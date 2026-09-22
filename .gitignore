@@ -1,0 +1,45 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Local financial/user data — never commit
+data/database/*
+data/documents/*
+data/artifacts/*
+data/backups/*
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Node / frontend
+node_modules/
+dist/
+coverage/
+
+# Rust / Tauri
+target/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Specific files
+FinanceApp.md
