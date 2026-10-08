@@ -1,0 +1,98 @@
+/* FinanceApp — Violet Ledger design tokens (S12)
+   Single source of truth. If a value is not here, it does not belong in a component. */
+
+@import "tailwindcss";
+
+/* IBM Plex fonts are imported from main.tsx so Vite bundles the woff2 files. */
+
+@theme {
+  /* ── Surfaces (dark-first, violet-tinted neutrals) ── */
+  --color-bg: #0a0a0f;          /* page */
+  --color-surface: #101018;     /* panels, tables */
+  --color-raised: #16161f;      /* table headers, elevated layers */
+  --color-interactive: #1d1d29; /* hover / interactive surfaces */
+  --color-line: #232330;        /* hairlines, borders */
+
+  /* ── Ink (verified on ALL five surfaces: bg/surface/raised/wash/hover —
+     worst case 4.57:1 on interactive; hierarchy 14.7/7.2/4.9 on raised) ── */
+  --color-ink: #e8e8ee;
+  --color-ink-2: #a3a3b2;
+  --color-ink-3: #858591;
+
+  /* ── Accent — violet identity. Text use 7.26:1; fill use white text 5.7:1 ── */
+  --color-accent: #a78bfa;
+  --color-accent-strong: #7c3aed;
+  --color-accent-deep: #6d28d9;
+  --color-accent-wash: rgb(124 58 237 / 0.12);
+
+  /* ── Financial semantics (signed meaning only, never decoration) ── */
+  --color-pos: #34d399;
+  --color-neg: #fb7185;
+  --color-warn: #fbbf24;
+
+  /* ── Type — one ratio (~1.2), base 14px, cap 26px, weights 400/500/600.
+     S12 refinement: compact, not tiring — reading sizes up, hierarchy intact. ── */
+  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --text-meta: 0.75rem;     /* 12px — meta, captions, labels, eyebrows */
+  --text-body: 0.875rem;   /* 14px — body, tables, buttons */
+  --text-title: 1.0625rem; /* 17px — screen titles, emphasis */
+  --text-amount: 1.3125rem; /* 21px — drawer amounts */
+  --text-display: 1.625rem; /* 26px — Overview dominant number */
+
+  /* ── Form ── */
+  --radius-tk: 6px; /* the only radius in the entire UI */
+  --shadow-float: 0 2px 8px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.5);
+
+  /* ── Motion ── */
+  --ease-tk: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out-tk: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Motion = transiciones de números, hover, capas. Nada más. */
+}
+
+/* SPACE scale — declared system (Tailwind 4px base).
+   Full scale: 2 · 4 · 6 · 8 · 10 · 12 · 16 · 24 · 32 · 48.
+   The half-steps 2/6/10 are declared dense-UI values (hairline gaps,
+   dense row padding, skeleton bars) — not drift.
+   Layout constants, NOT spacing: drawer min(440px, 40vw), shell max-w 1600px,
+   selection bar 2px. */
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: rgb(124 58 237 / 0.3);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-raised) transparent;
+}
+
+/* Reduced motion — skeletons pulse, layers slide; users who opt out get
+   instant state changes instead. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

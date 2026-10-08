@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.tauri.app/config/1",
+  "productName": "FinanceApp",
+  "version": "0.1.0",
+  "identifier": "com.financeapp.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devPath": "http://localhost:5174"
+  },
+  "app": {
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "identifier": "com.financeapp.app"
+  },
+  // TODO: Configure file system permissions for import directory
+  // TODO: Add plugin configuration for dialog, fs, and process execution
+}

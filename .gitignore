@@ -1,45 +1,91 @@
-# Environment / secrets
+# ==================================================
+# Environment variables and secrets
+# ==================================================
 .env
 .env.*
 !.env.example
 !.env.*.example
 
+# ==================================================
 # Local databases
+# ==================================================
 *.db
 *.sqlite
 *.sqlite3
+*.sql
 
-# Local financial/user data — never commit
-data/database/*
-data/documents/*
-data/artifacts/*
-data/backups/*
+# ==================================================
+# Private data and generated artifacts (root only)
+# ==================================================
+/data/database/
+/data/documents/
+/data/benchmarks/
+/data/artifacts/
+/data/backups/
+/data/ground_truth/
+/backend/data/
+/backend/internal/app/data/
 
+
+# ==================================================
 # Python
+# ==================================================
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .venv/
 venv/
 
-# Node / frontend
+# ==================================================
+# Node.js / frontend
+# ==================================================
 node_modules/
 dist/
 coverage/
+.npm/
 
+# ==================================================
 # Rust / Tauri
+# ==================================================
 target/
 
-# OS / editor
+# ==================================================
+# OS / IDE / development tools
+# ==================================================
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+.codegraph/
+.atl/
 
-# Temporary files
+# ==================================================
+# Temporary files and logs
+# ==================================================
 *.tmp
 *.temp
 *.log
+*.bak
+*.swp
+*.swo
 
-# Specific files
-FinanceApp.md
+# ==================================================
+# Private project documentation
+# ==================================================
+/FinanceApp.md
+/docs/experiments/
+/docs/domain/
+/docs/decisions/
+/docs/architecture/
+/docs/api/
+/docs/*.md
+/backend/docs/architecture/
+
+
+# ==================================================
+# Executable files and binaries
+# ==================================================
+*.exe
+*.dll

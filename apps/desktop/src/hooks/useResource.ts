@@ -1,0 +1,52 @@
+import { useCallback, useEffect, useState } from 'react';
+
+import { ApiError } from '../api/client';
+
+/* Per-section resource state. Each fetch resolves, fails or retries on its
+   own — a failure in one section never blanks the others. Errors carry the
+   HTTP status code so callers can distinguish 404 (honest absence) from
+   transport failures. */
+
+export type ResourceState<T> =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'error'; code?: number }
+  | { status: 'ready'; data: T };
+
+export function useResource<T>(
+  id: string | null | undefined,
+  fetcher: (id: string) => Promise<T>,
+): ResourceState<T> & { retry: () => void } {
+  const [state, setState] = useState<ResourceState<T>>({ status: 'idle' });
+  const [attempt, setAttempt] = useState(0);
+  const effectiveId = id ?? null;
+
+  useEffect(() => {
+    if (!effectiveId) {
+      setState({ status: 'idle' });
+      return;
+    }
+    let cancelled = false;
+    setState({ status: 'loading' });
+    fetcher(effectiveId)
+      .then((data) => {
+        if (!cancelled) setState({ status: 'ready', data });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const code = err instanceof ApiError ? err.status : undefined;
+        setState({ status: 'error', code });
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveId, attempt]);
+
+  const retry = useCallback(() => setAttempt((a) => a + 1), []);
+
+  if (state.status === 'ready') return { status: 'ready', data: state.data, retry };
+  if (state.status === 'loading') return { status: 'loading', retry };
+  if (state.status === 'error') return { status: 'error', code: state.code, retry };
+  return { status: 'idle', retry };
+}
