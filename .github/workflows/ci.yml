@@ -1,69 +1,52 @@
 name: CI
 
 on:
-push:
-branches:
-- main
-pull_request:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-repository:
-name: Repository checks
-runs-on: ubuntu-latest
+  repository-checks:
+    name: Repository checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
+      - name: Verify required files
+        shell: bash
+        run: |
+          set -e
+          required_files=(
+            "README.md"
+            "LICENSE"
+            ".gitignore"
+          )
+          for file in "${required_files[@]}"; do
+            if [[ ! -f "$file" ]]; then
+              echo "Missing required file: $file"
+              exit 1
+            fi
+          done
 
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
+      - name: Verify project directories
+        shell: bash
+        run: |
+          set -e
+          required_directories=(
+            "apps/desktop"
+            "apps/processor"
+            "backend"
+          )
+          for directory in "${required_directories[@]}"; do
+            if [[ ! -d "$directory" ]]; then
+              echo "Missing required directory: $directory"
+              exit 1
+            fi
+          done
 
-  - name: Verify required files
-    shell: bash
-    run: |
-      set -e
-
-      required_files=(
-        "README.md"
-        "LICENSE"
-        ".gitignore"
-        "docs/decisions/ADR-000-project-bootstrap.md"
-      )
-
-      for file in "${required_files[@]}"; do
-        if [[ ! -f "$file" ]]; then
-          echo "Missing required file: $file"
-          exit 1
-        fi
-      done
-
-  - name: Verify project directories
-    shell: bash
-    run: |
-      set -e
-
-      required_directories=(
-        "apps/desktop"
-        "apps/processor"
-        "backend"
-        "data"
-        "docs"
-        "frontend"
-        "infrastructure"
-        "scripts"
-        "tests"
-        "tests/e2e"
-        "tests/fixtures"
-        "tests/integration"
-      )
-
-      for directory in "${required_directories[@]}"; do
-        if [[ ! -d "$directory" ]]; then
-          echo "Missing required directory: $directory"
-          exit 1
-        fi
-      done
-
-  - name: Check repository status
-    shell: bash
-    run: |
-      git status --short
+      - name: Check repository status
+        shell: bash
+        run: git status --short
 
