@@ -12,6 +12,7 @@ type Config struct {
 	Environment   string
 	PythonPath    string
 	Port          string
+	PythonVersion string
 }
 
 func defaultAppData() string {
@@ -68,5 +69,6 @@ func Load() Config {
 		Environment:   env,
 		PythonPath:    python,
 		Port:          port,
+		PythonVersion: "3.12.10",
 	}
 }
