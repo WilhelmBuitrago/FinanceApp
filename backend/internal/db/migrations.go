@@ -2,24 +2,23 @@ package db
 
 import (
 	"database/sql"
-	"os"
+	"embed"
 	"strings"
 )
 
+//go:embed migrations/*.sql
+var migrationsFS embed.FS
+
 func Apply(sqlDB *sql.DB) error {
 	migrations := []string{
-		"db/migrations/0001_initial_schema.sql",
-		"db/migrations/0002_import_jobs.sql",
-		"db/migrations/0003_import_review_staging.sql",
+		"migrations/0001_initial_schema.sql",
+		"migrations/0002_import_jobs.sql",
+		"migrations/0003_import_review_staging.sql",
 	}
 	for _, path := range migrations {
-		content, err := os.ReadFile(path)
+		content, err := migrationsFS.ReadFile(path)
 		if err != nil {
-			alt := "../..//" + path
-			content, err = os.ReadFile(alt)
-			if err != nil {
-				return err
-			}
+			return err
 		}
 		stmts := strings.Split(string(content), ";")
 		for _, s := range stmts {

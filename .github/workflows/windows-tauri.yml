@@ -39,6 +39,9 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force `
             "apps/desktop/src-tauri/resources" | Out-Null
+          New-Item -ItemType Directory -Force `
+            "apps/desktop/src-tauri/resources/processor" | Out-Null
+          Copy-Item -Path "apps/processor/*" -Destination "apps/desktop/src-tauri/resources/processor" -Recurse -Force
 
       - name: Build Backend
         working-directory: backend

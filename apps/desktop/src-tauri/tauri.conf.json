@@ -33,7 +33,8 @@
       ],
       "category": "Finance",
       "resources": [
-        "resources/financeapp-backend.exe"
+        "resources/financeapp-backend.exe",
+        "resources/processor"
       ],
       "publisher": "FinanceApp",
       "createUpdaterArtifacts": true

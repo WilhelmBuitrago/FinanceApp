@@ -22,8 +22,12 @@ def process_pdf(pdf_path):
     processing_id = str(uuid.uuid4())
     inspection = inspect_pdf(pdf_path)
     extraction = extract_native_text(pdf_path)
-    base = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-    artifact_dir = os.path.join(base, "data", "artifacts", processing_id)
+    artifacts_base = os.environ.get('ARTIFACTS_PATH')
+    if not artifacts_base:
+        base = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        artifacts_base = os.path.join(base, "data", "artifacts")
+    artifact_dir = os.path.join(artifacts_base, processing_id)
+    os.makedirs(artifact_dir, exist_ok=True)
     write_artifacts(artifact_dir, inspection, extraction)
 
     # Create minimal manifest so parser can load it

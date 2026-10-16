@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -18,10 +19,24 @@ type ProcessorResult struct {
 func RunProcessor(pdfPath string, accountID string) (*ProcessorResult, error) {
 	pythonPath := os.Getenv("PROCESSOR_PYTHON")
 	if pythonPath == "" {
-		pythonPath = `C:\Users\wilhe\miniconda3\envs\agent\python.exe`
+		if os.PathSeparator == '\\' {
+			pythonPath = filepath.Join(os.Getenv("APPDATA"), "FinanceApp", "venv", "Scripts", "python.exe")
+		} else {
+			pythonPath = filepath.Join(os.Getenv("APPDATA"), "FinanceApp", "venv", "bin", "python")
+		}
 	}
-	cmd := exec.Command(pythonPath, "../apps/processor/src/main.py", pdfPath)
+	scriptPath := os.Getenv("PROCESSOR_SCRIPT")
+	if scriptPath == "" {
+		scriptPath = filepath.Join(os.Getenv("APPDATA"), "FinanceApp", "processor", "src", "main.py")
+	}
+	cmd := exec.Command(pythonPath, scriptPath, pdfPath)
+	cmd.Env = os.Environ()
+	// Ensure artifacts path is available to Python via env
+	if artifacts := os.Getenv("ARTIFACTS_PATH"); artifacts != "" {
+		cmd.Env = append(cmd.Env, "ARTIFACTS_PATH="+artifacts)
+	}
 	out, err := cmd.CombinedOutput()
+
 	if err != nil {
 		return nil, fmt.Errorf("processor execution failed: %w, output: %s", err, string(out))
 	}

@@ -36,7 +36,7 @@ func defaultPath(sub string) string {
 func Load() Config {
 	dbPath := os.Getenv("DATABASE_PATH")
 	if dbPath == "" {
-		dbPath = filepath.Join(defaultPath("data/database"), "finance.db")
+		dbPath = filepath.Join(defaultPath("data/db"), "finance.db")
 	}
 	artifacts := os.Getenv("ARTIFACTS_PATH")
 	if artifacts == "" {

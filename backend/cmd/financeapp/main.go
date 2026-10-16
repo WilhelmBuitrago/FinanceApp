@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	_ "modernc.org/sqlite"
@@ -19,6 +20,13 @@ import (
 
 func main() {
 	cfg := config.Load()
+	// Ensure required directories exist
+	for _, p := range []string{filepath.Dir(cfg.DatabasePath), cfg.ArtifactsPath, cfg.LogsPath} {
+		if err := os.MkdirAll(p, 0755); err != nil {
+			fmt.Printf("failed to create directory %s: %v\n", p, err)
+			os.Exit(1)
+		}
+	}
 	logDir := cfg.LogsPath
 	f, err := log.InitRun(logDir)
 	if err != nil {

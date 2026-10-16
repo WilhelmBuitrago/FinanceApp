@@ -70,7 +70,15 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	dstPath := filepath.Join("data", "documents", "raw", hdr.Filename)
+	docsBase := os.Getenv("DOCUMENTS_PATH")
+	if docsBase == "" {
+		if appdata := os.Getenv("APPDATA"); appdata != "" {
+			docsBase = filepath.Join(appdata, "FinanceApp", "data", "documents")
+		} else {
+			docsBase = "data/documents"
+		}
+	}
+	dstPath := filepath.Join(docsBase, "raw", hdr.Filename)
 	if err := os.MkdirAll(filepath.Dir(dstPath), 0755); err != nil {
 		http.Error(w, "cannot create dir", http.StatusInternalServerError)
 		return
@@ -157,7 +165,15 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Stage source entries from parsed artifact
-	artifactPath := filepath.Join("..", "data", "artifacts", res.ProcessingID, "parsed.json")
+	artifactsBase := os.Getenv("ARTIFACTS_PATH")
+	if artifactsBase == "" {
+		if appdata := os.Getenv("APPDATA"); appdata != "" {
+			artifactsBase = filepath.Join(appdata, "FinanceApp", "data", "artifacts")
+		} else {
+			artifactsBase = "data/artifacts"
+		}
+	}
+	artifactPath := filepath.Join(artifactsBase, res.ProcessingID, "parsed.json")
 	if data, err := os.ReadFile(artifactPath); err == nil {
 		var parsed struct {
 			Movements []struct {

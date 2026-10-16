@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	_ "modernc.org/sqlite"
 	"time"
 	"financeapp/backend/internal/domain"
@@ -537,8 +538,13 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 		if dbPath == "" {
 			dbPath = "data/finance.db"
 		}
+		logDir := os.Getenv("LOGS_PATH")
+		if logDir == "" {
+			logDir = "logs"
+		}
 		logErr := func(msg string) {
-			if f, _ := os.OpenFile("logs/"+time.Now().Format("02-01-2006.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644); f != nil {
+			logFile := filepath.Join(logDir, time.Now().Format("02-01-2006.log"))
+			if f, _ := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644); f != nil {
 				fmt.Fprintf(f, "[%s] PURGE %s: %s\n", time.Now().Format("15:04:05"), msg, dbPath)
 				f.Close()
 			}
@@ -567,7 +573,8 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 		for _, t := range tables {
 			if _, err := sqlDB.Exec("DELETE FROM " + t); err != nil {
 				// Log error to file
-				if f, _ := os.OpenFile("logs/"+time.Now().Format("02-01-2006.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644); f != nil {
+				logFile := filepath.Join(logDir, time.Now().Format("02-01-2006.log"))
+				if f, _ := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644); f != nil {
 					fmt.Fprintf(f, "[%s] PURGE error table %s: %v\n", time.Now().Format("15:04:05"), t, err)
 					f.Close()
 				}
@@ -645,7 +652,13 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 		id := r.PathValue("id")
 		// Soft delete for safety, but we can physically delete for now
 		dbPath := os.Getenv("DATABASE_PATH")
-		if dbPath == "" { dbPath = "./data/finance.db" }
+		if dbPath == "" {
+			if appdata := os.Getenv("APPDATA"); appdata != "" {
+				dbPath = filepath.Join(appdata, "FinanceApp", "data", "db", "finance.db")
+			} else {
+				dbPath = "./data/finance.db"
+			}
+		}
 		dbConn, err := sql.Open("sqlite", dbPath)
 		if err != nil {
 			http.Error(w, `{"error":"db open failed"}`, http.StatusInternalServerError)
@@ -678,7 +691,13 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 			return
 		}
 		dbPath := os.Getenv("DATABASE_PATH")
-		if dbPath == "" { dbPath = "./data/finance.db" }
+		if dbPath == "" {
+			if appdata := os.Getenv("APPDATA"); appdata != "" {
+				dbPath = filepath.Join(appdata, "FinanceApp", "data", "db", "finance.db")
+			} else {
+				dbPath = "./data/finance.db"
+			}
+		}
 		dbConn, err := sql.Open("sqlite", dbPath)
 		if err != nil { http.Error(w, `{"error":"db open"}`, http.StatusInternalServerError); return }
 		defer dbConn.Close()
@@ -689,7 +708,13 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 	mux.HandleFunc("DELETE /movements/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		dbPath := os.Getenv("DATABASE_PATH")
-		if dbPath == "" { dbPath = "./data/finance.db" }
+		if dbPath == "" {
+			if appdata := os.Getenv("APPDATA"); appdata != "" {
+				dbPath = filepath.Join(appdata, "FinanceApp", "data", "db", "finance.db")
+			} else {
+				dbPath = "./data/finance.db"
+			}
+		}
 		dbConn, err := sql.Open("sqlite", dbPath)
 		if err != nil { http.Error(w, `{"error":"db"}`, http.StatusInternalServerError); return }
 		defer dbConn.Close()
