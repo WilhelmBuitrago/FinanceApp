@@ -1,5 +1,7 @@
 use tauri::Manager;
 use std::process::Command;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 
 fn main() {
     tauri::Builder::default()
@@ -23,6 +25,9 @@ fn main() {
                 let processor_script = resource_dir.join("processor").join("src").join("main.py");
                 cmd.env("PROCESSOR_SCRIPT", &processor_script);
             }
+
+            #[cfg(windows)]
+            unsafe { cmd.creation_flags(0x08000000); } // CREATE_NO_WINDOW
 
             match cmd.spawn() {
                 Ok(child) => {

@@ -62,8 +62,8 @@ func EnsurePythonEnv(baseDir string) error {
 
 const (
 	PythonVersion = "3.12.10"
-	PythonURL     = "https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip"
-	PythonSHA256  = "REPLACE_WITH_OFFICIAL_SHA256"
+	PythonURL     = "https://www.python.org/ftp/python/3.12.10/python-3.12.10-embeddable-amd64.zip"
+	PythonSHA256  = "156c7eea90d58cd7e91a23f28a0056616b13e9f4cf4901b7b99b837b7848c6da"
 	GetPipURL     = "https://bootstrap.pypa.io/get-pip.py"
 )
 

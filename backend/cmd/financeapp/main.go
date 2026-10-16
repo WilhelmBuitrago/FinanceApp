@@ -21,12 +21,7 @@ import (
 
 func main() {
 	cfg := config.Load()
-	// Ensure Python runtime before starting services
-	if err := bootstrap.EnsurePythonRuntime(); err != nil {
-		fmt.Printf("Python runtime not ready: %v\n", err)
-		os.Exit(1)
-	}
-	// Ensure required directories exist
+	// Ensure required directories exist before any operation that may fail
 	for _, p := range []string{filepath.Dir(cfg.DatabasePath), cfg.ArtifactsPath, cfg.LogsPath} {
 		if err := os.MkdirAll(p, 0755); err != nil {
 			fmt.Printf("failed to create directory %s: %v\n", p, err)
@@ -42,6 +37,14 @@ func main() {
 	defer f.Close()
 	log.Log(f, "Backend starting")
 	log.Log(f, fmt.Sprintf("DB path: %s", cfg.DatabasePath))
+
+	// Ensure Python runtime before starting services
+	if err := bootstrap.EnsurePythonRuntime(); err != nil {
+		log.Log(f, fmt.Sprintf("Python runtime not ready: %v", err))
+		fmt.Printf("Python runtime not ready: %v\n", err)
+		os.Exit(1)
+	}
+	// Ensure required directories exist
 
 	sqlDB, err := sql.Open("sqlite", cfg.DatabasePath)
 	if err != nil {
