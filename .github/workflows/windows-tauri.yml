@@ -31,7 +31,7 @@ jobs:
           cd apps/desktop
           npm run build
       - name: Install Tauri CLI
-        run: cargo install tauri-cli --version "2"
+        run: cargo install tauri-cli
       - name: Build Tauri MSI
         run: |
           cd apps/desktop
