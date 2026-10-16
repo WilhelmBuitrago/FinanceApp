@@ -213,10 +213,10 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 				fe := domain.FinancialEvent{
 					ID:                 feID,
 					EventType:         eventType,
-					EventDate:         strPtr(m.DateNormalized),
+					EventDate:         sPtr(m.DateNormalized),
 					Status:            "ACTIVE",
 					VerificationStatus: "UNVERIFIED",
-					Description:       strPtr(m.DescriptionOriginal),
+					Description:       sPtr(m.DescriptionOriginal),
 					CreatedAt:         now,
 					UpdatedAt:         now,
 				}
@@ -230,7 +230,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 					SourceEntryID:    &seID,
 					MovementDate:     m.DateNormalized,
 					AmountMinor:      int64(m.AmountNormalized),
-					Description:      strPtr(m.DescriptionOriginal),
+					Description:      sPtr(m.DescriptionOriginal),
 					Status:           "ACTIVE",
 					CreatedAt:        now,
 					UpdatedAt:        now,
@@ -283,5 +283,6 @@ func GetJobHandler(w http.ResponseWriter, r *http.Request, repo *repositories.Im
 }
 
 func int64Ptr(v int64) *int64 { return &v }
-func strPtr(s string) *string { return &s }
+func sPtr(s string) *string { return &s }
+
 
