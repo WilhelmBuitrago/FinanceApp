@@ -28,6 +28,8 @@ func main() {
 	defer f.Close()
 	log.Log(f, "Backend starting")
 	log.Log(f, fmt.Sprintf("DB path: %s", cfg.DatabasePath))
+
+	sqlDB, err := sql.Open("sqlite", cfg.DatabasePath)
 	if err != nil {
 		log.Log(f, fmt.Sprintf("failed to open database: %v", err))
 		fmt.Printf("failed to open database: %v\n", err)
@@ -53,8 +55,6 @@ func main() {
 		Querier: querier,
 	}
 
-	// Build repositories
-	// Note: Persistence also builds them, but we construct explicitly to avoid double init
 	persistence := repositories.NewPersistence(sqlDB)
 	_ = repoDB
 
@@ -63,14 +63,12 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Start application
 	if err := application.Start(ctx); err != nil {
 		log.Log(f, fmt.Sprintf("application start error: %v", err))
 		fmt.Printf("application start error: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
@@ -85,3 +83,4 @@ func main() {
 		os.Exit(1)
 	}
 }
+
