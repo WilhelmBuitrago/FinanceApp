@@ -15,44 +15,81 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      # Go: usa la versión declarada en backend/go.mod.
+      # La caché depende del go.sum que realmente existe.
+      - name: Set up Go
+        uses: actions/setup-go@v7
         with:
-          targets: x86_64-pc-windows-msvc
+          go-version-file: backend/go.mod
+          cache: true
+          cache-dependency-path: backend/go.sum
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22'
+      - name: Download Go dependencies
+        working-directory: backend
+        run: go mod download
 
+      - name: Verify Go dependencies
+        working-directory: backend
+        run: go mod verify
+
+      # Node se necesita para construir el frontend.
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: npm
           cache-dependency-path: apps/desktop/package-lock.json
 
+      # Rust se configura para compilar el MSI de Windows x64.
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
       - name: Prepare backend resources
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force `
-            "apps/desktop/src-tauri/resources" | Out-Null
-          New-Item -ItemType Directory -Force `
-            "apps/desktop/src-tauri/resources/processor" | Out-Null
-          Copy-Item -Path "apps/processor/*" -Destination "apps/desktop/src-tauri/resources/processor" -Recurse -Force
+          $resources = "apps/desktop/src-tauri/resources"
+          $processor = Join-Path $resources "processor"
 
+          New-Item -ItemType Directory -Force $resources | Out-Null
+          New-Item -ItemType Directory -Force $processor | Out-Null
+
+          Copy-Item `
+            -Path "apps/processor/*" `
+            -Destination $processor `
+            -Recurse `
+            -Force
+
+          if (-not (Test-Path (Join-Path $processor "requirements.txt"))) {
+            throw "No se encontró apps/processor/requirements.txt"
+          }
+
+      # Todos los comandos Go se ejecutan desde backend.
       - name: Build Backend
         working-directory: backend
         run: go build -o ../apps/desktop/src-tauri/resources/financeapp-backend.exe ./cmd/financeapp
+
+      - name: Verify Backend executable
+        shell: pwsh
+        run: |
+          $backend = "apps/desktop/src-tauri/resources/financeapp-backend.exe"
+
+          if (-not (Test-Path $backend)) {
+            throw "No se generó el ejecutable del backend: $backend"
+          }
+
+          Get-Item $backend | Select-Object FullName, Length
 
       - name: Install Frontend Dependencies
         working-directory: apps/desktop
         run: npm ci
 
+      # Caché del CLI de Tauri.
       - name: Cache Tauri CLI
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin
           key: tauri-cli-2.12.3-${{ runner.os }}-${{ runner.arch }}
@@ -62,10 +99,17 @@ jobs:
         run: |
           if (-not (Get-Command cargo-tauri -ErrorAction SilentlyContinue)) {
             cargo install tauri-cli --version 2.12.3 --locked
+            if ($LASTEXITCODE -ne 0) {
+              throw "No se pudo instalar Tauri CLI"
+            }
           }
 
           cargo tauri --version
+          if ($LASTEXITCODE -ne 0) {
+            throw "Tauri CLI no está disponible"
+          }
 
+      # Genera el MSI y los artefactos de firma del actualizador.
       - name: Build Tauri MSI
         working-directory: apps/desktop
         run: cargo tauri build --target x86_64-pc-windows-msvc --bundles msi
@@ -76,18 +120,31 @@ jobs:
       - name: Inspect Tauri artifacts
         shell: pwsh
         run: |
-          Get-ChildItem "apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle" -Recurse -File |
-            Select-Object FullName
+          $bundle = "apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
+
+          if (-not (Test-Path $bundle)) {
+            throw "No se encontró el directorio de artefactos de Tauri"
+          }
+
+          Get-ChildItem $bundle -Recurse -File |
+            Select-Object FullName, Length
+
+          $msi = Get-ChildItem "$bundle/msi/*.msi" -File
+          if (-not $msi) {
+            throw "No se generó ningún archivo MSI"
+          }
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: FinanceApp-MSI
-          path: apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          path: |
+            apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+            apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.sig
           if-no-files-found: error
 
       - name: Publish Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
