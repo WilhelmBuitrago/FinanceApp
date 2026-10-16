@@ -1,5 +1,3 @@
-import React from 'react';
-
 type ImportStatusProps = {
   status: 'UPLOAD' | 'PROCESSING' | 'VALIDATING' | 'IMPORTING' | 'SUCCESS' | 'ERROR';
 };

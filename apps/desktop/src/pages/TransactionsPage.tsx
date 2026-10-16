@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAccounts } from '../hooks/useAccounts';
 import { useMovements } from '../hooks/useMovements';
@@ -28,7 +28,7 @@ const tableHead = 'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em]
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex h-7 items-center gap-1.5 rounded-tk border border-line bg-surface px-2 text-meta text-ink-2">
+    <span className="inline-flex h-7 items-center gap-1.5 rounded-[8px] border border-line bg-surface px-2 text-meta text-ink-2">
       {label}
       <button
         onClick={onRemove}
@@ -42,10 +42,10 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
 }
 
 const secondaryButton =
-  'inline-flex h-8 items-center rounded-tk border border-line bg-raised px-3 text-body font-medium text-ink transition-colors duration-[120ms] hover:bg-interactive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'inline-flex h-8 items-center rounded-[8px] border border-line bg-raised px-3 text-body font-medium text-ink transition-colors duration-[120ms] hover:bg-interactive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 const selectClass =
-  'h-8 rounded-tk border border-line bg-bg px-2 text-body text-ink focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'h-8 rounded-[8px] border border-line bg-bg px-2 text-body text-ink focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 export default function TransactionsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -252,6 +252,7 @@ export default function TransactionsPage() {
               <tr>
                 <th className={`${tableHead} w-24`}>Fecha</th>
                 <th className={tableHead}>Descripción</th>
+                <th className={`${tableHead} w-32`}>Categoría</th>
                 <th className={`${tableHead} w-40`}>Cuenta</th>
                 {showEstado && <th className={`${tableHead} w-28`}>Estado</th>}
                 <th className={`${tableHead.replace('text-left', 'text-right')} w-32`}>Monto</th>
@@ -281,6 +282,9 @@ export default function TransactionsPage() {
                     </td>
                     <td className="w-full max-w-0 truncate px-3 py-2 text-ink" title={mv.Description ?? undefined}>
                       {mv.Description ?? '—'}
+                    </td>
+                    <td className="truncate px-3 py-2 text-ink-2">
+                      {(mv as any).categoryName ?? '—'}
                     </td>
                     <td className="truncate px-3 py-2 text-ink-2" title={accountNames.get(mv.AccountID) ?? undefined}>
                       {accountNames.get(mv.AccountID) ?? '—'}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 /* IDs live only in drawers: mono 12px muted, click to copy. */
 export function CopyId({ id }: { id: string }) {

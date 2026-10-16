@@ -11,6 +11,7 @@ import {
   DrawerShell,
 } from './DrawerShell';
 import { FormField, selectClass } from './FormField';
+import { CopyId } from './CopyId';
 import type { Account } from '../types/account';
 
 /* Import document drawer — an import ALWAYS belongs to a configured
@@ -26,32 +27,75 @@ interface ImportDocumentDrawerProps {
 
 export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDocumentDrawerProps) {
   const [accountId, setAccountId] = useState(accounts[0]?.ID ?? '');
-  const [entityId, setEntityId] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadResult, setUploadResult] = useState<{document_id:string; job_id:string; processing_id?:string}|null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const submit = async () => {
     if (!accountId || !file) return;
     setSubmitting(true);
     setError(null);
-    /* Optional entity: one of the user's registered accounts. The backend
-       verifies the value against the target account's institution, so we
-       send the selected entity-account's institution. */
-    const entityAccount = accounts.find((a) => a.ID === entityId);
-    const entity = entityAccount?.Institution ?? undefined;
+    // Entity is derived from the selected account's institution
+    const account = accounts.find((a) => a.ID === accountId);
+    const entity = account?.Institution ?? undefined;
     try {
-      await uploadDocument(accountId, file, entity);
-      onImported();
+      const result = await uploadDocument(accountId, file, entity);
+      setUploadResult(result);
     } catch (err) {
-      const detail =
-        err instanceof ApiError && typeof err.response === 'object' && err.response !== null
-          ? (err.response as { error?: string }).error
-          : undefined;
+      let detail: string | undefined;
+      if (err instanceof ApiError) {
+        const r = err.response;
+        if (typeof r === 'object' && r && 'error' in (r as any)) {
+          detail = (r as any).error;
+        } else if (typeof r === 'string') {
+          try {
+            const parsed = JSON.parse(r);
+            if (parsed && typeof parsed === 'object' && 'error' in parsed) {
+              detail = parsed.error;
+            } else {
+              detail = r;
+            }
+          } catch {
+            detail = r;
+          }
+        }
+      }
       setError(detail ?? 'No se pudo importar el documento.');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleFileChange = (f: File | null) => {
+    setFile(f);
+    setError(null);
+    setUploadResult(null);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const dropped = e.dataTransfer.files?.[0];
+    if (dropped && dropped.type === 'application/pdf') {
+      handleFileChange(dropped);
+    } else if (dropped) {
+      setError('Solo se permiten archivos PDF.');
+    }
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
   };
 
   return (
@@ -101,71 +145,117 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
             </section>
 
             <section className="space-y-2">
-              <DrawerSectionLabel>Entidad asociada</DrawerSectionLabel>
-              <FormField
-                label="Entidad"
-                htmlFor="import-entity"
-                note="Verificación opcional: debe corresponder a la institución de la cuenta a la que importas."
-              >
-                <select
-                  id="import-entity"
-                  value={entityId}
-                  onChange={(e) => setEntityId(e.target.value)}
-                  className={selectClass}
-                >
-                  <option value="">Sin especificar (opcional)</option>
-                  {accounts.map((a) => (
-                    <option key={a.ID} value={a.ID}>
-                      {a.Name}
-                    </option>
-                  ))}
-                </select>
-              </FormField>
-            </section>
-
-            <section className="space-y-2">
               <DrawerSectionLabel>Archivo</DrawerSectionLabel>
               <FormField
                 label="Documento PDF"
                 htmlFor="import-file"
                 note="El extracto se asociará a la cuenta seleccionada y quedará registrado como documento de origen."
               >
-                <div className="flex items-center gap-3">
-                  <label className="inline-flex h-8 shrink-0 cursor-pointer items-center rounded-tk border border-line bg-raised px-3 text-body font-medium text-ink transition-colors duration-[120ms] hover:bg-interactive focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
-                    Seleccionar PDF
-                    <input
-                      id="import-file"
-                      type="file"
-                      accept="application/pdf"
-                      className="sr-only"
-                      onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                    />
-                  </label>
-                  {file ? (
-                    <span className="min-w-0 truncate text-body text-ink-2" title={file.name}>
-                      {file.name}
-                    </span>
-                  ) : (
-                    <span className="text-meta text-ink-3">Ningún archivo seleccionado</span>
-                  )}
+                <div
+                  onDragOver={onDragOver}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop}
+                  className={`group relative rounded-tk border ${isDragging ? 'border-accent bg-interactive' : file ? 'border-line bg-bg' : 'border-dashed border-line bg-bg'} px-4 py-3 transition-colors`}
+                  aria-dropeffect="execute"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`mt-0.5 rounded-md bg-raised p-2 text-ink-3 group-[.is-dragging]:text-accent`}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                      </svg>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      {file ? (
+                        <>
+                          <p className="text-body text-ink font-medium truncate" title={file.name}>{file.name}</p>
+                          <p className="text-meta text-ink-3">{(file.size / 1024).toFixed(0)} KB</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-body text-ink">Arrastra un PDF aquí</p>
+                          <p className="text-meta text-ink-3">o selecciona con el botón</p>
+                        </>
+                      )}
+                    </div>
+                    <label className="inline-flex h-8 shrink-0 cursor-pointer items-center rounded-tk border border-line bg-raised px-3 text-body font-medium text-ink transition-colors duration-[120ms] hover:bg-interactive focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
+                      Seleccionar PDF
+                      <input
+                        id="import-file"
+                        type="file"
+                        accept="application/pdf"
+                        className="sr-only"
+                        onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
+                      />
+                    </label>
+                  </div>
                 </div>
               </FormField>
             </section>
 
-            {error && (
-              <p className="text-body text-neg" role="alert">
-                {error}
-              </p>
-            )}
+            <div aria-live="polite" aria-atomic="true" className="space-y-3">
+              {error && (
+                <div className="rounded-tk border border-neg/30 bg-neg/10 px-3 py-2 text-body text-neg" role="alert">
+                  <p className="font-medium">No se pudo importar</p>
+                  <p className="text-meta">{error}</p>
+                </div>
+              )}
+              {uploadResult && (
+                <div className="rounded-tk border border-line bg-raised px-4 py-3 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 text-pos">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    </span>
+                    <div>
+                      <p className="text-body font-medium text-ink">Documento recibido</p>
+                      <p className="text-meta text-ink-3">El extracto se ha enviado a la cuenta seleccionada. Puedes seguir su estado en Documentos.</p>
+                    </div>
+                  </div>
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-meta">
+                    <dt className="text-ink-3">Documento</dt>
+                    <dd className="text-ink"><CopyId id={uploadResult.document_id} /></dd>
+                    <dt className="text-ink-3">Trabajo</dt>
+                    <dd className="text-ink"><CopyId id={uploadResult.job_id} /></dd>
+                    {uploadResult.processing_id && (
+                      <>
+                        <dt className="text-ink-3">Procesamiento</dt>
+                        <dd className="text-ink"><CopyId id={uploadResult.processing_id} /></dd>
+                      </>
+                    )}
+                  </dl>
+                </div>
+              )}
+            </div>
 
-            <button
-              onClick={submit}
-              disabled={!file || !accountId || submitting}
-              aria-busy={submitting}
-              className="inline-flex h-8 items-center justify-center rounded-tk bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:hover:bg-accent-strong"
-            >
-              {submitting ? 'Importando…' : 'Importar'}
-            </button>
+            <div className="flex items-center gap-3">
+              {!uploadResult ? (
+                <button
+                  onClick={submit}
+                  disabled={!file || !accountId || submitting}
+                  aria-busy={submitting}
+                  className="inline-flex h-8 items-center justify-center rounded-tk bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:hover:bg-accent-strong"
+                >
+                  {submitting ? 'Importando…' : 'Importar'}
+                </button>
+              ) : (
+                <button
+                  onClick={() => { onImported(); onClose(); }}
+                  className="inline-flex h-8 items-center justify-center rounded-tk bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  Ver documentos
+                </button>
+              )}
+              {(error || uploadResult) && (
+                <button
+                  onClick={() => { setError(null); setUploadResult(null); setFile(null); }}
+                  className="inline-flex h-8 items-center justify-center rounded-tk border border-line px-3 text-body font-medium text-ink transition-colors duration-[120ms] hover:bg-interactive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  {uploadResult ? 'Importar otro' : 'Reiniciar'}
+                </button>
+              )}
+            </div>
           </>
         )}
       </DrawerBody>

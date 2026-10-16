@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 /* Confirmation modal — for destructive, irreversible actions only.
    Names the specific consequence, action-labeled buttons (never Sí/No),

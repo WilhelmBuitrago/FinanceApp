@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAccounts } from '../hooks/useAccounts';
 import { useDocuments } from '../hooks/useDocuments';
@@ -20,7 +20,7 @@ import type { Document } from '../types/document';
 const tableHead = 'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
 
 const primaryButton =
-  'inline-flex h-8 items-center rounded-tk bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:hover:bg-accent-strong';
+  'inline-flex h-8 items-center rounded-[8px] bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:hover:bg-accent-strong';
 
 export default function DocumentsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -64,10 +64,11 @@ export default function DocumentsPage() {
         />
       ) : (
         <>
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-body text-ink-2">
-              {documents.data?.length ?? 0} documentos registrados.
-            </p>
+          <div className="mb-6 flex items-baseline justify-between gap-4">
+            <div>
+              <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">Documentos</h1>
+              <p className="text-body text-ink-2">{documents.data?.length ?? 0} documentos registrados.</p>
+            </div>
             <button onClick={() => setImportOpen(true)} className={primaryButton}>
               Importar documento
             </button>
@@ -77,14 +78,9 @@ export default function DocumentsPage() {
             <EmptyState
               title="Sin documentos"
               description="Importa el primer extracto de una de tus cuentas para generar movimientos."
-              action={
-                <button onClick={() => setImportOpen(true)} className={primaryButton}>
-                  Importar documento
-                </button>
-              }
             />
           ) : (
-            <div className="overflow-x-auto rounded-tk border border-line bg-surface">
+            <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
               <table className="w-full text-body">
                 <thead className="bg-raised">
                   <tr>

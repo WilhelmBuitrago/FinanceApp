@@ -7,7 +7,7 @@ interface PageContainerProps {
 export default function PageContainer({ children }: PageContainerProps) {
   return (
     <main className="flex-1 overflow-auto bg-bg">
-      <div className="mx-auto h-full w-full max-w-[1600px] p-6">{children}</div>
+      <div className="mx-auto h-full w-full max-w-[1440px] px-8 py-8">{children}</div>
     </main>
   );
 }

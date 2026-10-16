@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAccounts } from '../hooks/useAccounts';
+import { useMovements } from '../hooks/useMovements';
 import {
   useCashFlow,
   useExpenseDistribution,
@@ -32,7 +33,7 @@ const tableHead = 'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em]
 const tableHeadRight = 'px-3 py-1.5 text-right font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
 
 const primaryButton =
-  'inline-flex h-8 items-center rounded-tk bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'inline-flex h-8 items-center rounded-[8px] bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -47,18 +48,63 @@ function todayIso(): string {
 }
 
 export default function DashboardPage() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [addMovementOpen, setAddMovementOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>(() => {
+    try {
+      const q = JSON.parse(localStorage.getItem('reviewQueue') || '[]');
+      return q.map((i:any)=> `Movimiento duplicado detectado el ${i.date}`);
+    } catch { return [] }
+  });
+  const [form, setForm] = useState({cantidad:'', tipo:'Ingreso', cuenta:'', categoria:'', descripcion:'', fecha:''});
+  const [categories, setCategories] = useState<any[]>([]);
   const accounts = useAccounts();
+
+  useEffect(() => {
+    if (accounts.data && accounts.data.length > 0 && !form.cuenta) {
+      setForm(f => ({...f, cuenta: accounts.data[0].ID}));
+    }
+  }, [accounts.data]);
   const cashFlow = useCashFlow();
   const incomeDist = useIncomeDistribution();
   const expenseDist = useExpenseDistribution();
   const recentMovements = useRecentMovements();
   const recentDocuments = useRecentDocuments();
+  const movements = useMovements();
+
+  useEffect(() => {
+    fetch('http://localhost:8081/categories')
+      .then(r=>r.json())
+      .then(data => {
+        const norm = (data || []).map((c:any) => ({
+          id: c.id ?? c.ID,
+          name: c.name ?? c.Name,
+          category_type: (c.category_type ?? c.CategoryType ?? '').toUpperCase()
+        }));
+        setCategories(norm);
+      })
+      .catch(()=>{});
+  }, []);
 
   const accountNames = useMemo(() => {
     const map = new Map<string, string>();
     for (const account of accounts.data ?? []) map.set(account.ID, account.Name);
     return map;
   }, [accounts.data]);
+
+  const { totalNet, perAccount } = useMemo(() => {
+    const map = new Map<string, number>();
+    let total = 0;
+    const data = movements.data ?? [];
+    for (const mv of data) {
+      const amt = Number(mv.AmountMinor) || 0;
+      total += amt;
+      const acc = mv.AccountID as string;
+      map.set(acc, (map.get(acc) ?? 0) + amt);
+    }
+    return { totalNet: total, perAccount: Array.from(map.entries()).map(([id, net]) => ({ id, name: accountNames.get(id) ?? id, net })) };
+  }, [movements.data, accountNames]);
 
   /* Backend points sorted for the chart. */
   const points = useMemo(
@@ -98,12 +144,56 @@ export default function DashboardPage() {
     (recentDocuments.data?.length ?? 0) === 0;
 
   return (
-    <div className="max-w-6xl space-y-8">
-      {/* Context */}
-      <p className="text-title font-medium text-ink">
-        {greeting()}, Wilhelm
-        <span className="ml-2 text-meta font-normal text-ink-3">{formatDate(todayIso())}</span>
-      </p>
+    <div className="space-y-8">
+      <div className="flex items-baseline justify-between gap-4">
+        <div>
+          <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">
+            {greeting()}, Wilhelm
+          </h1>
+          <p className="text-meta text-ink-3">{formatDate(todayIso())}</p>
+        </div>
+        {firstUse ? null : (
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <button className="relative p-2 rounded border border-line bg-surface" onClick={() => setNotificationsOpen(v=>!v)} title="Notificaciones">🔔{notifications.length>0 && <span className="absolute -top-1 -right-1 bg-neg text-white text-xs rounded-full px-1">{notifications.length}</span>}</button>
+              {notificationsOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 rounded-lg border border-line bg-surface shadow-xl p-2 z-[9999]">
+                  <p className="text-sm font-medium px-2 py-1">Notificaciones</p>
+                  {notifications.length===0 ? <p className="text-sm text-ink-3 px-2 py-1">Sin notificaciones</p> : notifications.map((n,i)=>(
+                    <div key={i} className="px-2 py-1 text-sm border-b border-line last:border-0 cursor-pointer hover:bg-raised" onClick={()=>{ setNotificationsOpen(false); window.location.href='/review'; }}>{n}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="relative">
+              <button className={primaryButton} onClick={() => setMenuOpen(v => !v)}>+</button>
+              {menuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-line bg-surface shadow-xl p-1 z-[9999]">
+                <Link to="/documents" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-md hover:bg-raised text-sm">Importar documento</Link>
+                <button onClick={() => { setMenuOpen(false); setAddMovementOpen(true); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-raised text-sm">Agregar movimiento</button>
+              </div>
+            )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {!firstUse && (
+        <section aria-label="Neto total">
+          <div className="rounded-[12px] border border-line bg-surface p-5">
+            <p className="text-meta text-ink-3">Neto total</p>
+            <p className="text-[1.75rem] font-semibold tracking-tight text-ink">{formatSignedMoney(totalNet)}</p>
+            <div className="mt-4 space-y-2">
+              {perAccount.map(a => (
+                <div key={a.id} className="flex items-center justify-between text-body">
+                  <span className="text-ink-2">{a.name}</span>
+                  <span className={a.net >= 0 ? 'text-pos' : 'text-neg'}>{formatSignedMoney(a.net)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {firstUse ? (
         <EmptyState
@@ -120,7 +210,7 @@ export default function DashboardPage() {
           {/* 1. Financial summary — real 30-day sums over backend aggregates */}
           <section aria-label="Situación financiera">
             {cashFlow.loading ? (
-              <div className="h-14 w-full max-w-2xl animate-pulse rounded-tk bg-interactive" aria-hidden="true" />
+              <div className="h-14 w-full max-w-2xl animate-pulse rounded-[8px] bg-interactive" aria-hidden="true" />
             ) : cashFlow.error ? (
               <p className="text-body text-ink-2">
                 No se pudo cargar la situación financiera desde el servidor.
@@ -138,7 +228,7 @@ export default function DashboardPage() {
           <section aria-label="Flujo de dinero" className="space-y-2">
             <SectionHeader title="Flujo de dinero" />
             {cashFlow.loading ? (
-              <div className="h-48 w-full animate-pulse rounded-tk border border-line bg-surface" aria-hidden="true" />
+              <div className="h-48 w-full animate-pulse rounded-[12px] border border-line bg-surface" aria-hidden="true" />
             ) : cashFlow.error ? (
               <EmptyState
                 title="No se pudo cargar el flujo"
@@ -163,7 +253,7 @@ export default function DashboardPage() {
             <SectionHeader title="Distribución" />
             <div className="grid gap-6 md:grid-cols-2">
               {incomeDist.loading || expenseDist.loading ? (
-                <div className="h-40 w-full animate-pulse rounded-tk border border-line bg-surface" aria-hidden="true" />
+                <div className="h-40 w-full animate-pulse rounded-[12px] border border-line bg-surface" aria-hidden="true" />
               ) : (
                 <>
                   <ChartCard title="Ingresos">
@@ -213,12 +303,13 @@ export default function DashboardPage() {
                 description="Los movimientos aparecerán al importar documentos."
               />
             ) : (
-              <div className="overflow-hidden rounded-tk border border-line bg-surface">
+              <div className="overflow-hidden rounded-[12px] border border-line bg-surface">
                 <table className="w-full table-fixed text-body">
                   <thead className="bg-raised">
                     <tr>
                       <th className={`${tableHead} w-24`}>Fecha</th>
                       <th className={tableHead}>Descripción</th>
+                      <th className={`${tableHead} w-32`}>Categoría</th>
                       <th className={`${tableHead} w-40`}>Cuenta</th>
                       <th className={`${tableHeadRight} w-32`}>Monto</th>
                     </tr>
@@ -232,6 +323,7 @@ export default function DashboardPage() {
                         <td className="w-full max-w-0 truncate px-3 py-2 text-ink" title={mv.Description ?? undefined}>
                           {mv.Description ?? '—'}
                         </td>
+                        <td className="truncate px-3 py-2 text-ink-2">{mv.categoryName || '—'}</td>
                         <td className="truncate px-3 py-2 text-ink-2" title={accountNames.get(mv.AccountID) ?? undefined}>
                           {accountNames.get(mv.AccountID) ?? '—'}
                         </td>
@@ -254,7 +346,7 @@ export default function DashboardPage() {
           {attentionDocs.length > 0 && (
             <section aria-label="Requiere atención" className="space-y-2">
               <SectionHeader title="Requiere atención" action={{ to: '/documents', label: 'Ver documentos' }} />
-              <div className="overflow-hidden rounded-tk border border-line bg-surface">
+              <div className="overflow-hidden rounded-[12px] border border-line bg-surface">
                 {attentionDocs.slice(0, 3).map((doc) => (
                   <div
                     key={doc.ID}
@@ -289,7 +381,7 @@ export default function DashboardPage() {
                 description="Los documentos bancarios importados aparecerán aquí."
               />
             ) : (
-              <div className="overflow-hidden rounded-tk border border-line bg-surface">
+              <div className="overflow-hidden rounded-[12px] border border-line bg-surface">
                 <table className="w-full text-body">
                   <thead className="bg-raised">
                     <tr>
@@ -326,6 +418,51 @@ export default function DashboardPage() {
             )}
           </section>
         </>
+      )}
+      {/* Add Movement Drawer */}
+      {addMovementOpen && (
+        <div className="fixed inset-0 z-[10000] flex">
+          <div className="absolute inset-0 bg-black/40 z-0" onClick={() => setAddMovementOpen(false)} />
+          <div className="ml-auto h-full w-[420px] bg-surface border-l border-line p-6 overflow-auto relative z-10" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold mb-4">Agregar movimiento</h2>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const amount = Number(parseFloat(form.cantidad).toFixed(2));
+              if (!amount || amount <= 0) return alert('Cantidad debe ser positiva');
+              const sign = form.tipo === 'Egreso' ? -1 : 1;
+              const amountMinor = Math.round(amount * 100) * sign;
+              const body = {
+                amountMinor,
+                type: form.tipo === 'Ingreso' ? 'INCOME' : form.tipo === 'Egreso' ? 'EXPENSE' : 'TRANSFER',
+                accountId: form.cuenta,
+                description: form.descripcion,
+                date: form.fecha,
+                categoryId: form.categoria
+              };
+              const res = await fetch('http://localhost:8081/movements', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+              if (res.status === 409) {
+                const item = { amount, date: form.fecha, desc: form.descripcion || '', account: form.cuenta, type: form.tipo, created: Date.now() };
+                const q = JSON.parse(localStorage.getItem('reviewQueue') || '[]');
+                localStorage.setItem('reviewQueue', JSON.stringify([...q, item]));
+                setNotifications(n => [...n, `Movimiento duplicado detectado el ${form.fecha} por $${amount}`]);
+                setAddMovementOpen(false);
+                return;
+              }
+              if (!res.ok) { alert('Error al crear movimiento: ' + await res.text()); return; }
+              window.location.reload();
+            }}>
+              <div className="space-y-4">
+                <div><label className="text-sm">Cantidad *</label><input type="number" min="0" step="0.01" required value={form.cantidad} onChange={e=>setForm({...form, cantidad:e.target.value})} className="w-full bg-surface border border-line rounded px-2 py-1 text-ink" /></div>
+                <div><label className="text-sm">Tipo *</label><select value={form.tipo} onChange={e=>setForm({...form, tipo:e.target.value})} className="w-full bg-surface border border-line rounded px-2 py-1 text-ink"><option>Ingreso</option><option>Egreso</option>{accounts.data && accounts.data.length > 1 && <option>Transferencia</option>}</select></div>
+                <div><label className="text-sm">Cuenta *</label><select value={form.cuenta} onChange={e=>setForm({...form, cuenta:e.target.value})} className="w-full bg-surface border border-line rounded px-2 py-1 text-ink">{accounts.data?.map(a => <option key={a.ID} value={a.ID}>{a.Name}</option>)}</select></div>
+                <div><label className="text-sm">Categoría</label><select value={form.categoria} onChange={e=>setForm({...form, categoria:e.target.value})} className="w-full bg-surface border border-line rounded px-2 py-1 text-ink"><option value="">Sin categoría</option>{categories.filter(c => { const typeMap = { 'Ingreso':'INCOME','Egreso':'EXPENSE','Transferencia':'TRANSFER' }; return c.category_type === typeMap[form.tipo]; }).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+                <div><label className="text-sm">Descripción</label><input type="text" value={form.descripcion} onChange={e=>setForm({...form, descripcion:e.target.value})} className="w-full bg-surface border border-line rounded px-2 py-1 text-ink" /></div>
+                <div><label className="text-sm">Fecha *</label><input type="date" required value={form.fecha} onChange={e=>setForm({...form, fecha:e.target.value})} className="w-full bg-surface border border-line rounded px-2 py-1 text-ink" /></div>
+                <div className="flex justify-end gap-2 pt-4"><button type="button" onClick={() => setAddMovementOpen(false)} className="px-3 py-1 rounded border">Cancelar</button><button type="submit" className="px-3 py-1 rounded bg-accent-strong text-white">Aceptar</button></div>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

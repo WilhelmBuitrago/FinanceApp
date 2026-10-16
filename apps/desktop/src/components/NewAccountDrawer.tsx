@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { createAccount } from '../api/accounts';
 import { ApiError } from '../api/client';
@@ -33,7 +33,6 @@ export function NewAccountDrawer({ onClose, onCreated }: NewAccountDrawerProps) 
 
   const [institutionCode, setInstitutionCode] = useState('');
   const [accountType, setAccountType] = useState('');
-  const [name, setName] = useState('');
   const [validationData, setValidationData] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,15 +47,22 @@ export function NewAccountDrawer({ onClose, onCreated }: NewAccountDrawerProps) 
   const products = effectiveInstitution?.supported_account_types ?? [];
   const effectiveType = accountType || (products.length > 0 ? products[0] : '');
 
+  const accountName = useMemo(() => {
+    if (!effectiveInstitution) return '';
+    const productLabel = PRODUCT_LABELS[effectiveType] ?? effectiveType;
+    // Name derives from institution, not user input
+    return `${effectiveInstitution.name}`;
+  }, [effectiveInstitution, effectiveType]);
+
   const submit = async () => {
-    if (!effectiveCode || !effectiveType || !name.trim()) return;
+    if (!effectiveCode || !effectiveType || !accountName) return;
     setSubmitting(true);
     setError(null);
     try {
       await createAccount({
         id: crypto.randomUUID(),
         user_id: 'local',
-        name: name.trim(),
+        name: accountName,
         account_type: effectiveType as 'BANK_ACCOUNT' | 'CREDIT_CARD',
         currency: 'COP',
         institution: effectiveCode,
@@ -148,24 +154,6 @@ export function NewAccountDrawer({ onClose, onCreated }: NewAccountDrawerProps) 
             </section>
 
             <section className="space-y-2">
-              <DrawerSectionLabel>Identificación</DrawerSectionLabel>
-              <FormField
-                label="Nombre"
-                htmlFor="new-account-name"
-                note="Para identificar la cuenta dentro de FinanceApp."
-              >
-                <input
-                  id="new-account-name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Cuenta principal"
-                  className={inputClass}
-                />
-              </FormField>
-            </section>
-
-            <section className="space-y-2">
               <DrawerSectionLabel>Datos de validación</DrawerSectionLabel>
               <FormField
                 label="Número de cuenta"
@@ -191,7 +179,7 @@ export function NewAccountDrawer({ onClose, onCreated }: NewAccountDrawerProps) 
 
             <button
               onClick={submit}
-              disabled={!name.trim() || !effectiveType || submitting}
+              disabled={!effectiveType || submitting}
               aria-busy={submitting}
               className="inline-flex h-8 items-center justify-center rounded-tk bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:hover:bg-accent-strong"
             >

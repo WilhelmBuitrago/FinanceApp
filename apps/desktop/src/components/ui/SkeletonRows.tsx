@@ -1,5 +1,3 @@
-import React from 'react';
-
 /* Skeleton rows — structural loading placeholder matching the real table
    layout (header bar + N rows). First load only; refetches keep old data. */
 

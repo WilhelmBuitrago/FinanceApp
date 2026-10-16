@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ImportStatus from '../components/ImportStatus';
 
 // TODO: Integrate with backend API endpoints

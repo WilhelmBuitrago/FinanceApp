@@ -1,18 +1,18 @@
 /* Money formatting for FinanceApp.
-   CONTRACT (verified against apps/processor/normalization/nu_normalizer.py):
-   normalize_amount() stores INTEGER PESOS in amount_minor
-   ("+$700.000,00" -> 700000), NOT hundredths. Values are formatted as-is,
-   with no /100 division. Currency: COP, locale es-CO, compact "$3.641"
-   (Intl's es-CO currency style inserts a non-breaking space, which breaks
-   column alignment and reads wrong for the compact ledger style). */
+   amountMinor ahora es centavos. Se divide por 100 para mostrar pesos con 2 decimales.
+   NOTA IMPORTANTE: El sistema usa pesos decimales internamente como centavos enteros.
+   amount_minor = 150042 → UI $1.500,42
+   amount_minor = 15044 → UI $150,44
+   Nunca almacenar decimales en amount_minor, solo enteros de centavos.
+*/
 
 export function formatMoney(amountMinor: number, locale = 'es-CO'): string {
   const sign = amountMinor < 0 ? '-' : '';
-  const value = Math.abs(amountMinor);
+  const value = Math.abs(amountMinor) / 100;
   try {
-    return `${sign}$${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)}`;
+    return `${sign}$${new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}`;
   } catch {
-    return `${sign}$${value}`;
+    return `${sign}$${value.toFixed(2)}`;
   }
 }
 

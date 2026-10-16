@@ -40,15 +40,15 @@ function NavItem({ to, label, Icon, collapsed }: NavItemDef & { collapsed: boole
       end={to === '/'}
       title={collapsed ? label : undefined}
       className={({ isActive }) =>
-        `relative flex h-8 items-center mx-2 rounded-tk text-body font-medium transition-colors duration-[120ms] ${
+        `relative flex h-9 items-center mx-2 rounded-[8px] text-body font-medium transition-colors duration-[120ms] ${
           collapsed ? 'justify-center' : 'gap-3 px-3'
-        } ${isActive ? 'bg-accent-wash text-ink' : 'text-ink-2 hover:bg-interactive hover:text-ink'}`
+        } ${isActive ? 'bg-raised text-ink' : 'text-ink-2 hover:bg-interactive hover:text-ink'}`
       }
     >
       {({ isActive }) => (
         <>
           {isActive && (
-            <span className="absolute left-0 top-1.5 bottom-1.5 w-[2px] bg-accent" aria-hidden="true" />
+            <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-accent" aria-hidden="true" />
           )}
           <Icon className={isActive ? 'shrink-0 text-accent' : 'shrink-0 text-ink-3'} />
           <span className={`truncate ${collapsed ? 'sr-only' : ''}`}>{label}</span>
@@ -71,7 +71,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
   return (
     <aside
       className={`flex shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-[220ms] ease-out-tk ${
-        collapsed ? 'w-16' : 'w-56'
+        collapsed ? 'w-16' : 'w-64'
       }`}
     >
       {/* Brand */}

@@ -1,4 +1,3 @@
-import React from 'react';
 
 import { formatMoney } from '../lib/formatMoney';
 import type { DistributionSlice } from '../api/dashboard';
@@ -52,7 +51,7 @@ function buildLegend(slices: DistributionSlice[]): { entries: LegendEntry[]; tot
 }
 
 export function DonutChart({ slices }: DonutChartProps) {
-  const { entries, total } = buildLegend(slices);
+  const { entries } = buildLegend(slices);
 
   if (entries.length === 0) return null;
 

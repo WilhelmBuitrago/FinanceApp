@@ -1,5 +1,3 @@
-import React from 'react';
-
 /* Semantic status badge — dot + label, never color alone.
    Tinted background at 10%, text in the semantic color, 11px, radius 6. */
 

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getAccountDocuments, getAccountMovements } from '../api/accounts';
 import { DetailDrawer } from '../components/DetailDrawer';
@@ -56,7 +56,7 @@ export default function AccountDetailPage() {
 
   return (
     <div
-      className={`transition-[padding] duration-[220ms] ease-out-tk ${
+      className={`space-y-8 transition-[padding] duration-[220ms] ease-out-tk ${
         selected ? 'pr-[calc(min(440px,40vw)_+_16px)]' : ''
       }`}
     >
@@ -69,9 +69,9 @@ export default function AccountDetailPage() {
           onRetry={() => setRefreshKey((k) => k + 1)}
         />
       ) : account ? (
-        <header className="space-y-1.5">
-          <p className="text-display font-semibold text-ink">{account.Name}</p>
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body text-ink-2">
+        <header className="space-y-3">
+          <h1 className="text-[1.75rem] font-semibold tracking-tight text-ink">{account.Name}</h1>
+          <div className="flex flex-wrap items-center gap-2 text-body text-ink-2">
             <span>{accountTypeLabel(account.AccountType)}</span>
             <span aria-hidden="true">·</span>
             <span>{account.Institution ?? 'Sin institución'}</span>
@@ -81,7 +81,7 @@ export default function AccountDetailPage() {
             <StatusBadge status={account.Status} />
             <span aria-hidden="true">·</span>
             <span className="text-meta text-ink-3">Creada {formatDate(account.CreatedAt)}</span>
-          </p>
+          </div>
         </header>
       ) : (
         <header className="space-y-1.5">
@@ -119,7 +119,7 @@ export default function AccountDetailPage() {
               description="Esta cuenta todavía no tiene movimientos registrados."
             />
           ) : (
-            <div className="overflow-x-auto rounded-tk border border-line bg-surface">
+            <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
               <table
                 className="w-full text-body"
                 onKeyDown={(e) => {
@@ -137,6 +137,7 @@ export default function AccountDetailPage() {
                   <tr>
                     <th className={`${tableHead} w-24`}>Fecha</th>
                     <th className={tableHead}>Descripción</th>
+                    <th className={`${tableHead} w-32`}>Categoría</th>
                     <th className={`${tableHead.replace('text-left', 'text-right')} w-32`}>Monto</th>
                   </tr>
                 </thead>
@@ -171,6 +172,7 @@ export default function AccountDetailPage() {
                         >
                           {mv.Description ?? '—'}
                         </td>
+                        <td className="truncate px-3 py-2 text-ink-2">{mv.categoryName || '—'}</td>
                         <td
                           className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${
                             mv.AmountMinor > 0 ? 'text-pos' : mv.AmountMinor < 0 ? 'text-neg' : 'text-ink'
@@ -206,7 +208,7 @@ export default function AccountDetailPage() {
               description="Esta cuenta todavía no tiene documentos asociados."
             />
           ) : (
-            <div className="overflow-x-auto rounded-tk border border-line bg-surface">
+            <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
               <table className="w-full text-body">
                 <thead className="bg-raised">
                   <tr>

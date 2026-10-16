@@ -10,9 +10,9 @@ interface EmptyStateProps {
    Never framed as an error. */
 
 export const EmptyState = ({ title = 'Sin datos', description, action }: EmptyStateProps) => (
-  <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
-    <h2 className="text-body font-medium text-ink">{title}</h2>
-    {description && <p className="mt-1.5 max-w-sm text-body text-ink-2">{description}</p>}
-    {action && <div className="mt-4">{action}</div>}
+  <div className="flex flex-col items-center justify-center rounded-[12px] border border-dashed border-line bg-surface/50 px-8 py-14 text-center">
+    <h2 className="text-[1.125rem] font-semibold text-ink">{title}</h2>
+    {description && <p className="mt-2 max-w-md text-body text-ink-2">{description}</p>}
+    {action && <div className="mt-5">{action}</div>}
   </div>
 );

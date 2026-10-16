@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccounts } from '../hooks/useAccounts';
 import { useMovements } from '../hooks/useMovements';
@@ -17,7 +17,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 const tableHead = 'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
 
 const primaryButton =
-  'inline-flex h-8 items-center rounded-tk bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:hover:bg-accent-strong';
+  'inline-flex h-8 items-center rounded-[8px] bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:hover:bg-accent-strong';
 
 export default function AccountsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -48,12 +48,12 @@ export default function AccountsPage() {
   const noAccounts = !accounts.loading && !accounts.error && (accounts.data?.length ?? 0) === 0;
 
   return (
-    <div>
-      {/* Configuration entry — always available, the page's primary action */}
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-body text-ink-2">
-          Tus entidades financieras: qué puedes importar y desde dónde.
-        </p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">Cuentas</h1>
+          <p className="text-body text-ink-2">Tus entidades financieras: qué puedes importar y desde dónde.</p>
+        </div>
         <button onClick={() => setWizardOpen(true)} className={primaryButton}>
           Nueva cuenta
         </button>
@@ -83,7 +83,7 @@ export default function AccountsPage() {
           }
         />
       ) : (
-        <div className="overflow-x-auto rounded-tk border border-line bg-surface">
+        <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
           <table className="w-full text-body">
             <thead className="bg-raised">
               <tr>

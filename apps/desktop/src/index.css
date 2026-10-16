@@ -1,4 +1,4 @@
-/* FinanceApp — Violet Ledger design tokens (S12)
+/* FinanceApp — Ledger redesign
    Single source of truth. If a value is not here, it does not belong in a component. */
 
 @import "tailwindcss";
@@ -6,12 +6,12 @@
 /* IBM Plex fonts are imported from main.tsx so Vite bundles the woff2 files. */
 
 @theme {
-  /* ── Surfaces (dark-first, violet-tinted neutrals) ── */
-  --color-bg: #0a0a0f;          /* page */
-  --color-surface: #101018;     /* panels, tables */
-  --color-raised: #16161f;      /* table headers, elevated layers */
-  --color-interactive: #1d1d29; /* hover / interactive surfaces */
-  --color-line: #232330;        /* hairlines, borders */
+  /* ── Surfaces (calm dark, editorial) ── */
+  --color-bg: #08080c;          /* page */
+  --color-surface: #0e0e14;     /* panels, tables */
+  --color-raised: #14141c;      /* table headers, elevated layers */
+  --color-interactive: #1b1b27; /* hover / interactive surfaces */
+  --color-line: #1e1e2a;        /* hairlines, borders */
 
   /* ── Ink (verified on ALL five surfaces: bg/surface/raised/wash/hover —
      worst case 4.57:1 on interactive; hierarchy 14.7/7.2/4.9 on raised) ── */
@@ -41,8 +41,9 @@
   --text-display: 1.625rem; /* 26px — Overview dominant number */
 
   /* ── Form ── */
-  --radius-tk: 6px; /* the only radius in the entire UI */
-  --shadow-float: 0 2px 8px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.5);
+  --radius-tk: 8px; /* card radius */
+  --radius-sm: 6px; /* controls */
+  --shadow-float: 0 1px 0 0 rgb(0 0 0 / 0.2), 0 8px 24px rgb(0 0 0 / 0.45);
 
   /* ── Motion ── */
   --ease-tk: cubic-bezier(0.2, 0, 0, 1);
