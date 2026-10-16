@@ -1,0 +1,3 @@
+pdfplumber
+pydantic
+# Add other processor deps here
