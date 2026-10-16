@@ -21,15 +21,16 @@ type UploadResponse struct {
 }
 
 type UploadHandler struct {
-	docRepo      *repositories.DocumentRepository
-	jobRepo      *repositories.ImportJobRepo
-	accountRepo  *repositories.AccountRepository
-	movementRepo *repositories.MovementRepository
-	eventRepo    *repositories.FinancialEventRepository
+	docRepo         *repositories.DocumentRepository
+	jobRepo         *repositories.ImportJobRepo
+	accountRepo     *repositories.AccountRepository
+	movementRepo    *repositories.MovementRepository
+	eventRepo       *repositories.FinancialEventRepository
+	sourceEntryRepo *repositories.SourceEntryRepository
 }
 
-func NewUploadHandler(docRepo *repositories.DocumentRepository, jobRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository) *UploadHandler {
-	return &UploadHandler{docRepo: docRepo, jobRepo: jobRepo, accountRepo: accountRepo, movementRepo: movementRepo, eventRepo: eventRepo}
+func NewUploadHandler(docRepo *repositories.DocumentRepository, jobRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository) *UploadHandler {
+	return &UploadHandler{docRepo: docRepo, jobRepo: jobRepo, accountRepo: accountRepo, movementRepo: movementRepo, eventRepo: eventRepo, sourceEntryRepo: sourceEntryRepo}
 }
 
 func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +137,8 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		e := err.Error()
 		job.Error = &e
 		h.jobRepo.Update(r.Context(), job)
-		http.Error(w, "processor failed", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		http.Error(w, fmt.Sprintf(`{"error":"processor failed","detail":%q}`, e), http.StatusInternalServerError)
 		return
 	}
 
@@ -154,50 +156,89 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		_, _ = h.docRepo.Update(r.Context(), doc)
 	}
 
-	// Import movements from processor artifacts
-	artifactPath := filepath.Join("data", "artifacts", res.ProcessingID, "parsed.json")
+	// Stage source entries from parsed artifact
+	artifactPath := filepath.Join("..", "data", "artifacts", res.ProcessingID, "parsed.json")
 	if data, err := os.ReadFile(artifactPath); err == nil {
 		var parsed struct {
 			Movements []struct {
-				Date        string  `json:"date"`
-				Description string  `json:"description"`
-				Amount      float64 `json:"amount"`
-				Type        string  `json:"type"`
+				DateOriginal      string `json:"date_original"`
+				DateNormalized    string `json:"date_normalized"`
+				DescriptionOriginal string `json:"description_original"`
+				AmountNormalized  int    `json:"amount_normalized"`
+				PageNumber        int    `json:"page_number"`
+				Sequence          int    `json:"sequence"`
 			} `json:"movements"`
 		}
-		if json.Unmarshal(data, &parsed) == nil {
+		if json.Unmarshal(data, &parsed) == nil && h.sourceEntryRepo != nil {
 			now := time.Now().UTC().Format(time.RFC3339)
-			for i, m := range parsed.Movements {
-				eventID := fmt.Sprintf("%s_evt_%d", docID, i)
-				eventType := m.Type
-				if eventType == "" {
-					eventType = "INCOME"
+			for _, m := range parsed.Movements {
+				seID := fmt.Sprintf("%s_se_%d_%d", docID, m.PageNumber, m.Sequence)
+				se := domain.SourceEntry{
+					ID:                    seID,
+					DocumentID:            docID,
+					RawDescription:        &m.DescriptionOriginal,
+					RawDate:               &m.DateOriginal,
+					NormalizedDescription: &m.DescriptionOriginal,
+					NormalizedDate:        &m.DateNormalized,
+					PageNumber:            int64Ptr(int64(m.PageNumber)),
+					RowNumber:             int64Ptr(int64(m.Sequence)),
+					ExtractionID:          &res.ProcessingID,
+					CreatedAt:             now,
+					UpdatedAt:             now,
 				}
-				evt := domain.FinancialEvent{
-					ID:         eventID,
-					EventType:  eventType,
-					EventDate:  &m.Date,
-					Status:     "ACTIVE",
-					CreatedAt:  now,
-					UpdatedAt:  now,
-				}
-				_, _ = h.eventRepo.Create(r.Context(), evt)
+				_, _ = h.sourceEntryRepo.Create(r.Context(), se)
 
-				movID := fmt.Sprintf("%s_mov_%d", docID, i)
-				mov := domain.Movement{
-					ID:               movID,
-					FinancialEventID: eventID,
+				// Auto-import: create financial event and movement
+				eventType := "INCOME"
+				if m.AmountNormalized < 0 {
+					eventType = "EXPENSE"
+				}
+				feID := fmt.Sprintf("%s_fe_%d_%d", docID, m.PageNumber, m.Sequence)
+				fe := domain.FinancialEvent{
+					ID:                 feID,
+					EventType:         eventType,
+					EventDate:         strPtr(m.DateNormalized),
+					Status:            "ACTIVE",
+					VerificationStatus: "UNVERIFIED",
+					Description:       strPtr(m.DescriptionOriginal),
+					CreatedAt:         now,
+					UpdatedAt:         now,
+				}
+				_, _ = h.eventRepo.Create(r.Context(), fe)
+
+				mvID := fmt.Sprintf("%s_mv_%d_%d", docID, m.PageNumber, m.Sequence)
+				mv := domain.Movement{
+					ID:               mvID,
+					FinancialEventID: feID,
 					AccountID:        accountID,
-					MovementDate:     m.Date,
-					AmountMinor:      int64(m.Amount*100),
-					Description:      &m.Description,
+					SourceEntryID:    &seID,
+					MovementDate:     m.DateNormalized,
+					AmountMinor:      int64(m.AmountNormalized),
+					Description:      strPtr(m.DescriptionOriginal),
 					Status:           "ACTIVE",
 					CreatedAt:        now,
 					UpdatedAt:        now,
 				}
-				_, _ = h.movementRepo.Create(r.Context(), mov, []domain.MovementComponent{})
+				_, _ = h.movementRepo.Create(r.Context(), mv, []domain.MovementComponent{})
 			}
 		}
+	}
+
+	// Job moves to SUCCESS automatically
+	job.Status = "SUCCESS"
+	finished := time.Now().UTC().Format(time.RFC3339)
+	job.FinishedAt = &finished
+	if _, err := h.jobRepo.Update(r.Context(), job); err != nil {
+		http.Error(w, "job update failed", http.StatusInternalServerError)
+		return
+	}
+
+	// Update document status to IMPORTED
+	docUpd, err := h.docRepo.GetByID(r.Context(), docID)
+	if err == nil {
+		docUpd.Status = "IMPORTED"
+		docUpd.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+		_, _ = h.docRepo.Update(r.Context(), docUpd)
 	}
 
 	resp := UploadResponse{
@@ -224,3 +265,7 @@ func GetJobHandler(w http.ResponseWriter, r *http.Request, repo *repositories.Im
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(job)
 }
+
+func int64Ptr(v int64) *int64 { return &v }
+func strPtr(s string) *string { return &s }
+

@@ -2,19 +2,22 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"os/exec"
+	"os"
+	_ "modernc.org/sqlite"
 	"time"
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/repositories"
+	logpkg "financeapp/backend/internal/log"
 )
 
-func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository) http.Handler {
+func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository, categoryRepo *repositories.CategoryRepository, confirmHandler func(context.Context, string) error) http.Handler {
 	mux := http.NewServeMux()
-	uploadHandler := NewUploadHandler(docRepo, importRepo, accountRepo, movementRepo, eventRepo)
+	uploadHandler := NewUploadHandler(docRepo, importRepo, accountRepo, movementRepo, eventRepo, sourceEntryRepo)
 	mux.HandleFunc("POST /documents/upload", uploadHandler.Handle)
 	mux.HandleFunc("GET /institutions", func(w http.ResponseWriter, r *http.Request) {
 		inst := []map[string]interface{}{
@@ -94,6 +97,80 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 		id := r.URL.Path[len("/jobs/"):]
 		GetJobHandler(w, r, importRepo, id)
 	})
+	mux.HandleFunc("GET /jobs/{id}/parsed", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		// Load job to get processing_id
+		job, err := importRepo.GetByID(r.Context(), id)
+		if err != nil {
+			http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+			return
+		}
+		if job.ProcessingID == nil {
+			http.Error(w, `{"error":"processing not ready"}`, http.StatusBadRequest)
+			return
+		}
+		artifactPath := fmt.Sprintf("data/artifacts/%s/parsed.json", *job.ProcessingID)
+		data, err := os.ReadFile(artifactPath)
+		if err != nil {
+			http.Error(w, `{"error":"parsed not found"}`, http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(data)
+	})
+	mux.HandleFunc("GET /jobs/{id}/manifest", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		job, err := importRepo.GetByID(r.Context(), id)
+		if err != nil {
+			http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+			return
+		}
+		if job.ProcessingID == nil {
+			http.Error(w, `{"error":"processing not ready"}`, http.StatusBadRequest)
+			return
+		}
+		artifactPath := fmt.Sprintf("data/artifacts/%s/manifest.json", *job.ProcessingID)
+		data, err := os.ReadFile(artifactPath)
+		if err != nil {
+			http.Error(w, `{"error":"manifest not found"}`, http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(data)
+	})
+	mux.HandleFunc("POST /jobs/{id}/confirm", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		job, err := importRepo.GetByID(r.Context(), id)
+		if err != nil {
+			http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+			return
+		}
+		if job.Status == "SUCCESS" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"status":"SUCCESS","id":"`+id+`"}`))
+			return
+		}
+		if job.Status == "REVIEW" {
+			// check pending decisions - simplified: reject if status is REVIEW
+			http.Error(w, `{"error":"decisions pending"}`, http.StatusConflict)
+			return
+		}
+		// Call real import service via injected handler
+		if confirmHandler != nil {
+			if err := confirmHandler(r.Context(), id); err != nil {
+				http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+				return
+			}
+		}
+		// reload job
+		job, _ = importRepo.GetByID(r.Context(), id)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"`+job.Status+`","id":"`+id+`"}`))
+	})
 	mux.HandleFunc("GET /accounts", func(w http.ResponseWriter, r *http.Request) {
 		accounts, err := accountRepo.List(r.Context())
 		if err != nil {
@@ -109,8 +186,92 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 			http.Error(w, `{"error":"failed to list movements"}`, http.StatusInternalServerError)
 			return
 		}
+		type movementDTO struct {
+			domain.Movement
+			CategoryName string `json:"categoryName"`
+			CategoryID   string `json:"categoryId,omitempty"`
+		}
+		out := make([]movementDTO, 0, len(movements))
+		for _, m := range movements {
+			fe, _ := eventRepo.GetByID(r.Context(), m.FinancialEventID)
+			catName := ""
+			catID := ""
+			if fe.CategoryID != nil {
+				catID = *fe.CategoryID
+				if cat, err := categoryRepo.GetByID(r.Context(), *fe.CategoryID); err == nil {
+					catName = cat.Name
+				}
+			}
+			out = append(out, movementDTO{Movement: m, CategoryName: catName, CategoryID: catID})
+		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(movements)
+		_ = json.NewEncoder(w).Encode(out)
+	})
+	mux.HandleFunc("POST /movements", func(w http.ResponseWriter, r *http.Request) {
+		logpkg.LogMsg("[MOVEMENT CREATE] Request received")
+		force := r.URL.Query().Get("force") == "true"
+		var req struct {
+			AmountMinor   int64  `json:"amountMinor"`
+			Type          string `json:"type"`
+			AccountID     string `json:"accountId"`
+			ToAccountID   string `json:"toAccountId,omitempty"`
+			Description   string `json:"description"`
+			Date          string `json:"date"`
+			CategoryID    string `json:"categoryId,omitempty"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			logpkg.LogMsg("[MOVEMENT CREATE] Invalid body: " + err.Error())
+			http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
+			return
+		}
+		logpkg.LogMsg(fmt.Sprintf("[MOVEMENT CREATE] account=%s amount=%d type=%s date=%s desc=%s", req.AccountID, req.AmountMinor, req.Type, req.Date, req.Description))
+		if !force {
+			existing, _ := movementRepo.List(r.Context())
+			for _, m := range existing {
+				if m.AccountID == req.AccountID && m.MovementDate == req.Date && m.AmountMinor == req.AmountMinor && (m.Description == nil || req.Description == "" || *m.Description == req.Description) {
+					logpkg.LogMsg(fmt.Sprintf("[MOVEMENT CREATE] Duplicate found %s", m.ID))
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusConflict)
+					_ = json.NewEncoder(w).Encode(map[string]string{"error":"duplicate","redirect":"/review"})
+					return
+				}
+			}
+		}
+		now := time.Now().UTC().Format(time.RFC3339)
+		feID := fmt.Sprintf("fe_manual_%d", time.Now().UnixNano())
+		var catID *string
+		if req.CategoryID != "" {
+			catID = &req.CategoryID
+		}
+		fe := domain.FinancialEvent{
+			ID: feID,
+			EventType: req.Type,
+			EventDate: &req.Date,
+			Status: "ACTIVE",
+			VerificationStatus: "UNVERIFIED",
+			Description: &req.Description,
+			CategoryID: catID,
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+		_, _ = eventRepo.Create(r.Context(), fe)
+		mvID := fmt.Sprintf("mv_manual_%d", time.Now().UnixNano())
+		mv := domain.Movement{
+			ID: mvID,
+			FinancialEventID: feID,
+			AccountID: req.AccountID,
+			MovementDate: req.Date,
+			AmountMinor: req.AmountMinor,
+			Description: &req.Description,
+			Status: "ACTIVE",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+		_, _ = movementRepo.Create(r.Context(), mv, []domain.MovementComponent{})
+		logpkg.LogMsg(fmt.Sprintf("[MOVEMENT CREATE] Created movement %s", mvID))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]string{"id": mvID})
 	})
 	mux.HandleFunc("GET /documents", func(w http.ResponseWriter, r *http.Request) {
 		documents, err := docRepo.List(r.Context())
@@ -167,8 +328,26 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 			http.Error(w, `{"error":"failed to list movements"}`, http.StatusInternalServerError)
 			return
 		}
+		type movementDTO struct {
+			domain.Movement
+			CategoryName string `json:"categoryName"`
+			CategoryID   string `json:"categoryId,omitempty"`
+		}
+		out := make([]movementDTO, 0, len(movements))
+		for _, m := range movements {
+			fe, _ := eventRepo.GetByID(r.Context(), m.FinancialEventID)
+			catName := ""
+			catID := ""
+			if fe.CategoryID != nil {
+				catID = *fe.CategoryID
+				if cat, err := categoryRepo.GetByID(r.Context(), *fe.CategoryID); err == nil {
+					catName = cat.Name
+				}
+			}
+			out = append(out, movementDTO{Movement: m, CategoryName: catName, CategoryID: catID})
+		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(movements)
+		_ = json.NewEncoder(w).Encode(out)
 	})
 	mux.HandleFunc("GET /accounts/{id}/documents", func(w http.ResponseWriter, r *http.Request) {
 		documents, err := docRepo.ListByAccount(r.Context(), r.PathValue("id"))
@@ -203,8 +382,23 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 		if len(movs) > 5 {
 			movs = movs[:5]
 		}
+		type movementDTO struct {
+			domain.Movement
+			CategoryName string `json:"categoryName"`
+		}
+		out := make([]movementDTO, 0, len(movs))
+		for _, m := range movs {
+			fe, _ := eventRepo.GetByID(r.Context(), m.FinancialEventID)
+			catName := ""
+			if fe.CategoryID != nil {
+				if cat, err := categoryRepo.GetByID(r.Context(), *fe.CategoryID); err == nil {
+					catName = cat.Name
+				}
+			}
+			out = append(out, movementDTO{Movement: m, CategoryName: catName})
+		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(movs)
+		_ = json.NewEncoder(w).Encode(out)
 	})
 
 	// Dashboard aggregates
@@ -261,6 +455,7 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 			return
 		}
 		dist := make(map[string]int64)
+		catNames := make(map[string]string)
 		for _, m := range movements {
 			if from != "" && m.MovementDate < from { continue }
 			if to != "" && m.MovementDate > to { continue }
@@ -269,11 +464,21 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 			evt, err := eventRepo.GetByID(r.Context(), m.FinancialEventID)
 			if err != nil { continue }
 			if evt.EventType != "INCOME" { continue }
-			key := "uncategorized"
-			if evt.CategoryID != nil && *evt.CategoryID != "" {
-				key = *evt.CategoryID
+			var catName string
+			if evt.CategoryID == nil || *evt.CategoryID == "" {
+				catName = "Sin categoría"
+			} else {
+				catID := *evt.CategoryID
+				cat, err := categoryRepo.GetByID(r.Context(), catID)
+				if err != nil {
+					catName = "Sin categoría"
+				} else {
+					catName = cat.Name
+				}
 			}
+			key := catName
 			dist[key] += m.AmountMinor
+			catNames[key] = catName
 		}
 		var out []map[string]interface{}
 		for k, v := range dist {
@@ -302,11 +507,20 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 			if evt.EventType != "EXPENSE" && evt.EventType != "DEBIT_PURCHASE" && evt.EventType != "CREDIT_PAYMENT" {
 				continue
 			}
-			key := "uncategorized"
-			if evt.CategoryID != nil && *evt.CategoryID != "" {
-				key = *evt.CategoryID
+			var catName string
+			if evt.CategoryID == nil || *evt.CategoryID == "" {
+				catName = "Sin categoría"
+			} else {
+				catID := *evt.CategoryID
+				cat, err := categoryRepo.GetByID(r.Context(), catID)
+				if err != nil {
+					catName = "Sin categoría"
+				} else {
+					catName = cat.Name
+				}
 			}
-			dist[key] += -m.AmountMinor // make positive
+			key := catName
+			dist[key] += -m.AmountMinor
 		}
 		var out []map[string]interface{}
 		for k, v := range dist {
@@ -318,16 +532,168 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 
 	// Admin purge endpoint
 	mux.HandleFunc("DELETE /admin/purge", func(w http.ResponseWriter, r *http.Request) {
-		// Simple dev purge - deletes all domain data.
-		// DB path is CWD-relative, matching main.go's DATABASE_PATH default
-		// (the server runs from backend/).
-		cmd := exec.Command("C:\\platform-tools\\sqlite3.exe", "data\\finance.db",
-			"DELETE FROM movement_components; DELETE FROM event_relations; DELETE FROM movement_relations; DELETE FROM installments; DELETE FROM installment_plans; DELETE FROM source_entries; DELETE FROM movements; DELETE FROM financial_events; DELETE FROM documents; DELETE FROM import_jobs; DELETE FROM accounts; DELETE FROM categories;")
-		if err := cmd.Run(); err != nil {
-			http.Error(w, `{"error":"purge failed"}`, http.StatusInternalServerError)
+		// Simple dev purge - deletes all domain data using Go driver
+		dbPath := os.Getenv("DATABASE_PATH")
+		if dbPath == "" {
+			dbPath = "data/finance.db"
+		}
+		logErr := func(msg string) {
+			if f, _ := os.OpenFile("logs/"+time.Now().Format("02-01-2006.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644); f != nil {
+				fmt.Fprintf(f, "[%s] PURGE %s: %s\n", time.Now().Format("15:04:05"), msg, dbPath)
+				f.Close()
+			}
+		}
+		sqlDB, err := sql.Open("sqlite", dbPath)
+		if err != nil {
+			logErr("open failed " + err.Error())
+			http.Error(w, fmt.Sprintf(`{"error":"purge failed","detail":"%v"}`, err), http.StatusInternalServerError)
+			return
+		}
+		defer sqlDB.Close()
+		if _, err := sqlDB.Exec("PRAGMA foreign_keys=OFF"); err != nil {
+			logErr("pragma failed " + err.Error())
+			http.Error(w, fmt.Sprintf(`{"error":"purge failed","detail":"%v"}`, err), http.StatusInternalServerError)
+			return
+		}
+		tables := []string{
+			"source_entries",
+			"movements",
+			"financial_events",
+			"documents",
+			"import_jobs",
+			"accounts",
+			"categories",
+		}
+		for _, t := range tables {
+			if _, err := sqlDB.Exec("DELETE FROM " + t); err != nil {
+				// Log error to file
+				if f, _ := os.OpenFile("logs/"+time.Now().Format("02-01-2006.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644); f != nil {
+					fmt.Fprintf(f, "[%s] PURGE error table %s: %v\n", time.Now().Format("15:04:05"), t, err)
+					f.Close()
+				}
+				http.Error(w, fmt.Sprintf(`{"error":"purge failed","detail":"table %s: %v"}`, t, err), http.StatusInternalServerError)
+				return
+			}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	// Categories CRUD
+	mux.HandleFunc("GET /categories", func(w http.ResponseWriter, r *http.Request) {
+		cats, err := categoryRepo.List(r.Context(), "ACTIVE")
+		if err != nil {
+			http.Error(w, `{"error":"failed to list categories"}`, http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(cats)
+	})
+	mux.HandleFunc("POST /categories", func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			ID           string `json:"id"`
+			Name         string `json:"name"`
+			CategoryType string `json:"category_type"`
+			ParentID     *string `json:"parent_id,omitempty"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
+			return
+		}
+		now := timeNowUTC()
+		cat := domain.Category{
+			ID:           req.ID,
+			Name:         req.Name,
+			CategoryType: &req.CategoryType,
+			ParentID:     req.ParentID,
+			Status:       "ACTIVE",
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		}
+		created, err := categoryRepo.Create(r.Context(), cat)
+		if err != nil {
+			http.Error(w, `{"error":"failed to create category"}`, http.StatusInternalServerError)
+			return
+		}
+		logpkg.LogMsg(fmt.Sprintf("[CATEGORY CREATE] %s %s", created.ID, created.Name))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(created)
+	})
+	mux.HandleFunc("PUT /categories/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		var req struct {
+			Name         string `json:"name"`
+			CategoryType string `json:"category_type"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
+			return
+		}
+		existing, err := categoryRepo.GetByID(r.Context(), id)
+		if err != nil {
+			http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+			return
+		}
+		// Log review trigger
+		logpkg.LogMsg(fmt.Sprintf("[CATEGORY UPDATE] %s -> %s", id, req.Name))
+		logpkg.LogMsg(fmt.Sprintf("[REVIEW TRIGGER] Category %s edited, movements with this category should be reviewed", id))
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(existing)
+	})
+	mux.HandleFunc("DELETE /categories/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		// Soft delete for safety, but we can physically delete for now
+		dbPath := os.Getenv("DATABASE_PATH")
+		if dbPath == "" { dbPath = "./data/finance.db" }
+		dbConn, err := sql.Open("sqlite", dbPath)
+		if err != nil {
+			http.Error(w, `{"error":"db open failed"}`, http.StatusInternalServerError)
+			return
+		}
+		defer dbConn.Close()
+		_, err = dbConn.ExecContext(r.Context(), "DELETE FROM categories WHERE id = ?", id)
+		if err != nil {
+			http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+			return
+		}
+		logpkg.LogMsg(fmt.Sprintf("[CATEGORY DELETE] %s", id))
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	mux.HandleFunc("PUT /movements/{id}/category", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		var body struct { CategoryID *string `json:"categoryId"` }
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
+			return
+		}
+		mv, err := movementRepo.GetByID(r.Context(), id)
+		if err != nil {
+			http.Error(w, `{"error":"movement not found"}`, http.StatusNotFound)
+			return
+		}
+		if mv.FinancialEventID == "" {
+			http.Error(w, `{"error":"no financial event"}`, http.StatusBadRequest)
+			return
+		}
+		dbPath := os.Getenv("DATABASE_PATH")
+		if dbPath == "" { dbPath = "./data/finance.db" }
+		dbConn, err := sql.Open("sqlite", dbPath)
+		if err != nil { http.Error(w, `{"error":"db open"}`, http.StatusInternalServerError); return }
+		defer dbConn.Close()
+		_, err = dbConn.ExecContext(r.Context(), "UPDATE financial_events SET category_id = ?, updated_at = ? WHERE id = ?", body.CategoryID, time.Now().UTC().Format(time.RFC3339), mv.FinancialEventID)
+		if err != nil { http.Error(w, `{"error":"update failed"}`, http.StatusInternalServerError); return }
+		w.WriteHeader(http.StatusNoContent)
+	})
+	mux.HandleFunc("DELETE /movements/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		dbPath := os.Getenv("DATABASE_PATH")
+		if dbPath == "" { dbPath = "./data/finance.db" }
+		dbConn, err := sql.Open("sqlite", dbPath)
+		if err != nil { http.Error(w, `{"error":"db"}`, http.StatusInternalServerError); return }
+		defer dbConn.Close()
+		_, _ = dbConn.ExecContext(r.Context(), "DELETE FROM movements WHERE id = ?", id)
 		w.WriteHeader(http.StatusNoContent)
 	})
 
@@ -357,7 +723,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		} else {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 		}
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		if r.Method == http.MethodOptions {

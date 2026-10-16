@@ -96,7 +96,7 @@ func (q *Queries) GetMovement(ctx context.Context, id string) (Movement, error) 
 }
 
 const listMovementsAll = `-- name: ListMovementsAll :many
-SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at FROM movements ORDER BY movement_date DESC
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at FROM movements ORDER BY created_at DESC
 `
 
 func (q *Queries) ListMovementsAll(ctx context.Context) ([]Movement, error) {
@@ -135,7 +135,7 @@ func (q *Queries) ListMovementsAll(ctx context.Context) ([]Movement, error) {
 }
 
 const listMovementsByAccount = `-- name: ListMovementsByAccount :many
-SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at FROM movements WHERE account_id = ? ORDER BY movement_date DESC
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at FROM movements WHERE account_id = ? ORDER BY created_at DESC
 `
 
 func (q *Queries) ListMovementsByAccount(ctx context.Context, accountID string) ([]Movement, error) {

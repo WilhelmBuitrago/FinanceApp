@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"os"
 
 	"financeapp/backend/internal/api"
 	"financeapp/backend/internal/repositories"
@@ -15,15 +16,18 @@ type Application struct {
 	Persistence  *repositories.Persistence
 	ImportJobRepo *repositories.ImportJobRepo
 	DocRepo      *repositories.DocumentRepository
+	ImportService *ImportService
 	Server       *http.Server
 }
 
 func New(db *sql.DB, persistence *repositories.Persistence) *Application {
+	importJobRepo := repositories.NewImportJobRepo(db)
 	return &Application{
 		DB:           db,
 		Persistence:  persistence,
-		ImportJobRepo: repositories.NewImportJobRepo(db),
+		ImportJobRepo: importJobRepo,
 		DocRepo:      persistence.DocumentRepo,
+		ImportService: NewImportService(persistence, importJobRepo),
 	}
 }
 
@@ -31,13 +35,20 @@ func (a *Application) Start(ctx context.Context) error {
 	if err := a.HealthCheck(ctx); err != nil {
 		return fmt.Errorf("health check failed: %w", err)
 	}
-	router := api.NewRouter(a.DocRepo, a.ImportJobRepo, a.Persistence.AccountRepo, a.Persistence.MovementRepo, a.Persistence.FinancialEventRepo, a.Persistence.SourceEntryRepo)
+	router := api.NewRouter(a.DocRepo, a.ImportJobRepo, a.Persistence.AccountRepo, a.Persistence.MovementRepo, a.Persistence.FinancialEventRepo, a.Persistence.SourceEntryRepo, a.Persistence.CategoryRepo, func(ctx context.Context, id string) error {
+		return a.ImportService.Import(ctx, id)
+	})
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8081"
+	}
+	addr := ":" + port
 	a.Server = &http.Server{
-		Addr:    ":8080",
+		Addr:    addr,
 		Handler: router,
 	}
 	go func() {
-		fmt.Println("HTTP server listening on :8080")
+		fmt.Printf("HTTP server listening on %s\n", addr)
 		if err := a.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			fmt.Printf("server error: %v\n", err)
 		}

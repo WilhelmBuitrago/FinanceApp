@@ -10,6 +10,7 @@ func Apply(sqlDB *sql.DB) error {
 	migrations := []string{
 		"db/migrations/0001_initial_schema.sql",
 		"db/migrations/0002_import_jobs.sql",
+		"db/migrations/0003_import_review_staging.sql",
 	}
 	for _, path := range migrations {
 		content, err := os.ReadFile(path)
@@ -26,11 +27,13 @@ func Apply(sqlDB *sql.DB) error {
 			if s == "" {
 				continue
 			}
-			if _, err := sqlDB.Exec(s); err != nil {
-				// Idempotent: ignore "already exists"
-				if !strings.Contains(err.Error(), "already exists") {
-					return err
+		if _, err := sqlDB.Exec(s); err != nil {
+				// Idempotent: ignore "already exists" and duplicate column
+				errMsg := err.Error()
+				if strings.Contains(errMsg, "already exists") || strings.Contains(errMsg, "duplicate column") {
+					continue
 				}
+				return err
 			}
 		}
 	}
