@@ -30,7 +30,7 @@ fn main() {
                 }
                 Err(e) => {
                     eprintln!("Failed to start backend: {}", e);
-                    return Err(tauri::Error::Io(Box::new(std::io::Error::other(e.to_string()))));
+                    return Err(Box::new(std::io::Error::other(e.to_string())));
                 }
             }
 
