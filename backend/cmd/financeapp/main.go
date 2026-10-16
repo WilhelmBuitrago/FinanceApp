@@ -12,6 +12,7 @@ import (
 	_ "modernc.org/sqlite"
 
 	"financeapp/backend/internal/app"
+	"financeapp/backend/internal/bootstrap"
 	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/log"
@@ -20,6 +21,11 @@ import (
 
 func main() {
 	cfg := config.Load()
+	// Ensure Python runtime before starting services
+	if err := bootstrap.EnsurePythonRuntime(); err != nil {
+		fmt.Printf("Python runtime not ready: %v\n", err)
+		os.Exit(1)
+	}
 	// Ensure required directories exist
 	for _, p := range []string{filepath.Dir(cfg.DatabasePath), cfg.ArtifactsPath, cfg.LogsPath} {
 		if err := os.MkdirAll(p, 0755); err != nil {
