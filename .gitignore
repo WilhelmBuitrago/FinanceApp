@@ -98,3 +98,5 @@ Thumbs.db
 # ==================================================
 skills-lock.json
 .opencode/
+# Agents
+.agents/
