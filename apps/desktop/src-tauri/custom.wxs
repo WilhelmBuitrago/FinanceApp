@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Fragment>
@@ -5,28 +6,39 @@
       Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"
       Value="Launch FinanceApp after setup" />
 
-    <!-- Prepare Python during a fresh installation -->
+    <!-- Build the command line while MSI properties are available. -->
+    <CustomAction
+      Id="SetRunPreparePython"
+      Property="RunPreparePython"
+      Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]resources\prepare-python.ps1&quot; -InstallDir &quot;[INSTALLDIR]&quot;"
+      Execute="immediate" />
+
+    <!-- Execute the prepared command with elevated installer privileges. -->
     <CustomAction
       Id="RunPreparePython"
       Directory="SystemFolder"
-      ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]resources\prepare-python.ps1&quot; -InstallDir &quot;[INSTALLDIR]&quot;"
+      ExeCommand="[CustomActionData]"
       Return="check"
       Execute="deferred"
       Impersonate="no" />
 
-    <!-- Remove technical Python files during a full uninstall -->
+    <!-- Remove technical Python files during a full uninstall. -->
     <CustomAction
       Id="RemoveFinanceAppProgramData"
       Directory="SystemFolder"
-      ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -Command &quot;Remove-Item -LiteralPath 'C:\ProgramData\FinanceApp' -Recurse -Force -ErrorAction SilentlyContinue&quot;"
+      ExeCommand="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -Command &quot;Remove-Item -LiteralPath 'C:\ProgramData\FinanceApp' -Recurse -Force -ErrorAction SilentlyContinue&quot;"
       Return="ignore"
       Execute="deferred"
       Impersonate="no" />
 
     <InstallExecuteSequence>
       <Custom
-        Action="RunPreparePython"
+        Action="SetRunPreparePython"
         After="InstallFiles">NOT Installed AND NOT REMOVE</Custom>
+
+      <Custom
+        Action="RunPreparePython"
+        After="SetRunPreparePython">NOT Installed AND NOT REMOVE</Custom>
 
       <Custom
         Action="RemoveFinanceAppProgramData"
