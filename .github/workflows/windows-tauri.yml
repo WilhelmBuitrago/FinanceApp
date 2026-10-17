@@ -67,8 +67,8 @@ jobs:
             -Recurse `
             -Force
 
-          if (-not (Test-Path (Join-Path $processor "requirements.txt"))) {
-            throw "No se encontró apps/processor/requirements.txt"
+          if (-not (Test-Path (Join-Path $processor "requirements-lock.txt"))) {
+            throw "No se encontró apps/processor/requirements-lock.txt"
           }
 
           # Download bundled Python runtime for offline first run
