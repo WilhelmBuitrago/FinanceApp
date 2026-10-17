@@ -54,10 +54,12 @@ jobs:
           $resources = "apps/desktop/src-tauri/resources"
           $processor = Join-Path $resources "processor"
           $pythonDir = Join-Path $resources "python-runtime"
+          $wheelsDir = Join-Path $resources "python-wheels"
 
           New-Item -ItemType Directory -Force $resources | Out-Null
           New-Item -ItemType Directory -Force $processor | Out-Null
           New-Item -ItemType Directory -Force $pythonDir | Out-Null
+          New-Item -ItemType Directory -Force $wheelsDir | Out-Null
 
           Copy-Item `
             -Path "apps/processor/*" `
@@ -75,6 +77,22 @@ jobs:
           if (-not (Test-Path $pythonZip)) {
             Invoke-WebRequest -Uri $pythonUrl -OutFile $pythonZip -UseBasicParsing
           }
+
+      - name: Setup Python for wheels
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Download Python wheels offline
+        shell: pwsh
+        run: |
+          $resources = "apps/desktop/src-tauri/resources"
+          $wheelsDir = Join-Path $resources "python-wheels"
+          $reqFile = "apps/processor/requirements-lock.txt"
+          pip download -r $reqFile --dest $wheelsDir --platform win_amd64 --only-binary=:all: --no-deps
+          pip download -r $reqFile --dest $wheelsDir --platform win_amd64 --only-binary=:all:
+          # Also download transitive dependencies
+          Get-ChildItem $wheelsDir | Write-Host
 
       # Todos los comandos Go se ejecutan desde backend.
       - name: Build Backend

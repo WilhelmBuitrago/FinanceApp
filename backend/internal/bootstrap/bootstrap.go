@@ -200,6 +200,20 @@ func installRequirements(venvPython string) error {
 		return fmt.Errorf("pip upgrade failed: %w, %s", err, string(out))
 	}
 	reqPath := os.Getenv("PROCESSOR_REQUIREMENTS")
+	wheelsPath := os.Getenv("PYTHON_WHEELS_PATH")
+	useOffline := wheelsPath != "" && dirExists(wheelsPath)
+	if useOffline {
+		args := []string{"-m", "pip", "install", "--no-index", "--find-links", wheelsPath, "--no-warn-script-location"}
+		if reqPath != "" {
+			args = append(args, "-r", reqPath)
+		}
+		cmd = exec.Command(venvPython, args...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("pip install offline failed: %w, %s", err, string(out))
+		}
+		return nil
+	}
 	if reqPath == "" {
 		// fallback to known pinned packages
 		pkgs := []string{
@@ -295,4 +309,9 @@ func unzip(src, dest string) error {
 		}
 	}
 	return nil
+}
+
+func dirExists(path string) bool {
+	fi, err := os.Stat(path)
+	return err == nil && fi.IsDir()
 }

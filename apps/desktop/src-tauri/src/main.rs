@@ -33,6 +33,10 @@ fn main() {
                 if python_bundle.exists() {
                     cmd.env("PYTHON_BUNDLE_PATH", &python_bundle);
                 }
+                let wheels_path = resource_dir.join("python-wheels");
+                if wheels_path.exists() {
+                    cmd.env("PYTHON_WHEELS_PATH", &wheels_path);
+                }
             }
 
             #[cfg(windows)]
