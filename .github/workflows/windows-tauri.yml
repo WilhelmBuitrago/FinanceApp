@@ -53,9 +53,11 @@ jobs:
         run: |
           $resources = "apps/desktop/src-tauri/resources"
           $processor = Join-Path $resources "processor"
+          $pythonDir = Join-Path $resources "python-runtime"
 
           New-Item -ItemType Directory -Force $resources | Out-Null
           New-Item -ItemType Directory -Force $processor | Out-Null
+          New-Item -ItemType Directory -Force $pythonDir | Out-Null
 
           Copy-Item `
             -Path "apps/processor/*" `
@@ -65,6 +67,13 @@ jobs:
 
           if (-not (Test-Path (Join-Path $processor "requirements.txt"))) {
             throw "No se encontró apps/processor/requirements.txt"
+          }
+
+          # Download bundled Python runtime for offline first run
+          $pythonUrl = "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.zip"
+          $pythonZip = Join-Path $pythonDir "python-3.12.10-amd64.zip"
+          if (-not (Test-Path $pythonZip)) {
+            Invoke-WebRequest -Uri $pythonUrl -OutFile $pythonZip -UseBasicParsing
           }
 
       # Todos los comandos Go se ejecutan desde backend.

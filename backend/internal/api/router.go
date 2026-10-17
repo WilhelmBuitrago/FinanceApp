@@ -18,6 +18,10 @@ import (
 
 func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository, categoryRepo *repositories.CategoryRepository, confirmHandler func(context.Context, string) error) http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status":"ok"})
+	})
 	uploadHandler := NewUploadHandler(docRepo, importRepo, accountRepo, movementRepo, eventRepo, sourceEntryRepo)
 	mux.HandleFunc("POST /documents/upload", uploadHandler.Handle)
 	mux.HandleFunc("GET /institutions", func(w http.ResponseWriter, r *http.Request) {

@@ -1,5 +1,7 @@
 use tauri::Manager;
 use std::process::Command;
+use std::time::Duration;
+use std::thread;
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 
@@ -26,20 +28,44 @@ fn main() {
                 cmd.env("PROCESSOR_SCRIPT", &processor_script);
                 let requirements_file = resource_dir.join("processor").join("requirements-lock.txt");
                 cmd.env("PROCESSOR_REQUIREMENTS", &requirements_file);
+                // Optional bundled python runtime
+                let python_bundle = resource_dir.join("python-runtime").join("python-3.12.10-amd64.zip");
+                if python_bundle.exists() {
+                    cmd.env("PYTHON_BUNDLE_PATH", &python_bundle);
+                }
             }
 
             #[cfg(windows)]
             unsafe { cmd.creation_flags(0x08000000); } // CREATE_NO_WINDOW
 
-            match cmd.spawn() {
-                Ok(child) => {
-                    eprintln!("Backend started with PID {}", child.id());
+            let mut child = cmd.spawn().map_err(|e| {
+                eprintln!("Failed to start backend: {}", e);
+                Box::new(std::io::Error::other(e.to_string())) as Box<dyn std::error::Error>
+            })?;
+            eprintln!("Backend started with PID {}", child.id());
+
+            // Wait for backend health
+            let health_url = "http://localhost:8081/health";
+            let mut attempts = 0;
+            let max_attempts = 60;
+            loop {
+                attempts += 1;
+                if let Ok(resp) = reqwest::blocking::get(health_url) {
+                    if resp.status().is_success() {
+                        eprintln!("Backend health OK after {} attempts", attempts);
+                        break;
+                    }
                 }
-                Err(e) => {
-                    eprintln!("Failed to start backend: {}", e);
-                    return Err(Box::new(std::io::Error::other(e.to_string())));
+                if attempts >= max_attempts {
+                    eprintln!("Backend health check timeout");
+                    let _ = child.kill();
+                    return Err(Box::new(std::io::Error::other("Backend health check timeout")));
                 }
+                thread::sleep(Duration::from_secs(1));
             }
+
+            // Store child handle for cleanup on exit
+            app.manage(child);
 
             Ok(())
         })

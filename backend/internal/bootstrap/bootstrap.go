@@ -138,8 +138,27 @@ func ensureRuntime(dir string) error {
 	}
 	defer os.RemoveAll(tmp)
 	zipPath := filepath.Join(tmp, "python.zip")
-	if err := downloadFile(PythonURL, zipPath); err != nil {
-		return err
+	// Prefer bundled zip to avoid network on first run
+	if bundle := os.Getenv("PYTHON_BUNDLE_PATH"); bundle != "" {
+		if _, err := os.Stat(bundle); err == nil {
+			// copy bundled zip to temp
+			data, err := os.ReadFile(bundle)
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(zipPath, data, 0644); err != nil {
+				return err
+			}
+		} else {
+			// fallback to download
+			if err := downloadFile(PythonURL, zipPath); err != nil {
+				return err
+			}
+		}
+	} else {
+		if err := downloadFile(PythonURL, zipPath); err != nil {
+			return err
+		}
 	}
 	if PythonSHA256 != "" && PythonSHA256 != "REPLACE_WITH_OFFICIAL_SHA256" {
 		if err := verifySHA256(zipPath, PythonSHA256); err != nil {
