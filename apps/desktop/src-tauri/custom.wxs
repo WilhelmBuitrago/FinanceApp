@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch FinanceApp after setup"/>
+    <CustomAction Id="SetInstallDir" Property="FINAPP_INSTALLDIR" Value="[INSTALLDIR]"/>
+    <InstallExecuteSequence>
+      <Custom Action="SetInstallDir" After="AppSearch">NOT Installed</Custom>
+    </InstallExecuteSequence>
+  </Fragment>
+</Wix>

@@ -75,34 +75,31 @@ func AppDataBase() string {
 	return filepath.Join(home, "AppData", "Roaming", "FinanceApp")
 }
 
+func ProgramDataBase() string {
+	if progData := os.Getenv("PROGRAMDATA"); progData != "" {
+		return filepath.Join(progData, "FinanceApp")
+	}
+	return filepath.Join(os.Getenv("SystemDrive"), "ProgramData", "FinanceApp")
+}
+
 func EnsurePythonRuntime() error {
-	base := AppDataBase()
+	base := ProgramDataBase()
 	venvPython := filepath.Join(base, "venv", "Scripts", "python.exe")
 	if runtime.GOOS != "windows" {
 		venvPython = filepath.Join(base, "venv", "bin", "python")
 	}
-	if ok, _ := pythonVersionMatches(venvPython, PythonVersion); ok {
-		if markerOK(base) {
-			return nil
-		}
+	// Verify marker exists
+	if !markerOK(base) {
+		return fmt.Errorf("python runtime not prepared: marker missing in %s. Run installer", base)
 	}
-	if err := os.MkdirAll(base, 0755); err != nil {
-		return err
+	// Verify python version matches
+	if ok, err := pythonVersionMatches(venvPython, PythonVersion); err != nil || !ok {
+		return fmt.Errorf("python runtime version mismatch or not found: %s", venvPython)
 	}
-	runtimeDir := filepath.Join(base, "python-runtime", PythonVersion)
-	if err := ensureRuntime(runtimeDir); err != nil {
-		return fmt.Errorf("runtime ensure: %w", err)
-	}
-	if err := createVenv(base, runtimeDir); err != nil {
-		return fmt.Errorf("venv create: %w", err)
-	}
-	if err := installRequirements(venvPython); err != nil {
-		return fmt.Errorf("requirements install: %w", err)
-	}
+	// Verify imports
 	if err := verifyImports(venvPython); err != nil {
-		return err
+		return fmt.Errorf("python imports verification failed: %w", err)
 	}
-	writeMarker(base)
 	return nil
 }
 
