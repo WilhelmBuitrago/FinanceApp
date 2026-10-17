@@ -40,10 +40,10 @@
       ],
       "publisher": "FinanceApp",
       "createUpdaterArtifacts": true,
-      "msi": {
-        "customWix": [
-          "custom.wxs"
-        ]
+      "windows": {
+        "wix": {
+          "template": "custom.wxs"
+        }
       }
     },
     "plugins": {
