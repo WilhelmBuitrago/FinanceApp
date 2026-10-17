@@ -39,7 +39,12 @@
         "resources/python-wheels"
       ],
       "publisher": "FinanceApp",
-      "createUpdaterArtifacts": true
+      "createUpdaterArtifacts": true,
+      "msi": {
+        "customWix": [
+          "custom.wxs"
+        ]
+      }
     },
     "plugins": {
       "updater": {

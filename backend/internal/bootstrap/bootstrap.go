@@ -84,13 +84,63 @@ func ProgramDataBase() string {
 
 func EnsurePythonRuntime() error {
 	base := ProgramDataBase()
-	venvPython := filepath.Join(base, "venv", "Scripts", "python.exe")
-	if runtime.GOOS != "windows" {
-		venvPython = filepath.Join(base, "venv", "bin", "python")
-	}
-	// Verify marker exists
-	if !markerOK(base) {
+	markerPath := filepath.Join(base, ".python-ready")
+	data, err := os.ReadFile(markerPath)
+	if err != nil {
 		return fmt.Errorf("python runtime not prepared: marker missing in %s. Run installer", base)
+	}
+	content := string(data)
+	fields := make(map[string]string)
+	for _, line := range strings.Split(content, "\n") {
+		if strings.Contains(line, "=") {
+			parts := strings.SplitN(line, "=", 2)
+			key := strings.TrimSpace(parts[0])
+			val := strings.TrimSpace(parts[1])
+			fields[key] = val
+		}
+	}
+	// Required fields
+	for _, k := range []string{"version", "requirements_hash", "identifier", "venv_path", "marker_format"} {
+		if _, ok := fields[k]; !ok {
+			return fmt.Errorf("python runtime marker incomplete: missing %s", k)
+		}
+	}
+	if fields["version"] != PythonVersion {
+		return fmt.Errorf("python runtime version mismatch in marker")
+	}
+	if fields["marker_format"] != "1" {
+		return fmt.Errorf("unsupported marker format")
+	}
+	// Validate identifier matches version+hash
+	expectedId := PythonVersion + "-" + fields["requirements_hash"]
+	if fields["identifier"] != expectedId {
+		return fmt.Errorf("identifier mismatch: expected %s got %s", expectedId, fields["identifier"])
+	}
+	// Validate requirements_hash against distributed requirements-lock.txt
+	reqPath := os.Getenv("PROCESSOR_REQUIREMENTS")
+	if reqPath == "" {
+		return fmt.Errorf("PROCESSOR_REQUIREMENTS not set, cannot validate requirements hash")
+	}
+	hash, err := fileSHA256(reqPath)
+	if err != nil {
+		return fmt.Errorf("cannot read requirements-lock: %w", err)
+	}
+	if strings.ToLower(hash) != strings.ToLower(fields["requirements_hash"]) {
+		return fmt.Errorf("requirements hash mismatch")
+	}
+	venvPathRaw := fields["venv_path"]
+	if !filepath.IsAbs(venvPathRaw) {
+		return fmt.Errorf("venv_path must be absolute")
+	}
+	absBase, _ := filepath.Abs(base)
+	absVenv, _ := filepath.Abs(venvPathRaw)
+	expectedVenv := filepath.Join(absBase, "venvs", fields["identifier"])
+	if absVenv != expectedVenv {
+		return fmt.Errorf("venv_path does not match expected versioned directory")
+	}
+	venvPython := filepath.Join(venvPathRaw, "Scripts", "python.exe")
+	if runtime.GOOS != "windows" {
+		venvPython = filepath.Join(venvPathRaw, "bin", "python")
 	}
 	// Verify python version matches
 	if ok, err := pythonVersionMatches(venvPython, PythonVersion); err != nil || !ok {
@@ -99,6 +149,10 @@ func EnsurePythonRuntime() error {
 	// Verify imports
 	if err := verifyImports(venvPython); err != nil {
 		return fmt.Errorf("python imports verification failed: %w", err)
+	}
+	// Verify exact versions
+	if err := verifyVersions(venvPython); err != nil {
+		return fmt.Errorf("dependency version mismatch: %w", err)
 	}
 	return nil
 }
@@ -118,7 +172,12 @@ func markerOK(base string) bool {
 	if err != nil {
 		return false
 	}
-	return strings.Contains(string(data), PythonVersion)
+	content := string(data)
+	if !strings.Contains(content, PythonVersion) {
+		return false
+	}
+	// basic format check
+	return strings.Contains(content, "marker_format=1")
 }
 
 func writeMarker(base string) {
@@ -239,6 +298,28 @@ func verifyImports(venvPython string) error {
 	return cmd.Run()
 }
 
+func verifyVersions(venvPython string) error {
+	cmd := exec.Command(venvPython, "-c", "import pdfplumber, pydantic, fitz; import sys; print(pdfplumber.__version__); print(pydantic.__version__); import fitz; print(fitz.__version__)")
+	out, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	if len(lines) < 3 {
+		return fmt.Errorf("unexpected version output")
+	}
+	if lines[0] != "0.11.10" {
+		return fmt.Errorf("pdfplumber version %s != 0.11.10", lines[0])
+	}
+	if lines[1] != "2.11.7" {
+		return fmt.Errorf("pydantic version %s != 2.11.7", lines[1])
+	}
+	if lines[2] != "1.26.3" {
+		return fmt.Errorf("pymupdf version %s != 1.26.3", lines[2])
+	}
+	return nil
+}
+
 func downloadFile(url, dest string) error {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -272,6 +353,19 @@ func verifySHA256(path, want string) error {
 		return fmt.Errorf("sha256 mismatch")
 	}
 	return nil
+}
+
+func fileSHA256(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 func unzip(src, dest string) error {
