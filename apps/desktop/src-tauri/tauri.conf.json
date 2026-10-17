@@ -36,7 +36,8 @@
         "resources/financeapp-backend.exe",
         "resources/processor",
         "resources/python-runtime",
-        "resources/python-wheels"
+        "resources/python-wheels",
+        "resources/prepare-python.ps1"
       ],
       "publisher": "FinanceApp",
       "createUpdaterArtifacts": true,
