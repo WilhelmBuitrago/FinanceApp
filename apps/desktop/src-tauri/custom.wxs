@@ -3,7 +3,7 @@
   <Fragment>
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch FinanceApp after setup"/>
     <CustomAction Id="RunPreparePython"
-                  Directory="TARGETDIR"
+                  Directory="INSTALLDIR"
                   ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]resources\prepare-python.ps1&quot; -InstallDir &quot;[INSTALLDIR]&quot;"
                   Return="check"
                   Execute="deferred"

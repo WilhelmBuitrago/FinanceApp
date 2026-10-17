@@ -11,9 +11,17 @@ fn main() {
             // Resolve backend executable path via Tauri resources
             let resource_dir = app.path().resource_dir()?;
             let backend_path = resource_dir.join("financeapp-backend.exe");
+            eprintln!("DEBUG Tauri resource_dir: {}", resource_dir.display());
+            eprintln!("DEBUG Backend path: {}", backend_path.display());
+            eprintln!("DEBUG Current dir: {}", std::env::current_dir().unwrap_or_default().display());
+            if !backend_path.exists() {
+                eprintln!("ERROR Backend executable not found at {}", backend_path.display());
+                return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, format!("backend not found at {}", backend_path.display()))));
+            }
 
             // Build environment for backend with explicit data paths
             let mut cmd = Command::new(&backend_path);
+            cmd.current_dir(&resource_dir);
             if let Ok(appdata) = std::env::var("APPDATA") {
                 let base = std::path::Path::new(&appdata).join("FinanceApp");
                 let db_path = base.join("data").join("db").join("finance.db");
