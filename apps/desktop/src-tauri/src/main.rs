@@ -24,6 +24,8 @@ fn main() {
                 // Processor script location
                 let processor_script = resource_dir.join("processor").join("src").join("main.py");
                 cmd.env("PROCESSOR_SCRIPT", &processor_script);
+                let requirements_file = resource_dir.join("processor").join("requirements-lock.txt");
+                cmd.env("PROCESSOR_REQUIREMENTS", &requirements_file);
             }
 
             #[cfg(windows)]

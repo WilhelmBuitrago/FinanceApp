@@ -62,8 +62,8 @@ func EnsurePythonEnv(baseDir string) error {
 
 const (
 	PythonVersion = "3.12.10"
-	PythonURL     = "https://www.python.org/ftp/python/3.12.10/python-3.12.10-embeddable-amd64.zip"
-	PythonSHA256  = "156c7eea90d58cd7e91a23f28a0056616b13e9f4cf4901b7b99b837b7848c6da"
+	PythonURL     = "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.zip"
+	PythonSHA256  = "8649692de846c56a7189d6dae5c322ab20deb1b5908b6f39426b62a36f39415d"
 	GetPipURL     = "https://bootstrap.pypa.io/get-pip.py"
 )
 
@@ -180,16 +180,26 @@ func installRequirements(venvPython string) error {
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("pip upgrade failed: %w, %s", err, string(out))
 	}
-	pkgs := []string{
-		"pdfplumber==0.11.10",
-		"pydantic==2.11.7",
-		"pymupdf==1.26.3",
+	reqPath := os.Getenv("PROCESSOR_REQUIREMENTS")
+	if reqPath == "" {
+		// fallback to known pinned packages
+		pkgs := []string{
+			"pdfplumber==0.11.10",
+			"pydantic==2.11.7",
+			"pymupdf==1.26.3",
+		}
+		cmd = exec.Command(venvPython, "-m", "pip", "install", "--no-warn-script-location")
+		cmd.Args = append(cmd.Args, pkgs...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("pip install failed: %w, %s", err, string(out))
+		}
+		return nil
 	}
-	cmd = exec.Command(venvPython, "-m", "pip", "install", "--no-warn-script-location")
-	cmd.Args = append(cmd.Args, pkgs...)
+	cmd = exec.Command(venvPython, "-m", "pip", "install", "--no-warn-script-location", "-r", reqPath)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("pip install failed: %w, %s", err, string(out))
+		return fmt.Errorf("pip install -r failed: %w, %s", err, string(out))
 	}
 	return nil
 }
@@ -205,6 +215,9 @@ func downloadFile(url, dest string) error {
 		return err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("download failed: %s", resp.Status)
+	}
 	f, err := os.Create(dest)
 	if err != nil {
 		return err
