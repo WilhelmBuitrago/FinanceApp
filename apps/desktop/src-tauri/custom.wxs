@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Fragment>
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch FinanceApp after setup"/>
-    <CustomAction Id="RunPreparePython" 
+    <CustomAction Id="RunPreparePython"
+                  Directory="TARGETDIR"
                   ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]resources\prepare-python.ps1&quot; -InstallDir &quot;[INSTALLDIR]&quot;"
-                  Return="check" Execute="deferred" Impersonate="no"/>
+                  Return="check"
+                  Execute="deferred"
+                  Impersonate="no"/>
     <InstallExecuteSequence>
       <Custom Action="RunPreparePython" After="InstallFiles">NOT Installed AND NOT REMOVE</Custom>
     </InstallExecuteSequence>

@@ -42,7 +42,7 @@
       "createUpdaterArtifacts": true,
       "windows": {
         "wix": {
-          "template": "custom.wxs"
+          "fragmentPaths": ["custom.wxs"]
         }
       }
     },
