@@ -10,7 +10,22 @@ fn main() {
         .setup(|app| {
             // Resolve backend executable path via Tauri resources
             let resource_dir = app.path().resource_dir()?;
-            let backend_path = resource_dir.join("financeapp-backend.exe");
+
+            let backend_path = resource_dir
+                .join("resources")
+                .join("financeapp-backend.exe");
+
+            println!("DEBUG Tauri resource_dir: {:?}", resource_dir);
+            println!("DEBUG Backend path: {:?}", backend_path);
+
+            if !backend_path.is_file() {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    format!("Backend executable not found at {:?}", backend_path),
+                )
+                .into());
+            }
+
             eprintln!("DEBUG Tauri resource_dir: {}", resource_dir.display());
             eprintln!("DEBUG Backend path: {}", backend_path.display());
             eprintln!("DEBUG Current dir: {}", std::env::current_dir().unwrap_or_default().display());
