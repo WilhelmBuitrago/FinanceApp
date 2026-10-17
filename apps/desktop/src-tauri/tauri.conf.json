@@ -32,13 +32,13 @@
         "icons/icon.ico"
       ],
       "category": "Finance",
-      "resources": [
-        "resources/financeapp-backend.exe",
-        "resources/processor",
-        "resources/python-runtime",
-        "resources/python-wheels",
-        "resources/prepare-python.ps1"
-      ],
+      "resources": {
+        "resources/financeapp-backend.exe": "resources/financeapp-backend.exe",
+        "../../processor/": "resources/processor/",
+        "resources/python-runtime/": "resources/python-runtime/",
+        "resources/python-wheels/": "resources/python-wheels/",
+        "resources/prepare-python.ps1": "resources/prepare-python.ps1"
+      },
       "publisher": "FinanceApp",
       "createUpdaterArtifacts": true,
       "windows": {

@@ -1,15 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Fragment>
-    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch FinanceApp after setup"/>
-    <CustomAction Id="RunPreparePython"
-                  Directory="INSTALLDIR"
-                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]resources\prepare-python.ps1&quot; -InstallDir &quot;[INSTALLDIR]&quot;"
-                  Return="check"
-                  Execute="deferred"
-                  Impersonate="no"/>
+    <Property
+      Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"
+      Value="Launch FinanceApp after setup" />
+
+    <!-- Prepare Python during a fresh installation -->
+    <CustomAction
+      Id="RunPreparePython"
+      Directory="SystemFolder"
+      ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]resources\prepare-python.ps1&quot; -InstallDir &quot;[INSTALLDIR]&quot;"
+      Return="check"
+      Execute="deferred"
+      Impersonate="no" />
+
+    <!-- Remove technical Python files during a full uninstall -->
+    <CustomAction
+      Id="RemoveFinanceAppProgramData"
+      Directory="SystemFolder"
+      ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -Command &quot;Remove-Item -LiteralPath 'C:\ProgramData\FinanceApp' -Recurse -Force -ErrorAction SilentlyContinue&quot;"
+      Return="ignore"
+      Execute="deferred"
+      Impersonate="no" />
+
     <InstallExecuteSequence>
-      <Custom Action="RunPreparePython" After="InstallFiles">NOT Installed AND NOT REMOVE</Custom>
+      <Custom
+        Action="RunPreparePython"
+        After="InstallFiles">NOT Installed AND NOT REMOVE</Custom>
+
+      <Custom
+        Action="RemoveFinanceAppProgramData"
+        After="RemoveFiles">REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE</Custom>
     </InstallExecuteSequence>
   </Fragment>
 </Wix>
