@@ -17,8 +17,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      # Go: usa la versi??n declarada en backend/go.mod.
-      # La cach?? depende del go.sum que realmente existe.
+      # Go: usa la versión declarada en backend/go.mod.
+      # La caché depende del go.sum que realmente existe.
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
@@ -68,7 +68,7 @@ jobs:
             -Force
 
           if (-not (Test-Path (Join-Path $processor "requirements-lock.txt"))) {
-            throw "No se encontr?? apps/processor/requirements-lock.txt"
+            throw "No se encontró apps/processor/requirements-lock.txt"
           }
 
           # Download bundled Python runtime for offline first run
@@ -105,7 +105,7 @@ jobs:
           $backend = "apps/desktop/src-tauri/resources/financeapp-backend.exe"
 
           if (-not (Test-Path $backend)) {
-            throw "No se gener?? el ejecutable del backend: $backend"
+            throw "No se generó el ejecutable del backend: $backend"
           }
 
           Get-Item $backend | Select-Object FullName, Length
@@ -114,7 +114,7 @@ jobs:
         working-directory: apps/desktop
         run: npm ci
 
-      # Cach?? del CLI de Tauri.
+      # Caché del CLI de Tauri.
       - name: Cache Tauri CLI
         uses: actions/cache@v6
         with:
@@ -133,7 +133,7 @@ jobs:
 
           cargo tauri --version
           if ($LASTEXITCODE -ne 0) {
-            throw "Tauri CLI no est?? disponible"
+            throw "Tauri CLI no está disponible"
           }
 
 
@@ -168,7 +168,7 @@ jobs:
           $bundle = "apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
 
           if (-not (Test-Path $bundle)) {
-            throw "No se encontr?? el directorio de artefactos de Tauri"
+            throw "No se encontró el directorio de artefactos de Tauri"
           }
 
           Get-ChildItem $bundle -Recurse -File |
@@ -176,7 +176,7 @@ jobs:
 
           $msi = Get-ChildItem "$bundle/msi/*.msi" -File
           if (-not $msi) {
-            throw "No se gener?? ning??n archivo MSI"
+            throw "No se generó ningún archivo MSI"
           }
 
 
@@ -188,7 +188,7 @@ jobs:
           $msis = @(Get-ChildItem $msiDir -Filter "*.msi" -File)
 
           if ($msis.Count -eq 0) {
-            throw "No se encontr?? ning??n MSI en $msiDir"
+            throw "No se encontró ningún MSI en $msiDir"
           }
 
           Write-Host "=== MSI encontrados ==="
@@ -232,7 +232,7 @@ jobs:
             Select-Object -First 1
 
           if (-not $msi) {
-            throw "No se encontr?? el MSI para verificar."
+            throw "No se encontró el MSI para verificar."
           }
 
           Write-Host "MSI inspeccionado: $($msi.FullName)"
@@ -271,7 +271,7 @@ jobs:
           }
 
 
-         # Comprobar directamente si existe la acci??n antigua en el MSI.
+         # Comprobar directamente si existe la acción antigua en el MSI.
           $view = $database.OpenView(
               "SELECT `Action` FROM `CustomAction` WHERE `Action` = 'SetRunPreparePython'"
           )
@@ -299,7 +299,7 @@ jobs:
           }
 
           if ($action[0] -cne "RunPreparePython") {
-            throw "Nombre inesperado para la acci??n: $($action[0])"
+            throw "Nombre inesperado para la acción: $($action[0])"
           }
 
           if ([int]$action[1] -ne 3106) {
@@ -318,9 +318,9 @@ jobs:
             throw "RunPreparePython no apunta a resources\prepare-python.ps1."
           }
 
-          Write-Host "OK: RunPreparePython est?? definida y apunta al script esperado."
+          Write-Host "OK: RunPreparePython está definida y apunta al script esperado."
 
-          # Comprobar que se programa despu??s de InstallFiles.
+          # Comprobar que se programa después de InstallFiles.
           $view = $database.OpenView(
     "SELECT `Action` FROM `InstallExecuteSequence` WHERE `Action` = 'SetRunPreparePython'"
 )
@@ -337,37 +337,37 @@ finally {
     $view.Close()
 }
 
-Write-Host "OK: SetRunPreparePython no est?? en InstallExecuteSequence."
+Write-Host "OK: SetRunPreparePython no está en InstallExecuteSequence."
 
           if ([int]$pythonSequence[2] -le [int]$installFiles[2]) {
-            throw "RunPreparePython no se ejecuta despu??s de InstallFiles."
+            throw "RunPreparePython no se ejecuta después de InstallFiles."
           }
 
           if ($pythonSequence[1] -notmatch 'NOT Installed' -or
               $pythonSequence[1] -notmatch 'NOT REMOVE') {
-            throw "Condici??n inesperada: $($pythonSequence[1])"
+            throw "Condición inesperada: $($pythonSequence[1])"
           }
 
-          Write-Host "OK: RunPreparePython est?? programada despu??s de InstallFiles."
-          Write-Host "OK: condici??n de instalaci??n nueva verificada."
+          Write-Host "OK: RunPreparePython está programada después de InstallFiles."
+          Write-Host "OK: condición de instalación nueva verificada."
 
-          # Comprobar la acci??n de limpieza.
+          # Comprobar la acción de limpieza.
           $cleanup = Get-MsiRecord `
             "SELECT ``Action`` FROM ``CustomAction`` WHERE ``Action`` = 'RemoveFinanceAppProgramData'"
 
           if ($null -eq $cleanup) {
-            throw "RemoveFinanceAppProgramData no est?? definida."
+            throw "RemoveFinanceAppProgramData no está definida."
           }
 
           $cleanupSequence = Get-MsiRecord `
             "SELECT ``Action`` FROM ``InstallExecuteSequence`` WHERE ``Action`` = 'RemoveFinanceAppProgramData'"
 
           if ($null -eq $cleanupSequence) {
-            throw "RemoveFinanceAppProgramData no est?? programada."
+            throw "RemoveFinanceAppProgramData no está programada."
           }
 
-          Write-Host "OK: RemoveFinanceAppProgramData est?? definida y programada."
-          Write-Host "Verificaci??n de acciones MSI completada."
+          Write-Host "OK: RemoveFinanceAppProgramData está definida y programada."
+          Write-Host "Verificación de acciones MSI completada."
 
 
 
@@ -390,4 +390,3 @@ Write-Host "OK: SetRunPreparePython no est?? en InstallExecuteSequence."
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
