@@ -1,62 +1,62 @@
-﻿{
-    "productName":  "FinanceApp",
-    "version":  "0.1.0",
-    "identifier":  "com.financeapp.desktop",
-    "build":  {
-                  "beforeDevCommand":  "npm run dev",
-                  "beforeBuildCommand":  "npm run build",
-                  "devUrl":  "http://localhost:5174",
-                  "frontendDist":  "../dist"
-              },
-    "app":  {
-                "withGlobalTauri":  true,
-                "windows":  [
-                                {
-                                    "width":  1280,
-                                    "height":  800,
-                                    "resizable":  true
-                                }
-                            ],
-                "security":  {
-                                 "csp":  null
-                             }
-            },
-    "bundle":  {
-                   "active":  true,
-                   "targets":  [
-                                   "msi"
-                               ],
-                   "icon":  [
-                                "icons/32x32.png",
-                                "icons/128x128.png",
-                                "icons/128x128@2x.png",
-                                "icons/icon.ico"
-                            ],
-                   "category":  "Finance",
-                   "resources":  {
-                                     "resources/financeapp-backend.exe":  "resources/financeapp-backend.exe",
-                                     "../../processor/":  "resources/processor/",
-                                     "resources/python-runtime/":  "resources/python-runtime/",
-                                     "resources/python-wheels/":  "resources/python-wheels/",
-                                     "resources/prepare-python.ps1":  "resources/prepare-python.ps1"
-                                 },
-                   "publisher":  "FinanceApp",
-                   "createUpdaterArtifacts":  true,
-                   "windows":  {
-                                   "wix":  {
-                                               "template":  "main.wxs"
-                                           }
-                               }
-               },
-    "plugins":  {
-                    "updater":  {
-                                    "pubkey":  "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI5Q0Y1NTk1MTIzQkU0NjkKUldScDVEc1NsVlhQS1NqSFpLU2lBVEsyQ0lJK0Z2TXgzY2V2VXFGSXczVzdHL1FON0tidE1jLzkK",
-                                    "endpoints":  [
-                                                      "https://github.com/WilhelmBuitrago/financeapp/releases/latest/download/latest.json"
-                                                  ],
-                                    "windows":  {
-                                                    "installMode":  "passive"
-                                                }
-                                }
-                }
-}
+
+{
+    "productName": "FinanceApp",
+    "version": "0.1.0",
+    "identifier": "com.financeapp.desktop",
+    "build": {
+      "beforeDevCommand": "npm run dev",
+      "beforeBuildCommand": "npm run build",
+      "devUrl": "http://localhost:5174",
+      "frontendDist": "../dist"
+    },
+    "app": {
+      "withGlobalTauri": true,
+      "windows": [
+        {
+          "width": 1280,
+          "height": 800,
+          "resizable": true
+        }
+      ],
+      "security": {
+        "csp": null
+      }
+    },
+    "bundle": {
+      "active": true,
+      "targets": ["msi"],
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.ico"
+      ],
+      "category": "Finance",
+      "resources": [
+        "resources/financeapp-backend.exe",
+        "resources/processor",
+        "resources/python-runtime",
+        "resources/python-wheels",
+        "resources/prepare-python.ps1"
+      ],
+      "publisher": "FinanceApp",
+      "createUpdaterArtifacts": true,
+      "windows": {
+        "wix": {
+          "fragmentPaths": ["custom.wxs"]
+        }
+      }
+    },
+    "plugins": {
+      "updater": {
+        "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI5Q0Y1NTk1MTIzQkU0NjkKUldScDVEc1NsVlhQS1NqSFpLU2lBVEsyQ0lJK0Z2TXgzY2V2VXFGSXczVzdHL1FON0tidE1jLzkK",
+        "endpoints": [
+          "https://github.com/WilhelmBuitrago/financeapp/releases/latest/download/latest.json"
+        ],
+        "windows": {
+          "installMode": "passive"
+        }
+      }
+    }
+  }
+  
