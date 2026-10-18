@@ -286,15 +286,21 @@ jobs:
             $_.Action -eq "RunPreparePython"
           })
 
+
+          Write-Host "=== Acciones Python leídas por la verificación ==="
+          $customActions |
+            Where-Object { $_.Action -match "Python|Prepare" } |
+            Format-List *
+
           if ($pythonAction.Count -ne 1) {
             throw "Se esperaba exactamente una definición de RunPreparePython; encontradas: $($pythonAction.Count)."
           }
 
           $action = $pythonAction[0]
 
-          # Tipo 3074 = acción EXE diferida, sin impersonación.
-          if ([int]$action.Type -ne 3074) {
-            throw "Tipo inesperado para RunPreparePython: $($action.Type). Se esperaba 3074."
+          # Tipo 3106 = acción EXE diferida, sin impersonación.
+          if ([int]$action.Type -ne 3106) {
+            throw "Tipo inesperado para RunPreparePython: $($action.Type). Se esperaba 3106."
           }
 
           if ($action.Source -ne "INSTALLDIR") {
