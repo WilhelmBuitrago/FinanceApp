@@ -43,5 +43,10 @@
         Action="RemoveFinanceAppProgramData"
         After="RemoveFiles">REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE</Custom>
     </InstallExecuteSequence>
+
+    <!-- Explicitly reference the custom actions in the WiX fragment. -->
+    <CustomActionRef Id="SetRunPreparePython" />
+    <CustomActionRef Id="RunPreparePython" />
+    <CustomActionRef Id="RemoveFinanceAppProgramData" />
   </Fragment>
 </Wix>

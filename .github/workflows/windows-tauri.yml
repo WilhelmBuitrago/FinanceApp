@@ -139,7 +139,7 @@ jobs:
       # Genera el MSI y los artefactos de firma del actualizador.
       - name: Build Tauri MSI
         working-directory: apps/desktop
-        run: cargo tauri build --target x86_64-pc-windows-msvc --bundles msi
+        run: cargo tauri build --verbose --target x86_64-pc-windows-msvc --bundles msi
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
