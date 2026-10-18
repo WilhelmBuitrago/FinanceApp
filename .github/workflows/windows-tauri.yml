@@ -180,6 +180,50 @@ jobs:
           }
 
 
+
+      - name: Diagnose custom actions in MSI
+        shell: pwsh
+        run: |
+          $msiDir = "apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi"
+          $msis = @(Get-ChildItem $msiDir -Filter "*.msi" -File)
+
+          if ($msis.Count -eq 0) {
+            throw "No se encontró ningún MSI en $msiDir"
+          }
+
+          Write-Host "=== MSI encontrados ==="
+          $msis | Select-Object Name, Length, LastWriteTime, FullName |
+            Format-Table -AutoSize
+
+          $installer = New-Object -ComObject WindowsInstaller.Installer
+
+          foreach ($msi in $msis) {
+            Write-Host "=== Inspeccionando: $($msi.Name) ==="
+            $database = $installer.OpenDatabase($msi.FullName, 0)
+
+            $view = $database.OpenView(
+              'SELECT `Action`, `Type`, `Source`, `Target` FROM `CustomAction`'
+            )
+            $view.Execute()
+
+            while ($record = $view.Fetch()) {
+              $name = $record.StringData(1)
+              if ($name -match "Python|Prepare|FinanceAppProgramData") {
+                Write-Host (
+                  "Action={0}; Type={1}; Source={2}; Target={3}" -f
+                  $name,
+                  $record.StringData(2),
+                  $record.StringData(3),
+                  $record.StringData(4)
+                )
+              }
+            }
+
+            $view.Close()
+          }
+
+
+
       - name: Verify custom actions in MSI
         shell: pwsh
         run: |
