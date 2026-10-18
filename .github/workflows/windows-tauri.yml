@@ -223,6 +223,7 @@ jobs:
           }
 
 
+ 
       - name: Verify custom actions in MSI
         shell: pwsh
         run: |
@@ -240,10 +241,13 @@ jobs:
           $installer = New-Object -ComObject WindowsInstaller.Installer
           $database = $installer.OpenDatabase($msi.FullName, 0)
 
-
           function Get-MsiRecord {
             param(
+              [Parameter(Mandatory)]
               [string]$Query,
+
+              [Parameter(Mandatory)]
+              [ValidateRange(1, 10)]
               [int]$ColumnCount
             )
 
@@ -270,32 +274,32 @@ jobs:
             }
           }
 
+          # La acción antigua no debe existir en ninguna de las dos tablas.
+          $oldAction = Get-MsiRecord `
+            -Query "SELECT ``Action`` FROM ``CustomAction`` WHERE ``Action`` = 'SetRunPreparePython'" `
+            -ColumnCount 1
 
-          # Comprobar directamente si existe la acción antigua en el MSI.
-          $view = $database.OpenView(
-              "SELECT `Action` FROM `CustomAction` WHERE `Action` = 'SetRunPreparePython'"
-          )
-
-          try {
-            $view.Execute()
-            $record = $view.Fetch()
-
-            if ($null -ne $record) {
-                throw "SetRunPreparePython sigue definida en la tabla CustomAction del MSI."
-            }
-          }
-          finally {
-              $view.Close()
+          if ($null -ne $oldAction) {
+            throw "SetRunPreparePython sigue definida en CustomAction."
           }
 
-          Write-Host "OK: SetRunPreparePython no existe en la tabla CustomAction."
+          $oldSequence = Get-MsiRecord `
+            -Query "SELECT ``Action`` FROM ``InstallExecuteSequence`` WHERE ``Action`` = 'SetRunPreparePython'" `
+            -ColumnCount 1
 
-          # Comprobar directamente RunPreparePython.
+          if ($null -ne $oldSequence) {
+            throw "SetRunPreparePython sigue presente en InstallExecuteSequence."
+          }
+
+          Write-Host "OK: SetRunPreparePython no existe ni está programada."
+
+          # Verificar definición y comando de RunPreparePython.
           $action = Get-MsiRecord `
-            "SELECT ``Action``, ``Type``, ``Source``, ``Target`` FROM ``CustomAction`` WHERE ``Action`` = 'RunPreparePython'"
+            -Query "SELECT ``Action``, ``Type``, ``Source``, ``Target`` FROM ``CustomAction`` WHERE ``Action`` = 'RunPreparePython'" `
+            -ColumnCount 4
 
           if ($null -eq $action) {
-            throw "RunPreparePython no existe en la tabla CustomAction."
+            throw "RunPreparePython no existe en CustomAction."
           }
 
           if ($action[0] -cne "RunPreparePython") {
@@ -311,56 +315,69 @@ jobs:
           }
 
           if ($action[3] -notmatch 'WindowsPowerShell\\v1\.0\\powershell\.exe') {
-            throw "RunPreparePython no apunta a Windows PowerShell."
+            throw "RunPreparePython no apunta a Windows PowerShell. Target: $($action[3])"
           }
 
           if ($action[3] -notmatch 'resources\\prepare-python\.ps1') {
-            throw "RunPreparePython no apunta a resources\prepare-python.ps1."
+            throw "RunPreparePython no apunta a resources\prepare-python.ps1. Target: $($action[3])"
           }
 
-          Write-Host "OK: RunPreparePython está definida y apunta al script esperado."
-
-          # Comprobar que se programa después de InstallFiles.
-          $view = $database.OpenView(
-              "SELECT `Action` FROM `InstallExecuteSequence` WHERE `Action` = 'SetRunPreparePython'"
-          )
-
-          try {
-              $view.Execute()
-              $record = $view.Fetch()
-
-              if ($null -ne $record) {
-                  throw "SetRunPreparePython sigue presente en InstallExecuteSequence."
-              }
-          }
-          finally {
-              $view.Close()
+          if ($action[3] -notmatch '-InstallDir') {
+            throw "Falta el argumento -InstallDir en RunPreparePython."
           }
 
-          Write-Host "OK: SetRunPreparePython no está en InstallExecuteSequence."
+          Write-Host "OK: RunPreparePython tiene el tipo, origen y comando esperados."
+
+          # Leer las secuencias: Action, Condition y Sequence.
+          $installFiles = Get-MsiRecord `
+            -Query "SELECT ``Action``, ``Condition``, ``Sequence`` FROM ``InstallExecuteSequence`` WHERE ``Action`` = 'InstallFiles'" `
+            -ColumnCount 3
+
+          if ($null -eq $installFiles) {
+            throw "InstallFiles no está programada en InstallExecuteSequence."
+          }
+
+          $pythonSequence = Get-MsiRecord `
+            -Query "SELECT ``Action``, ``Condition``, ``Sequence`` FROM ``InstallExecuteSequence`` WHERE ``Action`` = 'RunPreparePython'" `
+            -ColumnCount 3
+
+          if ($null -eq $pythonSequence) {
+            throw "RunPreparePython no está programada en InstallExecuteSequence."
+          }
+
+          if ($pythonSequence[0] -cne "RunPreparePython") {
+            throw "Nombre inesperado en la secuencia: $($pythonSequence[0])"
+          }
 
           if ([int]$pythonSequence[2] -le [int]$installFiles[2]) {
-            throw "RunPreparePython no se ejecuta después de InstallFiles."
+            throw "RunPreparePython no se ejecuta después de InstallFiles. InstallFiles=$($installFiles[2]); RunPreparePython=$($pythonSequence[2])."
           }
 
           if ($pythonSequence[1] -notmatch 'NOT Installed' -or
               $pythonSequence[1] -notmatch 'NOT REMOVE') {
-            throw "Condición inesperada: $($pythonSequence[1])"
+            throw "Condición inesperada para RunPreparePython: '$($pythonSequence[1])'."
           }
 
           Write-Host "OK: RunPreparePython está programada después de InstallFiles."
           Write-Host "OK: condición de instalación nueva verificada."
 
-          # Comprobar la acción de limpieza.
+          # Verificar definición de la acción de limpieza.
           $cleanup = Get-MsiRecord `
-            "SELECT ``Action`` FROM ``CustomAction`` WHERE ``Action`` = 'RemoveFinanceAppProgramData'"
+            -Query "SELECT ``Action``, ``Type``, ``Source``, ``Target`` FROM ``CustomAction`` WHERE ``Action`` = 'RemoveFinanceAppProgramData'" `
+            -ColumnCount 4
 
           if ($null -eq $cleanup) {
-            throw "RemoveFinanceAppProgramData no está definida."
+            throw "RemoveFinanceAppProgramData no está definida en CustomAction."
           }
 
+          if ($cleanup[0] -cne "RemoveFinanceAppProgramData") {
+            throw "Nombre inesperado para la acción de limpieza: $($cleanup[0])"
+          }
+
+          # Verificar que la acción de limpieza esté programada.
           $cleanupSequence = Get-MsiRecord `
-            "SELECT ``Action`` FROM ``InstallExecuteSequence`` WHERE ``Action`` = 'RemoveFinanceAppProgramData'"
+            -Query "SELECT ``Action``, ``Condition``, ``Sequence`` FROM ``InstallExecuteSequence`` WHERE ``Action`` = 'RemoveFinanceAppProgramData'" `
+            -ColumnCount 3
 
           if ($null -eq $cleanupSequence) {
             throw "RemoveFinanceAppProgramData no está programada."
@@ -368,7 +385,6 @@ jobs:
 
           Write-Host "OK: RemoveFinanceAppProgramData está definida y programada."
           Write-Host "Verificación de acciones MSI completada."
-
 
 
       - name: Upload Artifact
