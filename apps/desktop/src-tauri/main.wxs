@@ -376,12 +376,12 @@
         <CustomAction
             Id="SetRunPreparePython"
             Property="RunPreparePython"
-            Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]resources\prepare-python.ps1&quot; -InstallDir &quot;[INSTALLDIR]&quot;"
+            Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]resources\prepare-python.ps1&quot; -InstallDir &quot;[INSTALLDIR].&quot;"
             Execute="immediate" />
 
         <CustomAction
             Id="RunPreparePython"
-            Directory="TARGETDIR"
+            Directory="INSTALLDIR"
             ExeCommand="[CustomActionData]"
             Return="check"
             Execute="deferred"
