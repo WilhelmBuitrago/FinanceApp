@@ -239,6 +239,7 @@ jobs:
           $installer = New-Object -ComObject WindowsInstaller.Installer
           $database = $installer.OpenDatabase($msi.FullName, 0)
 
+
           function Get-MsiRows {
             param(
               [string]$Query,
@@ -246,25 +247,32 @@ jobs:
             )
 
             $view = $database.OpenView($Query)
-            $view.Execute()
 
-            $rows = @()
+            try {
+              $view.Execute()
 
-            while ($record = $view.Fetch()) {
-              $row = @{}
-              for ($i = 0; $i -lt $Columns.Count; $i++) {
-                $row[$Columns[$i]] = $record.StringData($Columns[$i])
+              while ($record = $view.Fetch()) {
+                $row = @{}
+
+                foreach ($column in $Columns) {
+                  $row[$column] = $record.StringData($column)
+                }
+
+                [pscustomobject]$row
               }
-              $rows += $row
             }
-
-            $view.Close()
-            return $rows
+            finally {
+              $view.Close()
+            }
           }
+
 
           $customActions = Get-MsiRows `
             -Query 'SELECT `Action`, `Type`, `Source`, `Target` FROM `CustomAction`' `
             -Columns @(1, 2, 3, 4)
+
+          Write-Host "Cantidad de acciones leídas: $(@($customActions).Count)"
+            $customActions | Format-List *
 
           $sequence = Get-MsiRows `
             -Query 'SELECT `Action`, `Condition`, `Sequence` FROM `InstallExecuteSequence`' `
