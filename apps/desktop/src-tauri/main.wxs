@@ -1,3 +1,4 @@
+
 <?if $(sys.BUILDARCH)="x86"?>
     <?define Win64 = "no" ?>
     <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
@@ -61,7 +62,7 @@
 
         <Icon Id="ProductIcon" SourceFile="{{icon_path}}"/>
         <Property Id="ARPPRODUCTICON" Value="ProductIcon" />
-        <Property Id="ARPNOREPAIR" Value="yes" Secure="yes" />      <!-- Remove repair -->
+        <Property Id="ARPNOREPAIR" Value="yes" Secure="yes" />
         <SetProperty Id="ARPNOMODIFY" Value="1" After="InstallValidate" Sequence="execute"/>
 
         {{#if homepage}}
@@ -75,10 +76,7 @@
              match wins. We list the NSIS default-key search first and the MSI InstallDir
              search second so that the MSI-specific path takes priority when both keys exist. -->
         <Property Id="INSTALLDIR">
-          <!-- First attempt: Search for the default key value (this is how the nsis installer stores the path) -->
           <RegistrySearch Id="PrevInstallDirNoName" Root="HKCU" Key="Software\\{{manufacturer}}\\{{product_name}}" Type="raw" />
-
-          <!-- Second attempt: Search for "InstallDir" which takes priority if found (this is how the msi installer stores the path) -->
           <RegistrySearch Id="PrevInstallDirWithName" Root="HKCU" Key="Software\\{{manufacturer}}\\{{product_name}}" Name="InstallDir" Type="raw" />
         </Property>
 
@@ -88,13 +86,11 @@
         <CustomAction Id="LaunchApplication" Impersonate="yes" FileKey="Path" ExeCommand="[LAUNCHAPPARGS]" Return="asyncNoWait" />
 
         <UI>
-            <!-- launch app checkbox -->
             <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
 
             <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
 
             {{#unless license}}
-            <!-- Skip license dialog -->
             <Publish Dialog="WelcomeDlg"
                      Control="Next"
                      Event="NewDialog"
@@ -131,6 +127,7 @@
                 <RegistryKey Root="HKCU" Key="Software\\{{manufacturer}}\\{{product_name}}">
                     <RegistryValue Name="InstallDir" Type="string" Value="[INSTALLDIR]" KeyPath="yes" />
                 </RegistryKey>
+
                 <!-- Change the Root to HKCU for perUser installations -->
                 {{#each deep_link_protocols as |protocol| ~}}
                 <RegistryKey Root="HKLM" Key="Software\Classes\\{{protocol}}">
@@ -145,6 +142,7 @@
                 </RegistryKey>
                 {{/each~}}
             </Component>
+
             <Component Id="Path" Guid="{{path_component_guid}}" Win64="$(var.Win64)">
                 <File Id="Path" Source="{{main_binary_path}}" KeyPath="yes" Checksum="yes"/>
                 {{#each file_associations as |association| ~}}
@@ -157,11 +155,13 @@
                 {{/each~}}
                 {{/each~}}
             </Component>
+
             {{#each binaries as |bin| ~}}
             <Component Id="{{ bin.id }}" Guid="{{bin.guid}}" Win64="$(var.Win64)">
                 <File Id="Bin_{{ bin.id }}" Source="{{bin.path}}" KeyPath="yes"/>
             </Component>
             {{/each~}}
+
             {{#if enable_elevated_update_task}}
             <Component Id="UpdateTask" Guid="C492327D-9720-4CD5-8DB8-F09082AF44BE" Win64="$(var.Win64)">
                 <File Id="UpdateTask" Source="update.xml" KeyPath="yes" Checksum="yes"/>
@@ -173,24 +173,24 @@
                 <File Id="UpdateTaskUninstaller" Source="uninstall-task.ps1" KeyPath="yes" Checksum="yes"/>
             </Component>
             {{/if}}
+
             {{resources}}
+
             <Component Id="CMP_UninstallShortcut" Guid="*">
-
                 <Shortcut Id="UninstallShortcut"
-						  Name="Uninstall {{product_name}}"
-						  Description="Uninstalls {{product_name}}"
-						  Target="[System64Folder]msiexec.exe"
-						  Arguments="/x [ProductCode]" />
+                          Name="Uninstall {{product_name}}"
+                          Description="Uninstalls {{product_name}}"
+                          Target="[System64Folder]msiexec.exe"
+                          Arguments="/x [ProductCode]" />
 
-				<RemoveFolder Id="INSTALLDIR"
-							  On="uninstall" />
+                <RemoveFolder Id="INSTALLDIR" On="uninstall" />
 
-				<RegistryValue Root="HKCU"
-							   Key="Software\\{{manufacturer}}\\{{product_name}}"
-							   Name="Uninstaller Shortcut"
-							   Type="integer"
-							   Value="1"
-							   KeyPath="yes" />
+                <RegistryValue Root="HKCU"
+                               Key="Software\\{{manufacturer}}\\{{product_name}}"
+                               Name="Uninstaller Shortcut"
+                               Type="integer"
+                               Value="1"
+                               KeyPath="yes" />
             </Component>
         </DirectoryRef>
 
@@ -206,7 +206,7 @@
                 </Shortcut>
                 <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
                 <RegistryValue Root="HKCU" Key="Software\\{{manufacturer}}\\{{product_name}}" Name="Start Menu Shortcut" Type="integer" Value="1" KeyPath="yes"/>
-           </Component>
+            </Component>
         </DirectoryRef>
 
         {{#each merge_modules as |msm| ~}}
@@ -241,9 +241,7 @@
                 <ComponentRef Id="UpdateTaskUninstaller" />
             {{/if}}
 
-            <Feature Id="ShortcutsFeature"
-                Title="Shortcuts"
-                Level="1">
+            <Feature Id="ShortcutsFeature" Title="Shortcuts" Level="1">
                 <ComponentRef Id="Path"/>
                 <ComponentRef Id="CMP_UninstallShortcut" />
                 <ComponentRef Id="ApplicationShortcut" />
@@ -256,10 +254,10 @@
                 Description="!(loc.PathEnvVarFeature)"
                 Level="1"
                 Absent="allow">
-            <ComponentRef Id="Path"/>
-            {{#each binaries as |bin| ~}}
-            <ComponentRef Id="{{ bin.id }}"/>
-            {{/each~}}
+                <ComponentRef Id="Path"/>
+                {{#each binaries as |bin| ~}}
+                <ComponentRef Id="{{ bin.id }}"/>
+                {{/each~}}
             </Feature>
         </Feature>
 
@@ -330,7 +328,6 @@
             <RegistrySearch Id="EdgeUpdateCurrentUser" Root="HKCU" Key="SOFTWARE\Microsoft\EdgeUpdate" Name="path" Type="raw"/>
         </Property>
         <!-- Chromium updater docs: https://source.chromium.org/chromium/chromium/src/+/main:docs/updater/user_manual.md -->
-        <!-- Modified from "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft EdgeWebView\ModifyPath" -->
         <CustomAction Id="UpdateWebView2ViaEdgeUpdate" Execute="deferred" Property="EDGEUPDATE_PATH" Return="check" Impersonate="no" ExeCommand="/install appguid={F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}&amp;needsadmin=true" />
         <InstallExecuteSequence>
             <Custom Action='UpdateWebView2ViaEdgeUpdate' Before='InstallFinalize'>
@@ -359,6 +356,7 @@
                 NOT(REMOVE)
             </Custom>
         </InstallExecuteSequence>
+
         <!-- Remove elevated update task during uninstall -->
         <CustomAction
             Id="DeleteUpdateTask"
@@ -372,7 +370,15 @@
         </InstallExecuteSequence>
         {{/if}}
 
-                <!-- Prepare the bundled Python environment after files are installed. -->
+        <!-- =========================================================
+             Python environment preparation
+
+             Previous implementation retained for reference:
+             it used SetRunPreparePython to populate the RunPreparePython
+             property, then passed CustomActionData to a deferred action.
+             ========================================================= -->
+
+        <!--
         <CustomAction
             Id="SetRunPreparePython"
             Property="RunPreparePython"
@@ -383,6 +389,20 @@
             Id="RunPreparePython"
             Directory="INSTALLDIR"
             ExeCommand="[CustomActionData]"
+            Return="check"
+            Execute="deferred"
+            Impersonate="no" />
+        -->
+
+        <!--
+            Launch PowerShell directly as a deferred, non-impersonated
+            custom action. The executable and arguments are specified
+            explicitly instead of relying on CustomActionData.
+        -->
+        <CustomAction
+            Id="RunPreparePython"
+            Directory="INSTALLDIR"
+            ExeCommand="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]resources\prepare-python.ps1&quot; -InstallDir &quot;[INSTALLDIR].&quot;"
             Return="check"
             Execute="deferred"
             Impersonate="no" />
@@ -397,6 +417,7 @@
             Impersonate="no" />
 
         <InstallExecuteSequence>
+            <!-- Previous sequence retained for reference:
             <Custom
                 Action="SetRunPreparePython"
                 After="InstallFiles">NOT Installed AND NOT REMOVE</Custom>
@@ -404,6 +425,11 @@
             <Custom
                 Action="RunPreparePython"
                 After="SetRunPreparePython">NOT Installed AND NOT REMOVE</Custom>
+            -->
+
+            <Custom
+                Action="RunPreparePython"
+                After="InstallFiles">NOT Installed AND NOT REMOVE</Custom>
 
             <Custom
                 Action="RemoveFinanceAppProgramData"
