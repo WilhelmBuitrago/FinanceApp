@@ -271,7 +271,7 @@ jobs:
           }
 
 
-         # Comprobar directamente si existe la acción antigua en el MSI.
+          # Comprobar directamente si existe la acción antigua en el MSI.
           $view = $database.OpenView(
               "SELECT `Action` FROM `CustomAction` WHERE `Action` = 'SetRunPreparePython'"
           )
@@ -322,22 +322,22 @@ jobs:
 
           # Comprobar que se programa después de InstallFiles.
           $view = $database.OpenView(
-    "SELECT `Action` FROM `InstallExecuteSequence` WHERE `Action` = 'SetRunPreparePython'"
-)
+              "SELECT `Action` FROM `InstallExecuteSequence` WHERE `Action` = 'SetRunPreparePython'"
+          )
 
-try {
-    $view.Execute()
-    $record = $view.Fetch()
+          try {
+              $view.Execute()
+              $record = $view.Fetch()
 
-    if ($null -ne $record) {
-        throw "SetRunPreparePython sigue presente en InstallExecuteSequence."
-    }
-}
-finally {
-    $view.Close()
-}
+              if ($null -ne $record) {
+                  throw "SetRunPreparePython sigue presente en InstallExecuteSequence."
+              }
+          }
+          finally {
+              $view.Close()
+          }
 
-Write-Host "OK: SetRunPreparePython no está en InstallExecuteSequence."
+          Write-Host "OK: SetRunPreparePython no está en InstallExecuteSequence."
 
           if ([int]$pythonSequence[2] -le [int]$installFiles[2]) {
             throw "RunPreparePython no se ejecuta después de InstallFiles."
