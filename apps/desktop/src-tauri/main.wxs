@@ -374,14 +374,16 @@
 
                 <!-- Prepare the bundled Python environment after files are installed. -->
         <CustomAction
-            Id="SetRunPreparePython"
-            Property="RunPreparePython"
-            Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]resources\prepare-python.ps1&quot; -InstallDir &quot;[INSTALLDIR]&quot;"
-            Execute="immediate" />
-
+            Id="RunPreparePython"
+            Directory="TARGETDIR"
+            ExeCommand="[CustomActionData]"
+            Return="check"
+            Execute="deferred"
+            Impersonate="no" />
+            
         <CustomAction
             Id="RunPreparePython"
-            Directory="SystemFolder"
+            Directory="TARGETDIR"
             ExeCommand="[CustomActionData]"
             Return="check"
             Execute="deferred"
@@ -390,7 +392,7 @@
         <!-- Remove technical Python files during a full uninstall. -->
         <CustomAction
             Id="RemoveFinanceAppProgramData"
-            Directory="SystemFolder"
+            Directory="TARGETDIR"
             ExeCommand="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -Command &quot;Remove-Item -LiteralPath 'C:\ProgramData\FinanceApp' -Recurse -Force -ErrorAction SilentlyContinue&quot;"
             Return="ignore"
             Execute="deferred"
