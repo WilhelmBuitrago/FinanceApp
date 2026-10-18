@@ -222,8 +222,6 @@ jobs:
             $view.Close()
           }
 
-
-
       - name: Verify custom actions in MSI
         shell: pwsh
         run: |
@@ -236,9 +234,10 @@ jobs:
             throw "No se encontró el MSI para verificar."
           }
 
+          Write-Host "MSI inspeccionado: $($msi.FullName)"
+
           $installer = New-Object -ComObject WindowsInstaller.Installer
           $database = $installer.OpenDatabase($msi.FullName, 0)
-
 
           function Get-MsiRows {
             param(
@@ -266,47 +265,77 @@ jobs:
             }
           }
 
+          # Leer las acciones del MSI.
+          $customActions = @(
+            Get-MsiRows `
+              -Query 'SELECT `Action`, `Type`, `Source`, `Target` FROM `CustomAction`' `
+              -Columns @(1, 2, 3, 4)
+          )
 
-          $customActions = Get-MsiRows `
-            -Query 'SELECT `Action`, `Type`, `Source`, `Target` FROM `CustomAction`' `
-            -Columns @(1, 2, 3, 4)
+          Write-Host "Cantidad de acciones leídas: $($customActions.Count)"
+          $customActions | Format-List *
 
-          Write-Host "Cantidad de acciones leídas: $(@($customActions).Count)"
-            $customActions | Format-List *
+          # Consulta directa para contrastar con Get-MsiRows.
+          Write-Host "=== Consulta directa de RunPreparePython ==="
 
-          $sequence = Get-MsiRows `
-            -Query 'SELECT `Action`, `Condition`, `Sequence` FROM `InstallExecuteSequence`' `
-            -Columns @(1, 2, 3)
+          $view = $database.OpenView(
+            "SELECT ``Action``, ``Type``, ``Source``, ``Target`` FROM ``CustomAction`` WHERE ``Action`` = 'RunPreparePython'"
+          )
 
-          # La acción antigua no debe estar activa en el MSI.
-          if ($customActions.Action -contains "SetRunPreparePython") {
+          try {
+            $view.Execute()
+            $record = $view.Fetch()
+
+            if ($null -eq $record) {
+              Write-Host "La consulta directa NO encontró RunPreparePython."
+            }
+            else {
+              Write-Host "Action: $($record.StringData(1))"
+              Write-Host "Type: $($record.StringData(2))"
+              Write-Host "Source: $($record.StringData(3))"
+              Write-Host "Target: $($record.StringData(4))"
+            }
+          }
+          finally {
+            $view.Close()
+          }
+
+          # Leer la secuencia de instalación.
+          $sequence = @(
+            Get-MsiRows `
+              -Query 'SELECT `Action`, `Condition`, `Sequence` FROM `InstallExecuteSequence`' `
+              -Columns @(1, 2, 3)
+          )
+
+          # La acción antigua no debe estar definida ni programada.
+          if (@($customActions | Where-Object {
+            $_.Action -eq "SetRunPreparePython"
+          }).Count -gt 0) {
             throw "SetRunPreparePython sigue definida en el MSI."
           }
 
-          if ($sequence.Action -contains "SetRunPreparePython") {
+          if (@($sequence | Where-Object {
+            $_.Action -eq "SetRunPreparePython"
+          }).Count -gt 0) {
             throw "SetRunPreparePython sigue programada en InstallExecuteSequence."
           }
 
           Write-Host "OK: SetRunPreparePython no está activa."
 
-          # Verificar la acción directa de Python.
-          $pythonAction = @($customActions | Where-Object {
-            $_.Action -eq "RunPreparePython"
-          })
-
-
-          Write-Host "=== Acciones Python leídas por la verificación ==="
-          $customActions |
-            Where-Object { $_.Action -match "Python|Prepare" } |
-            Format-List *
+          # Validar RunPreparePython.
+          $pythonAction = @(
+            $customActions | Where-Object {
+              $_.Action -eq "RunPreparePython"
+            }
+          )
 
           if ($pythonAction.Count -ne 1) {
-            throw "Se esperaba exactamente una definición de RunPreparePython; encontradas: $($pythonAction.Count)."
+            throw "Se esperaba una definición de RunPreparePython; encontradas: $($pythonAction.Count)."
           }
 
           $action = $pythonAction[0]
 
-          # Tipo 3106 = acción EXE diferida, sin impersonación.
+          # Tipo observado en el MSI generado: 3106.
           if ([int]$action.Type -ne 3106) {
             throw "Tipo inesperado para RunPreparePython: $($action.Type). Se esperaba 3106."
           }
@@ -323,28 +352,38 @@ jobs:
             throw "RunPreparePython no apunta a resources\prepare-python.ps1."
           }
 
-          $pythonSequence = @($sequence | Where-Object {
-            $_.Action -eq "RunPreparePython"
-          })
+          # Comprobar el orden real, sin asumir el número 4001.
+          $installFiles = @(
+            $sequence | Where-Object { $_.Action -eq "InstallFiles" }
+          )
 
-          if ($pythonSequence.Count -ne 1) {
-            throw "Se esperaba exactamente una entrada de RunPreparePython en InstallExecuteSequence."
+          $pythonSequence = @(
+            $sequence | Where-Object { $_.Action -eq "RunPreparePython" }
+          )
+
+          if ($installFiles.Count -ne 1) {
+            throw "Se esperaba una entrada de InstallFiles en InstallExecuteSequence."
           }
 
-          if ([int]$pythonSequence[0].Sequence -ne 4001) {
-            throw "RunPreparePython tiene secuencia $($pythonSequence[0].Sequence); se esperaba 4001 (después de InstallFiles)."
+          if ($pythonSequence.Count -ne 1) {
+            throw "Se esperaba una entrada de RunPreparePython en InstallExecuteSequence."
+          }
+
+          if ([int]$pythonSequence[0].Sequence -le [int]$installFiles[0].Sequence) {
+            throw "RunPreparePython no está programada después de InstallFiles."
           }
 
           if ($pythonSequence[0].Condition -notmatch 'NOT Installed' -or
               $pythonSequence[0].Condition -notmatch 'NOT REMOVE') {
-            throw "La condición de RunPreparePython no coincide con la instalación nueva esperada: $($pythonSequence[0].Condition)"
+            throw "Condición inesperada para RunPreparePython: $($pythonSequence[0].Condition)"
           }
 
-          Write-Host "OK: RunPreparePython está definida con tipo 3074 y apunta al script esperado."
-          Write-Host "OK: RunPreparePython está programada después de InstallFiles."
-          Write-Host "OK: la condición de ejecución corresponde a una instalación nueva."
+          Write-Host "OK: RunPreparePython está definida con tipo 3106."
+          Write-Host "OK: apunta al script prepare-python.ps1."
+          Write-Host "OK: se ejecuta después de InstallFiles."
+          Write-Host "OK: la condición corresponde a una instalación nueva."
 
-          # La limpieza de datos técnicos debe seguir presente.
+          # Verificar la acción de limpieza.
           foreach ($actionName in @("RemoveFinanceAppProgramData")) {
             if ($actionName -notin $customActions.Action) {
               throw "El MSI no contiene la acción: $actionName"
@@ -358,6 +397,7 @@ jobs:
           }
 
           Write-Host "Verificación de acciones MSI completada."
+
 
 
       - name: Upload Artifact
