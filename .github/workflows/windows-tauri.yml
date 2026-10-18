@@ -240,10 +240,15 @@ jobs:
           $installer = New-Object -ComObject WindowsInstaller.Installer
           $database = $installer.OpenDatabase($msi.FullName, 0)
 
+
           function Get-MsiRecord {
-            param([string]$Query)
+            param(
+              [string]$Query,
+              [int]$ColumnCount
+            )
 
             $view = $database.OpenView($Query)
+
             try {
               $view.Execute()
               $record = $view.Fetch()
@@ -252,15 +257,11 @@ jobs:
                 return $null
               }
 
-              $values = @()
-              for ($i = 1; $i -le 4; $i++) {
-                try {
-                  $values += $record.StringData($i)
+              $values = @(
+                for ($i = 1; $i -le $ColumnCount; $i++) {
+                  $record.StringData($i)
                 }
-                catch {
-                  break
-                }
-              }
+              )
 
               return ,$values
             }
@@ -268,6 +269,7 @@ jobs:
               $view.Close()
             }
           }
+
 
           # La acción antigua no debe existir.
           $oldAction = Get-MsiRecord `
