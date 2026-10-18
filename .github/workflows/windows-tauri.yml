@@ -1,10 +1,10 @@
-
 name: Build Windows MSI
 
 permissions:
   contents: write
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
@@ -161,7 +161,63 @@ jobs:
             throw "No se generó ningún archivo MSI"
           }
 
+      - name: Verify custom actions in MSI
+        shell: pwsh
+        run: |
+          $msi = Get-ChildItem `
+            "apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi" `
+            -File |
+            Select-Object -First 1
+
+          if (-not $msi) {
+            throw "No se encontró el MSI para verificar."
+          }
+
+          $installer = New-Object -ComObject WindowsInstaller.Installer
+          $database = $installer.OpenDatabase($msi.FullName, 0)
+
+          $required = @(
+            "SetRunPreparePython",
+            "RunPreparePython",
+            "RemoveFinanceAppProgramData"
+          )
+
+          $tables = @{
+            "CustomAction" = @()
+            "InstallExecuteSequence" = @()
+          }
+
+          foreach ($table in @("CustomAction", "InstallExecuteSequence")) {
+            $view = $database.OpenView(
+              "SELECT ``Action`` FROM ``$table``"
+            )
+            $view.Execute()
+
+            $actions = @()
+            while ($record = $view.Fetch()) {
+              $actions += $record.StringData(1)
+            }
+
+            $view.Close()
+            $tables[$table] = $actions
+          }
+
+          foreach ($action in $required) {
+            if ($action -notin $tables["CustomAction"]) {
+              throw "El MSI no contiene la acción: $action"
+            }
+
+            if ($action -notin $tables["InstallExecuteSequence"]) {
+              throw "La acción $action no está programada en InstallExecuteSequence."
+            }
+
+            Write-Host "OK: $action está definida y programada."
+          }
+
+          Write-Host "Verificación de acciones MSI completada."
+
       - name: Upload Artifact
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v7
         with:
           name: FinanceApp-MSI
