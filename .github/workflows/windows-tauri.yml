@@ -325,9 +325,21 @@ jobs:
           # Validar RunPreparePython.
           $pythonAction = @(
             $customActions | Where-Object {
-              $_.Action -eq "RunPreparePython"
+              [string]($_.PSObject.Properties["Action"].Value) -ceq "RunPreparePython"
             }
           )
+
+          Write-Host "Coincidencias de RunPreparePython: $($pythonAction.Count)"
+
+          if ($pythonAction.Count -eq 0) {
+            Write-Host "=== Nombres de acciones leídos ==="
+
+            foreach ($item in $customActions) {
+              Write-Host "[$($item.PSObject.Properties['Action'].Value)]"
+            }
+
+            throw "La consulta general no encontró RunPreparePython, aunque la consulta directa sí la encontró."
+          }
 
           if ($pythonAction.Count -ne 1) {
             throw "Se esperaba una definición de RunPreparePython; encontradas: $($pythonAction.Count)."
