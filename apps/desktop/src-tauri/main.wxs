@@ -374,13 +374,11 @@
 
                 <!-- Prepare the bundled Python environment after files are installed. -->
         <CustomAction
-            Id="RunPreparePython"
-            Directory="TARGETDIR"
-            ExeCommand="[CustomActionData]"
-            Return="check"
-            Execute="deferred"
-            Impersonate="no" />
-            
+            Id="SetRunPreparePython"
+            Property="RunPreparePython"
+            Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]resources\prepare-python.ps1&quot; -InstallDir &quot;[INSTALLDIR]&quot;"
+            Execute="immediate" />
+
         <CustomAction
             Id="RunPreparePython"
             Directory="TARGETDIR"
