@@ -136,6 +136,24 @@ jobs:
             throw "Tauri CLI no está disponible"
           }
 
+
+      - name: Diagnose WiX inputs
+        shell: pwsh
+        run: |
+          Write-Host "Working directory: $(Get-Location)"
+
+          $paths = @(
+            "apps/desktop/src-tauri/main.wxs",
+            "apps/desktop/src-tauri/tauri.conf.json",
+            "apps/desktop/src-tauri/custom.wxs"
+          )
+
+          foreach ($path in $paths) {
+            Write-Host "$path : $(Test-Path $path)"
+          }
+
+          Get-Content "apps/desktop/src-tauri/tauri.conf.json" -Raw
+          
       # Genera el MSI y los artefactos de firma del actualizador.
       - name: Build Tauri MSI
         working-directory: apps/desktop
