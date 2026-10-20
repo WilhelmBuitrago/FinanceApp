@@ -38,6 +38,8 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+htmlcov/
+.coverage
 .venv/
 venv/
 
@@ -48,6 +50,9 @@ node_modules/
 dist/
 coverage/
 .npm/
+*.tsbuildinfo
+.eslintcache
+.cache/
 
 # ==================================================
 # Rust / Tauri
@@ -81,12 +86,6 @@ Thumbs.db
 # Private project documentation
 # ==================================================
 /FinanceApp.md
-/docs/experiments/
-/docs/domain/
-/docs/decisions/
-/docs/architecture/
-/docs/api/
-/docs/*.md
 /backend/docs/architecture/
 
 
