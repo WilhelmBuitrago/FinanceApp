@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"financeapp/backend/internal/log"
 )
 
 type ProcessorResult struct {
@@ -17,6 +18,7 @@ type ProcessorResult struct {
 }
 
 func RunProcessor(pdfPath string, accountID string) (*ProcessorResult, error) {
+	log.Info(fmt.Sprintf("RunProcessor start pdf=%s account=%s", pdfPath, accountID))
 	pythonPath := os.Getenv("PROCESSOR_PYTHON")
 	if pythonPath == "" {
 		if os.PathSeparator == '\\' {
@@ -29,6 +31,7 @@ func RunProcessor(pdfPath string, accountID string) (*ProcessorResult, error) {
 	if scriptPath == "" {
 		scriptPath = filepath.Join(os.Getenv("APPDATA"), "FinanceApp", "processor", "src", "main.py")
 	}
+	log.Info(fmt.Sprintf("Processor python=%s script=%s", pythonPath, scriptPath))
 	cmd := exec.Command(pythonPath, scriptPath, pdfPath)
 	cmd.Env = os.Environ()
 	// Ensure artifacts path is available to Python via env
@@ -38,8 +41,10 @@ func RunProcessor(pdfPath string, accountID string) (*ProcessorResult, error) {
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
+		log.Error(fmt.Sprintf("processor execution failed: %v output=%s", err, string(out)))
 		return nil, fmt.Errorf("processor execution failed: %w, output: %s", err, string(out))
 	}
+	log.Info("Processor execution ok")
 	s := strings.TrimSpace(string(out))
 	// Strip leading warning lines before JSON
 	if idx := strings.IndexByte(s, '{'); idx > 0 {
@@ -47,7 +52,9 @@ func RunProcessor(pdfPath string, accountID string) (*ProcessorResult, error) {
 	}
 	var res ProcessorResult
 	if err := json.Unmarshal([]byte(s), &res); err != nil {
+		log.Error(fmt.Sprintf("processor JSON unmarshal failed: %v output=%s", err, s))
 		return nil, err
 	}
+	log.Info(fmt.Sprintf("Processor result processing_id=%s status=%s", res.ProcessingID, res.Status))
 	return &res, nil
 }

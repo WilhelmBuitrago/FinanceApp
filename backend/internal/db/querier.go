@@ -41,6 +41,7 @@ type Querier interface {
 	ListInstallmentsByPlan(ctx context.Context, installmentPlanID string) ([]Installment, error)
 	ListMovementsAll(ctx context.Context) ([]Movement, error)
 	ListMovementsByAccount(ctx context.Context, accountID string) ([]Movement, error)
+	DeleteMovement(ctx context.Context, id string) error
 	ListRelationsByEvent(ctx context.Context, arg ListRelationsByEventParams) ([]EventRelation, error)
 	ListRelationsByMovement(ctx context.Context, arg ListRelationsByMovementParams) ([]MovementRelation, error)
 	ListSourceEntriesByDocument(ctx context.Context, documentID string) ([]SourceEntry, error)

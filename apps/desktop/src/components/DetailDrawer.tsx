@@ -98,6 +98,24 @@ export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerPro
               <CopyId id={movement.ID} />
             </KV>
           </dl>
+          <div className="pt-2">
+            <button
+              onClick={async () => {
+                if (!confirm('¿Eliminar este movimiento? Esta acción no se puede deshacer.')) return;
+                try {
+                  const { deleteMovement } = await import('../api/movements');
+                  await deleteMovement(movement.ID);
+                  onClose();
+                  window.location.reload();
+                } catch (e) {
+                  alert('No se pudo eliminar el movimiento');
+                }
+              }}
+              className="rounded-tk border border-line bg-bg px-3 py-1.5 text-sm font-medium text-neg hover:bg-red-50"
+            >
+              Eliminar movimiento
+            </button>
+          </div>
         </section>
 
         {/* EVENTO FINANCIERO */}

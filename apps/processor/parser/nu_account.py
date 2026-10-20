@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass, asdict
 from typing import List, Dict
 
-from apps.processor.normalization.nu_normalizer import normalize_date, normalize_amount
+from normalization.nu_normalizer import normalize_date, normalize_amount
 
 
 @dataclass

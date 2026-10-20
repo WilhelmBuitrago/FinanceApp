@@ -172,3 +172,12 @@ func (q *Queries) ListMovementsByAccount(ctx context.Context, accountID string) 
 	}
 	return items, nil
 }
+
+const deleteMovement = `-- name: DeleteMovement :exec
+DELETE FROM movements WHERE id = ?
+`
+
+func (q *Queries) DeleteMovement(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteMovement, id)
+	return err
+}

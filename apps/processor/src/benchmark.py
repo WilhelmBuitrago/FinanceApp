@@ -3,7 +3,7 @@
 import os
 import json
 import argparse
-from apps.processor.validation.benchmark import BenchmarkNuParser
+from validation.benchmark import BenchmarkNuParser
 
 
 def discover_processing_ids(artifacts_path: str):

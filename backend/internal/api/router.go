@@ -16,6 +16,16 @@ import (
 	logpkg "financeapp/backend/internal/log"
 )
 
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
 func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository, categoryRepo *repositories.CategoryRepository, confirmHandler func(context.Context, string) error) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
@@ -725,8 +735,40 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 		_, _ = dbConn.ExecContext(r.Context(), "DELETE FROM movements WHERE id = ?", id)
 		w.WriteHeader(http.StatusNoContent)
 	})
-
-	return corsMiddleware(mux)
+	mux.HandleFunc("DELETE /accounts/{id}/movements/{mid}", func(w http.ResponseWriter, r *http.Request) {
+		accountID := r.PathValue("id")
+		mid := r.PathValue("mid")
+		logpkg.LogMsg(fmt.Sprintf("[MOVEMENT DELETE ACCOUNT] account=%s movement=%s", accountID, mid))
+		// verify movement belongs to account
+		mv, err := movementRepo.GetByID(r.Context(), mid)
+		if err != nil {
+			logpkg.LogMsg(fmt.Sprintf("[MOVEMENT DELETE ACCOUNT] not found id=%s err=%v", mid, err))
+			http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+			return
+		}
+		if mv.AccountID != accountID {
+			logpkg.LogMsg(fmt.Sprintf("[MOVEMENT DELETE ACCOUNT] mismatch account=%s movement_account=%s", accountID, mv.AccountID))
+			http.Error(w, `{"error":"unauthorized"}`, http.StatusForbidden)
+			return
+		}
+		if err := movementRepo.Delete(r.Context(), mid); err != nil {
+			logpkg.LogMsg(fmt.Sprintf("[MOVEMENT DELETE ACCOUNT] error=%v", err))
+			http.Error(w, `{"error":"failed to delete"}`, http.StatusInternalServerError)
+			return
+		}
+		logpkg.LogMsg(fmt.Sprintf("[MOVEMENT DELETE ACCOUNT] success id=%s", mid))
+		w.WriteHeader(http.StatusNoContent)
+	})
+	// Logging middleware
+	loggedMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		logpkg.Info(fmt.Sprintf("HTTP %s %s start", r.Method, r.URL.Path))
+		rw := &responseWriter{w, http.StatusOK}
+		mux.ServeHTTP(rw, r)
+		duration := time.Since(start)
+		logpkg.Info(fmt.Sprintf("HTTP %s %s %d %s", r.Method, r.URL.Path, rw.status, duration))
+	})
+	return corsMiddleware(loggedMux)
 }
 
 func writeLookupError(w http.ResponseWriter, err error) {

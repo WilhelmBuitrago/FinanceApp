@@ -53,6 +53,9 @@ coverage/
 # Rust / Tauri
 # ==================================================
 target/
+gen/
+apps/desktop/src-tauri/resources/python-runtime
+apps/desktop/src-tauri/resources/python-wheels
 
 # ==================================================
 # OS / IDE / development tools

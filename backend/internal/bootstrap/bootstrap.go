@@ -12,6 +12,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
+
+	"financeapp/backend/internal/log"
 )
 
 type Dependencies struct {
@@ -35,7 +38,16 @@ func Check() error {
 
 func checkCommand(name, arg string) error {
 	cmd := exec.Command(name, arg)
+	withNoWindow(cmd)
 	return cmd.Run()
+}
+
+func withNoWindow(cmd *exec.Cmd) {
+	if runtime.GOOS == "windows" {
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			CreationFlags: 0x08000000, // CREATE_NO_WINDOW
+		}
+	}
 }
 
 func EnsurePythonEnv(baseDir string) error {
@@ -43,6 +55,7 @@ func EnsurePythonEnv(baseDir string) error {
 	if _, err := os.Stat(venvPath); os.IsNotExist(err) {
 		fmt.Println("Creating Python virtual environment...")
 		cmd := exec.Command("python", "-m", "venv", venvPath)
+		withNoWindow(cmd)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("venv creation failed: %w", err)
 		}
@@ -54,6 +67,7 @@ func EnsurePythonEnv(baseDir string) error {
 	fmt.Println("Installing processor requirements...")
 	reqPath := filepath.Join(baseDir, "apps", "processor", "requirements.txt")
 	cmd := exec.Command(pip, "install", "-r", reqPath)
+	withNoWindow(cmd)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("pip install failed: %w", err)
 	}
@@ -83,10 +97,13 @@ func ProgramDataBase() string {
 }
 
 func EnsurePythonRuntime() error {
+	log.Info("EnsurePythonRuntime start")
 	base := ProgramDataBase()
 	markerPath := filepath.Join(base, ".python-ready")
+	log.Info(fmt.Sprintf("Reading marker %s", markerPath))
 	data, err := os.ReadFile(markerPath)
 	if err != nil {
+		log.Error(fmt.Sprintf("marker missing: %v", err))
 		return fmt.Errorf("python runtime not prepared: marker missing in %s. Run installer", base)
 	}
 	content := string(data)
@@ -102,63 +119,86 @@ func EnsurePythonRuntime() error {
 	// Required fields
 	for _, k := range []string{"version", "requirements_hash", "identifier", "venv_path", "marker_format"} {
 		if _, ok := fields[k]; !ok {
+			log.Error(fmt.Sprintf("marker incomplete missing %s", k))
 			return fmt.Errorf("python runtime marker incomplete: missing %s", k)
 		}
 	}
+	log.Info(fmt.Sprintf("Marker fields ok: version=%s identifier=%s", fields["version"], fields["identifier"]))
 	if fields["version"] != PythonVersion {
+		log.Error("python runtime version mismatch in marker")
 		return fmt.Errorf("python runtime version mismatch in marker")
 	}
 	if fields["marker_format"] != "1" {
+		log.Error("unsupported marker format")
 		return fmt.Errorf("unsupported marker format")
 	}
 	// Validate identifier matches version+hash
 	expectedId := PythonVersion + "-" + fields["requirements_hash"]
 	if fields["identifier"] != expectedId {
+		log.Error(fmt.Sprintf("identifier mismatch: expected %s got %s", expectedId, fields["identifier"]))
 		return fmt.Errorf("identifier mismatch: expected %s got %s", expectedId, fields["identifier"])
 	}
+	log.Info("Identifier validated")
 	// Validate requirements_hash against distributed requirements-lock.txt
 	reqPath := os.Getenv("PROCESSOR_REQUIREMENTS")
 	if reqPath == "" {
+		log.Error("PROCESSOR_REQUIREMENTS not set")
 		return fmt.Errorf("PROCESSOR_REQUIREMENTS not set, cannot validate requirements hash")
 	}
 	hash, err := fileSHA256(reqPath)
 	if err != nil {
+		log.Error(fmt.Sprintf("cannot read requirements-lock: %v", err))
 		return fmt.Errorf("cannot read requirements-lock: %w", err)
 	}
 	if strings.ToLower(hash) != strings.ToLower(fields["requirements_hash"]) {
+		log.Error("requirements hash mismatch")
 		return fmt.Errorf("requirements hash mismatch")
 	}
+	log.Info("Requirements hash validated")
 	venvPathRaw := fields["venv_path"]
 	if !filepath.IsAbs(venvPathRaw) {
+		log.Error("venv_path must be absolute")
 		return fmt.Errorf("venv_path must be absolute")
 	}
 	absBase, _ := filepath.Abs(base)
 	absVenv, _ := filepath.Abs(venvPathRaw)
 	expectedVenv := filepath.Join(absBase, "venvs", fields["identifier"])
 	if absVenv != expectedVenv {
+		log.Error(fmt.Sprintf("venv_path does not match expected %s", expectedVenv))
 		return fmt.Errorf("venv_path does not match expected versioned directory")
 	}
+	log.Info(fmt.Sprintf("venv path validated: %s", venvPathRaw))
 	venvPython := filepath.Join(venvPathRaw, "Scripts", "python.exe")
 	if runtime.GOOS != "windows" {
 		venvPython = filepath.Join(venvPathRaw, "bin", "python")
 	}
 	// Verify python version matches
+	log.Info(fmt.Sprintf("Checking python version at %s", venvPython))
 	if ok, err := pythonVersionMatches(venvPython, PythonVersion); err != nil || !ok {
+		log.Error(fmt.Sprintf("python runtime version mismatch or not found: %s", venvPython))
 		return fmt.Errorf("python runtime version mismatch or not found: %s", venvPython)
 	}
+	log.Info("Python version matches")
 	// Verify imports
+	log.Info("Verifying python imports")
 	if err := verifyImports(venvPython); err != nil {
+		log.Error(fmt.Sprintf("python imports verification failed: %v", err))
 		return fmt.Errorf("python imports verification failed: %w", err)
 	}
+	log.Info("Python imports verified")
 	// Verify exact versions
+	log.Info("Verifying dependency versions")
 	if err := verifyVersions(venvPython); err != nil {
+		log.Error(fmt.Sprintf("dependency version mismatch: %v", err))
 		return fmt.Errorf("dependency version mismatch: %w", err)
 	}
+	log.Info("EnsurePythonRuntime success")
 	return nil
 }
 
 func pythonVersionMatches(path, want string) (bool, error) {
 	cmd := exec.Command(path, "--version")
+	withNoWindow(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		return false, err
@@ -232,6 +272,7 @@ func ensureRuntime(dir string) error {
 		}
 		cmd := exec.Command(pythonExe, getPipPath, "--no-warn-script-location")
 		cmd.Dir = dir
+		withNoWindow(cmd)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("get-pip failed: %w, %s", err, string(out))
 		}
@@ -247,11 +288,13 @@ func createVenv(base, runtimeDir string) error {
 	venvPath := filepath.Join(base, "venv")
 	cmd := exec.Command(pythonExe, "-m", "venv", venvPath)
 	cmd.Env = os.Environ()
+	withNoWindow(cmd)
 	return cmd.Run()
 }
 
 func installRequirements(venvPython string) error {
 	cmd := exec.Command(venvPython, "-m", "pip", "install", "--upgrade", "pip")
+	withNoWindow(cmd)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("pip upgrade failed: %w, %s", err, string(out))
 	}
@@ -264,6 +307,7 @@ func installRequirements(venvPython string) error {
 			args = append(args, "-r", reqPath)
 		}
 		cmd = exec.Command(venvPython, args...)
+		withNoWindow(cmd)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("pip install offline failed: %w, %s", err, string(out))
@@ -279,6 +323,7 @@ func installRequirements(venvPython string) error {
 		}
 		cmd = exec.Command(venvPython, "-m", "pip", "install", "--no-warn-script-location")
 		cmd.Args = append(cmd.Args, pkgs...)
+		withNoWindow(cmd)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("pip install failed: %w, %s", err, string(out))
@@ -286,6 +331,7 @@ func installRequirements(venvPython string) error {
 		return nil
 	}
 	cmd = exec.Command(venvPython, "-m", "pip", "install", "--no-warn-script-location", "-r", reqPath)
+	withNoWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("pip install -r failed: %w, %s", err, string(out))
@@ -295,16 +341,21 @@ func installRequirements(venvPython string) error {
 
 func verifyImports(venvPython string) error {
 	cmd := exec.Command(venvPython, "-c", "import pdfplumber, pydantic, fitz")
+	withNoWindow(cmd)
 	return cmd.Run()
 }
 
 func verifyVersions(venvPython string) error {
 	cmd := exec.Command(venvPython, "-c", "import pdfplumber, pydantic, fitz; import sys; print(pdfplumber.__version__); print(pydantic.__version__); import fitz; print(fitz.__version__)")
+	withNoWindow(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		return err
 	}
-	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	lines := strings.Split(strings.TrimSpace(strings.ReplaceAll(string(out), "\r\n", "\n")), "\n")
+	for i := range lines {
+		lines[i] = strings.TrimSpace(lines[i])
+	}
 	if len(lines) < 3 {
 		return fmt.Errorf("unexpected version output")
 	}

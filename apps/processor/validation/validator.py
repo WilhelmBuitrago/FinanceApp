@@ -1,7 +1,7 @@
 """Basic validator for parsed Nu Account documents."""
 
 from typing import List, Dict
-from apps.processor.parser.nu_account import ParsedNuAccountDocument, ParsedMovement
+from parser.nu_account import ParsedNuAccountDocument, ParsedMovement
 
 
 class NuAccountValidator:

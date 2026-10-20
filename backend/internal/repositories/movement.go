@@ -118,6 +118,16 @@ func (r *MovementRepository) List(ctx context.Context) ([]domain.Movement, error
 	return out, nil
 }
 
+func (r *MovementRepository) Delete(ctx context.Context, id string) error {
+	if r.db.Querier == nil {
+		return ErrUnavailable
+	}
+	if err := r.db.Querier.DeleteMovement(ctx, id); err != nil {
+		return translateError(err)
+	}
+	return nil
+}
+
 func (r *MovementRepository) Update(ctx context.Context, mv domain.Movement) (domain.Movement, error) {
 	return domain.Movement{}, ErrInvalid
 }

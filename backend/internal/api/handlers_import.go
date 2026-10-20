@@ -12,6 +12,7 @@ import (
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/domain/entities"
 	"financeapp/backend/internal/repositories"
+	"financeapp/backend/internal/log"
 )
 
 type UploadResponse struct {
@@ -34,12 +35,15 @@ func NewUploadHandler(docRepo *repositories.DocumentRepository, jobRepo *reposit
 }
 
 func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
+	log.Info("UploadHandler Handle start")
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		log.Error(fmt.Sprintf("ParseMultipartForm error: %v", err))
 		http.Error(w, "invalid multipart", http.StatusBadRequest)
 		return
 	}
 	accountID := r.FormValue("account_id")
 	if accountID == "" {
+		log.Error("account_id missing")
 		http.Error(w, `{"error":"account_id required"}`, http.StatusBadRequest)
 		return
 	}
@@ -47,24 +51,29 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	// Validate account exists and active
 	acc, err := h.accountRepo.GetByID(r.Context(), accountID)
 	if err != nil {
+		log.Error(fmt.Sprintf("account not found %s: %v", accountID, err))
 		http.Error(w, `{"error":"account not found"}`, http.StatusBadRequest)
 		return
 	}
 	if acc.Status != "ACTIVE" {
+		log.Error(fmt.Sprintf("account not active %s status=%s", accountID, acc.Status))
 		http.Error(w, `{"error":"account not active"}`, http.StatusBadRequest)
 		return
 	}
 	if acc.Institution == nil || *acc.Institution != "NU" {
+		log.Error(fmt.Sprintf("institution not supported %s", accountID))
 		http.Error(w, `{"error":"institution not supported"}`, http.StatusBadRequest)
 		return
 	}
 	// Optional entity verification for accessibility
 	if entity != "" && acc.Institution != nil && entity != *acc.Institution {
+		log.Error(fmt.Sprintf("entity mismatch account %s entity=%s institution=%s", accountID, entity, *acc.Institution))
 		http.Error(w, `{"error":"entity does not match account institution"}`, http.StatusBadRequest)
 		return
 	}
 	file, hdr, err := r.FormFile("file")
 	if err != nil {
+		log.Error(fmt.Sprintf("file missing: %v", err))
 		http.Error(w, "file missing", http.StatusBadRequest)
 		return
 	}

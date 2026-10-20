@@ -9,6 +9,7 @@ import (
 
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/domain"
+	"financeapp/backend/internal/log"
 	"financeapp/backend/internal/repositories"
 	"github.com/google/uuid"
 )
@@ -23,17 +24,22 @@ func NewImportService(p *repositories.Persistence, ijRepo *repositories.ImportJo
 }
 
 func (s *ImportService) Import(ctx context.Context, jobID string) error {
+	log.Info(fmt.Sprintf("ImportService.Import start jobID=%s", jobID))
 	job, err := s.importJobRepo.GetByID(ctx, jobID)
 	if err != nil {
+		log.Error(fmt.Sprintf("get job error: %v", err))
 		return fmt.Errorf("get job: %w", err)
 	}
 	if job.Status != "VALIDATING" && job.Status != "PROCESSING" {
+		log.Error(fmt.Sprintf("job status not importable %s", job.Status))
 		return fmt.Errorf("job status %s not importable", job.Status)
 	}
 	if job.ProcessingID == nil || *job.ProcessingID == "" {
+		log.Error("job missing processing_id")
 		return fmt.Errorf("job missing processing_id")
 	}
 	processingID := *job.ProcessingID
+	log.Info(fmt.Sprintf("processingID=%s", processingID))
 
 	docRepo := repositories.NewDocumentRepository(&repositories.DB{Querier: s.persistence.Querier})
 	doc, err := docRepo.GetByID(ctx, job.DocumentID)
@@ -45,9 +51,11 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 	}
 	accountID := *doc.AccountID
 
+	log.Info("Import: reading parsed.json")
 	parsedPath := fmt.Sprintf("C:\\Users\\wilhe\\Documents\\FinanceApp\\data\\artifacts\\%s\\parsed.json", processingID)
 	data, err := os.ReadFile(parsedPath)
 	if err != nil {
+		log.Error("Import: failed to read parsed.json")
 		return fmt.Errorf("read parsed.json: %w", err)
 	}
 	var parsed struct {
@@ -67,12 +75,16 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 		} `json:"validation"`
 	}
 	if err := json.Unmarshal(data, &parsed); err != nil {
+		log.Error("Import: unmarshal parsed.json failed")
 		return fmt.Errorf("unmarshal parsed: %w", err)
 	}
+	log.Info(fmt.Sprintf("Import: parsed %d movements", len(parsed.Movements)))
 	// Validation check
+	log.Info("Import: reading manifest.json")
 	manifestPath := fmt.Sprintf("C:\\Users\\wilhe\\Documents\\FinanceApp\\data\\artifacts\\%s\\manifest.json", processingID)
 	mData, err := os.ReadFile(manifestPath)
 	if err != nil {
+		log.Error("Import: failed to read manifest.json")
 		return fmt.Errorf("read manifest: %w", err)
 	}
 	var manifest struct {
@@ -81,19 +93,25 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 		} `json:"validation"`
 	}
 	if err := json.Unmarshal(mData, &manifest); err != nil {
+		log.Error("Import: unmarshal manifest failed")
 		return fmt.Errorf("unmarshal manifest: %w", err)
 	}
 	if !manifest.Validation.Valid {
+		log.Error("Import: validation not valid")
 		return fmt.Errorf("validation not valid")
 	}
+	log.Info("Import: validation ok")
 
 	// Begin transaction
+	log.Info("Import: beginning transaction")
 	tx, err := s.persistence.DB.BeginTx(ctx, nil)
 	if err != nil {
+		log.Error("Import: begin tx failed")
 		return fmt.Errorf("begin tx: %w", err)
 	}
 	defer func() {
 		if err != nil {
+			log.Warn("Import: transaction rollback")
 			tx.Rollback()
 		}
 	}()
@@ -107,10 +125,13 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 	now := time.Now().UTC().Format(time.RFC3339)
 
 	// Prevent re-import
+	log.Info("Import: updating job status to IMPORTING")
 	job.Status = "IMPORTING"
 	if _, err := s.importJobRepo.Update(ctx, job); err != nil {
+		log.Error("Import: failed to update job status")
 		return fmt.Errorf("update job to importing: %w", err)
 	}
+	log.Info(fmt.Sprintf("Import: processing %d movements", len(parsed.Movements)))
 
 	for _, m := range parsed.Movements {
 		seID := uuid.NewString()
@@ -171,14 +192,19 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 	}
 
 	// Update job to SUCCESS within same tx
+	log.Info("Import: updating job status to SUCCESS")
 	_, err = tx.ExecContext(ctx, `UPDATE import_jobs SET status=?, finished_at=? WHERE id=?`, "SUCCESS", now, jobID)
 	if err != nil {
+		log.Error("Import: failed to update job to SUCCESS")
 		return fmt.Errorf("update job success: %w", err)
 	}
 
+	log.Info("Import: committing transaction")
 	if err := tx.Commit(); err != nil {
+		log.Error("Import: commit failed")
 		return fmt.Errorf("commit: %w", err)
 	}
+	log.Info("Import complete")
 	return nil
 }
 

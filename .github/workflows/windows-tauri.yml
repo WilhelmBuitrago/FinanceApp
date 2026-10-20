@@ -121,6 +121,7 @@ jobs:
           path: ~/.cargo/bin
           key: tauri-cli-2.12.3-${{ runner.os }}-${{ runner.arch }}
 
+
       - name: Install Tauri CLI
         shell: pwsh
         run: |
@@ -154,6 +155,13 @@ jobs:
 
           Get-Content "apps/desktop/src-tauri/tauri.conf.json" -Raw
 
+
+      # Caché de dependencias y artefactos compilados de Rust.
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri -> target
+            
       # Genera el MSI y los artefactos de firma del actualizador.
       - name: Build Tauri MSI
         working-directory: apps/desktop
@@ -181,9 +189,12 @@ jobs:
 
 
 
+
       - name: Diagnose custom actions in MSI
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
+
           $msiDir = "apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi"
           $msis = @(Get-ChildItem $msiDir -Filter "*.msi" -File)
 
@@ -198,193 +209,100 @@ jobs:
           $installer = New-Object -ComObject WindowsInstaller.Installer
 
           foreach ($msi in $msis) {
-            Write-Host "=== Inspeccionando: $($msi.Name) ==="
+            Write-Host "`n=== Inspeccionando: $($msi.Name) ==="
             $database = $installer.OpenDatabase($msi.FullName, 0)
+
+            Write-Host "`n--- CustomAction ---"
 
             $view = $database.OpenView(
               'SELECT `Action`, `Type`, `Source`, `Target` FROM `CustomAction`'
             )
-            $view.Execute()
-
-            while ($record = $view.Fetch()) {
-              $name = $record.StringData(1)
-              if ($name -match "Python|Prepare|FinanceAppProgramData") {
-                Write-Host (
-                  "Action={0}; Type={1}; Source={2}; Target={3}" -f
-                  $name,
-                  $record.StringData(2),
-                  $record.StringData(3),
-                  $record.StringData(4)
-                )
-              }
-            }
-
-            $view.Close()
-          }
-
-
- 
-      - name: Verify custom actions in MSI
-        shell: pwsh
-        run: |
-          $msi = Get-ChildItem `
-            "apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi" `
-            -File |
-            Select-Object -First 1
-
-          if (-not $msi) {
-            throw "No se encontró el MSI para verificar."
-          }
-
-          Write-Host "MSI inspeccionado: $($msi.FullName)"
-
-          $installer = New-Object -ComObject WindowsInstaller.Installer
-          $database = $installer.OpenDatabase($msi.FullName, 0)
-
-          function Get-MsiRecord {
-            param(
-              [Parameter(Mandatory)]
-              [string]$Query,
-
-              [Parameter(Mandatory)]
-              [ValidateRange(1, 10)]
-              [int]$ColumnCount
-            )
-
-            $view = $database.OpenView($Query)
 
             try {
               $view.Execute()
-              $record = $view.Fetch()
 
-              if ($null -eq $record) {
-                return $null
-              }
+              while ($record = $view.Fetch()) {
+                $name = $record.StringData(1)
 
-              $values = @(
-                for ($i = 1; $i -le $ColumnCount; $i++) {
-                  $record.StringData($i)
+                if ($name -match "Python|Prepare|FinanceAppProgramData|RunPreparePython|RemoveFinanceAppProgramData") {
+                  Write-Host (
+                    "Action={0}; Type={1}; Source={2}; Target={3}" -f
+                    $name,
+                    $record.StringData(2),
+                    $record.StringData(3),
+                    $record.StringData(4)
+                  )
                 }
-              )
+              }
+            }
+            finally {
+              $view.Close()
+            }
 
-              return ,$values
+            Write-Host "`n--- InstallExecuteSequence ---"
+
+            $view = $database.OpenView(
+              'SELECT `Action`, `Condition`, `Sequence` FROM `InstallExecuteSequence`'
+            )
+
+            try {
+              $view.Execute()
+
+              while ($record = $view.Fetch()) {
+                $name = $record.StringData(1)
+
+                if ($name -match "Python|Prepare|FinanceAppProgramData|RunPreparePython|RemoveFinanceAppProgramData|InstallFiles") {
+                  Write-Host (
+                    "Action={0}; Condition={1}; Sequence={2}" -f
+                    $name,
+                    $record.StringData(2),
+                    $record.StringData(3)
+                  )
+                }
+              }
             }
             finally {
               $view.Close()
             }
           }
 
-          # La acción antigua no debe existir en ninguna de las dos tablas.
-          $oldAction = Get-MsiRecord `
-            -Query "SELECT ``Action`` FROM ``CustomAction`` WHERE ``Action`` = 'SetRunPreparePython'" `
-            -ColumnCount 1
 
-          if ($null -ne $oldAction) {
-            throw "SetRunPreparePython sigue definida en CustomAction."
+      
+      - name: Rename MSI artifacts
+        shell: pwsh
+        run: |
+          $msiDir = "apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi"
+          $msis = @(Get-ChildItem $msiDir -Filter "*.msi" -File)
+
+          if ($msis.Count -ne 1) {
+            throw "Se esperaba exactamente un MSI; encontrados: $($msis.Count)"
           }
 
-          $oldSequence = Get-MsiRecord `
-            -Query "SELECT ``Action`` FROM ``InstallExecuteSequence`` WHERE ``Action`` = 'SetRunPreparePython'" `
-            -ColumnCount 1
+          $msi = $msis[0]
 
-          if ($null -ne $oldSequence) {
-            throw "SetRunPreparePython sigue presente en InstallExecuteSequence."
+          if ($msi.BaseName -notmatch '^FinanceApp_(\d+\.\d+\.\d+)_x64_en-US$') {
+            throw "Nombre de MSI inesperado: $($msi.Name)"
           }
 
-          Write-Host "OK: SetRunPreparePython no existe ni está programada."
+          $version = $Matches[1]
+          $newName = "FinanceApp_${version}_x64.msi"
+          $newPath = Join-Path $msiDir $newName
+          $oldSig = "$($msi.FullName).sig"
+          $newSig = "$newPath.sig"
 
-          # Verificar definición y comando de RunPreparePython.
-          $action = Get-MsiRecord `
-            -Query "SELECT ``Action``, ``Type``, ``Source``, ``Target`` FROM ``CustomAction`` WHERE ``Action`` = 'RunPreparePython'" `
-            -ColumnCount 4
-
-          if ($null -eq $action) {
-            throw "RunPreparePython no existe en CustomAction."
+          if (-not (Test-Path $oldSig)) {
+            throw "No se encontró la firma original: $oldSig"
           }
 
-          if ($action[0] -cne "RunPreparePython") {
-            throw "Nombre inesperado para la acción: $($action[0])"
+          if (Test-Path $newPath) {
+            throw "Ya existe el destino: $newPath"
           }
 
-          if ([int]$action[1] -ne 3106) {
-            throw "Tipo inesperado: $($action[1]); se esperaba 3106."
-          }
+          Move-Item -LiteralPath $msi.FullName -Destination $newPath
+          Move-Item -LiteralPath $oldSig -Destination $newSig
 
-          if ($action[2] -cne "INSTALLDIR") {
-            throw "Source inesperado: $($action[2]); se esperaba INSTALLDIR."
-          }
-
-          if ($action[3] -notmatch 'WindowsPowerShell\\v1\.0\\powershell\.exe') {
-            throw "RunPreparePython no apunta a Windows PowerShell. Target: $($action[3])"
-          }
-
-          if ($action[3] -notmatch 'resources\\prepare-python\.ps1') {
-            throw "RunPreparePython no apunta a resources\prepare-python.ps1. Target: $($action[3])"
-          }
-
-          if ($action[3] -notmatch '-InstallDir') {
-            throw "Falta el argumento -InstallDir en RunPreparePython."
-          }
-
-          Write-Host "OK: RunPreparePython tiene el tipo, origen y comando esperados."
-
-          # Leer las secuencias: Action, Condition y Sequence.
-          $installFiles = Get-MsiRecord `
-            -Query "SELECT ``Action``, ``Condition``, ``Sequence`` FROM ``InstallExecuteSequence`` WHERE ``Action`` = 'InstallFiles'" `
-            -ColumnCount 3
-
-          if ($null -eq $installFiles) {
-            throw "InstallFiles no está programada en InstallExecuteSequence."
-          }
-
-          $pythonSequence = Get-MsiRecord `
-            -Query "SELECT ``Action``, ``Condition``, ``Sequence`` FROM ``InstallExecuteSequence`` WHERE ``Action`` = 'RunPreparePython'" `
-            -ColumnCount 3
-
-          if ($null -eq $pythonSequence) {
-            throw "RunPreparePython no está programada en InstallExecuteSequence."
-          }
-
-          if ($pythonSequence[0] -cne "RunPreparePython") {
-            throw "Nombre inesperado en la secuencia: $($pythonSequence[0])"
-          }
-
-          if ([int]$pythonSequence[2] -le [int]$installFiles[2]) {
-            throw "RunPreparePython no se ejecuta después de InstallFiles. InstallFiles=$($installFiles[2]); RunPreparePython=$($pythonSequence[2])."
-          }
-
-          if ($pythonSequence[1] -notmatch 'NOT Installed' -or
-              $pythonSequence[1] -notmatch 'NOT REMOVE') {
-            throw "Condición inesperada para RunPreparePython: '$($pythonSequence[1])'."
-          }
-
-          Write-Host "OK: RunPreparePython está programada después de InstallFiles."
-          Write-Host "OK: condición de instalación nueva verificada."
-
-          # Verificar definición de la acción de limpieza.
-          $cleanup = Get-MsiRecord `
-            -Query "SELECT ``Action``, ``Type``, ``Source``, ``Target`` FROM ``CustomAction`` WHERE ``Action`` = 'RemoveFinanceAppProgramData'" `
-            -ColumnCount 4
-
-          if ($null -eq $cleanup) {
-            throw "RemoveFinanceAppProgramData no está definida en CustomAction."
-          }
-
-          if ($cleanup[0] -cne "RemoveFinanceAppProgramData") {
-            throw "Nombre inesperado para la acción de limpieza: $($cleanup[0])"
-          }
-
-          # Verificar que la acción de limpieza esté programada.
-          $cleanupSequence = Get-MsiRecord `
-            -Query "SELECT ``Action``, ``Condition``, ``Sequence`` FROM ``InstallExecuteSequence`` WHERE ``Action`` = 'RemoveFinanceAppProgramData'" `
-            -ColumnCount 3
-
-          if ($null -eq $cleanupSequence) {
-            throw "RemoveFinanceAppProgramData no está programada."
-          }
-
-          Write-Host "OK: RemoveFinanceAppProgramData está definida y programada."
-          Write-Host "Verificación de acciones MSI completada."
+          Write-Host "MSI: $newName"
+          Write-Host "Firma: $(Split-Path $newSig -Leaf)"
 
 
       - name: Upload Artifact

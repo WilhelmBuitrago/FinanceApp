@@ -2,10 +2,10 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from apps.processor.parser.nu_account import NuAccountParser, ParsedNuAccountDocument
-from apps.processor.normalization.nu_normalizer import normalize_date, normalize_amount
+from parser.nu_account import NuAccountParser, ParsedNuAccountDocument
+from normalization.nu_normalizer import normalize_date, normalize_amount
 
 TEST_ARTIFACT_ID = 'cfa4f1ae-60da-45ee-b623-4887579661b8'
 

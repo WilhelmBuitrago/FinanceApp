@@ -13,13 +13,12 @@
 <?endif?>
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-    <Product
-            Id="*"
-            Name="{{product_name}}"
-            UpgradeCode="{{upgrade_code}}"
-            Language="!(loc.TauriLanguage)"
-            Manufacturer="{{manufacturer}}"
-            Version="{{version}}">
+        <Product Id="*"
+                Name="{{product_name}}"
+                UpgradeCode="{{upgrade_code}}"
+                Language="!(loc.TauriLanguage)"
+                Manufacturer="{{manufacturer}}"
+                Version="{{version}}">
 
         <Package Id="*"
                  Keywords="Installer"
@@ -29,6 +28,8 @@
                  InstallScope="perMachine"
                  SummaryCodepage="!(loc.TauriCodepage)"/>
 
+
+        <!-- <Property Id="ARPNOREMOVE" Value="1" /> --> 
         <!-- https://docs.microsoft.com/en-us/windows/win32/msi/reinstallmode -->
         <!-- reinstall all files; rewrite all registry entries; reinstall all shortcuts -->
         <Property Id="REINSTALLMODE" Value="amus" />
@@ -38,11 +39,14 @@
         <!-- Property to forward cli args to the launched app to not lose those of the pre-update instance -->
         <Property Id="LAUNCHAPPARGS" Secure="yes" />
 
+        <!-- Property to remove APPDATA files if user accepting -->
+        <Property Id="REMOVE_APPDATA" Secure="yes" />
         {{#if allow_downgrades}}
             <MajorUpgrade Schedule="afterInstallInitialize" AllowDowngrades="yes" />
         {{else}}
             <MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" AllowSameVersionUpgrades="yes" />
         {{/if}}
+
 
         <InstallExecuteSequence>
             <RemoveShortcuts>Installed AND NOT UPGRADINGPRODUCTCODE</RemoveShortcuts>
@@ -90,21 +94,68 @@
 
             <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
 
-            {{#unless license}}
-            <Publish Dialog="WelcomeDlg"
-                     Control="Next"
-                     Event="NewDialog"
-                     Value="InstallDirDlg"
-                     Order="2">1</Publish>
-            <Publish Dialog="InstallDirDlg"
-                     Control="Back"
-                     Event="NewDialog"
-                     Value="WelcomeDlg"
-                     Order="2">1</Publish>
-            {{/unless}}
+            <!-- Ask whether user data should be deleted during maintenance removal. -->
+        
+            <Dialog Id="AppDataRemovalDlg"
+                    Width="370"
+                    Height="270"
+                    Title="[ProductName] - Desinstalación">
+
+                <Control Id="Title"
+                        Type="Text"
+                        X="20" Y="18"
+                        Width="330" Height="30"
+                        Transparent="yes"
+                        NoPrefix="yes"
+                        Text="¿Qué quieres hacer con tus datos personales?" />
+
+                <Control Id="Description"
+                        Type="Text"
+                        X="20" Y="55"
+                        Width="330" Height="55"
+                        Text="Puedes conservar tus datos para utilizarlos si instalas FinanceApp nuevamente, o eliminarlos junto con la aplicación." />
+
+                <Control Id="DeleteAppData"
+                        Type="CheckBox"
+                        X="20" Y="125"
+                        Width="330" Height="30"
+                        Property="REMOVE_APPDATA"
+                        CheckBoxValue="1"
+                        Text="Eliminar también los datos personales de FinanceApp" />
+
+                <Control Id="Back"
+                        Type="PushButton"
+                        X="175" Y="243"
+                        Width="56" Height="17"
+                        Text="Atrás">
+                    <Publish Event="NewDialog"
+                            Value="MaintenanceTypeDlg">1</Publish>
+                </Control>
+
+                <Control Id="Next"
+                        Type="PushButton"
+                        X="235" Y="243"
+                        Width="70" Height="17"
+                        Default="yes"
+                        Text="Continuar">
+                    <Publish Event="NewDialog"
+                            Value="VerifyReadyDlg">1</Publish>
+                </Control>
+
+                <Control Id="Cancel"
+                        Type="PushButton"
+                        X="309" Y="243"
+                        Width="50" Height="17"
+                        Cancel="yes"
+                        Text="Cancelar">
+                    <Publish Event="SpawnDialog"
+                            Value="CancelDlg">1</Publish>
+                </Control>
+
+            </Dialog>
         </UI>
 
-        <UIRef Id="WixUI_InstallDir" />
+        <UIRef Id="FinanceAppWixUI_InstallDir" />
 
         <Directory Id="TARGETDIR" Name="SourceDir">
             <Directory Id="DesktopFolder" Name="Desktop">
@@ -181,7 +232,8 @@
                           Name="Uninstall {{product_name}}"
                           Description="Uninstalls {{product_name}}"
                           Target="[System64Folder]msiexec.exe"
-                          Arguments="/x [ProductCode]" />
+                          Arguments="/i [ProductCode]"
+                          WorkingDirectory="System64Folder" />
 
                 <RemoveFolder Id="INSTALLDIR" On="uninstall" />
 
@@ -192,6 +244,19 @@
                                Value="1"
                                KeyPath="yes" />
             </Component>
+
+            <Component Id="CMP_NoRemove" Guid="*">
+                <RegistryKey
+                    Root="HKLM"
+                    Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\[ProductCode]">
+                    <RegistryValue
+                        Name="NoRemove"
+                        Type="integer"
+                        Value="1"
+                        KeyPath="yes" />
+                </RegistryKey>
+            </Component>
+
         </DirectoryRef>
 
         <DirectoryRef Id="ApplicationProgramsFolder">
@@ -230,6 +295,7 @@
                 Absent="disallow">
 
             <ComponentRef Id="RegistryEntries"/>
+            <ComponentRef Id="CMP_NoRemove" />
 
             {{#each resource_file_ids as |resource_file_id| ~}}
                 <ComponentRef Id="{{ resource_file_id }}"/>
@@ -416,6 +482,15 @@
             Execute="deferred"
             Impersonate="no" />
 
+        <!-- Remove roaming AppData only when the user explicitly opts in. -->
+        <CustomAction
+            Id="RemoveFinanceAppAppData"
+            Directory="TARGETDIR"
+            ExeCommand="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -Command &quot;$target = Join-Path $env:APPDATA 'FinanceApp'; if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }&quot;"
+            Return="ignore"
+            Execute="deferred"
+            Impersonate="yes" />
+
         <InstallExecuteSequence>
             <!-- Previous sequence retained for reference:
             <Custom
@@ -435,9 +510,105 @@
                 Action="RemoveFinanceAppProgramData"
                 After="RemoveFiles">REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
 
+
+            <Custom
+                Action="RemoveFinanceAppAppData"
+                After="RemoveFinanceAppProgramData">REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE AND REMOVE_APPDATA="1"</Custom>
+
+
             <Custom Action="LaunchApplication" After="InstallFinalize">AUTOLAUNCHAPP AND NOT Installed</Custom>
         </InstallExecuteSequence>
 
         <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLDIR]" After="CostFinalize"/>
     </Product>
+
+
+    
+    <Fragment>
+        <UI Id="FinanceAppWixUI_InstallDir">
+            <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
+            <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+            <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+
+            <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+            <Property Id="WixUI_Mode" Value="InstallDir" />
+
+            <DialogRef Id="BrowseDlg" />
+            <DialogRef Id="DiskCostDlg" />
+            <DialogRef Id="ErrorDlg" />
+            <DialogRef Id="FatalError" />
+            <DialogRef Id="FilesInUse" />
+            <DialogRef Id="MsiRMFilesInUse" />
+            <DialogRef Id="PrepareDlg" />
+            <DialogRef Id="ProgressDlg" />
+            <DialogRef Id="ResumeDlg" />
+            <DialogRef Id="UserExit" />
+
+            <Publish Dialog="BrowseDlg" Control="OK"
+                    Event="DoAction" Value="WixUIValidatePath" Order="3">1</Publish>
+            <Publish Dialog="BrowseDlg" Control="OK"
+                    Event="SpawnDialog" Value="InvalidDirDlg" Order="4"><![CDATA[NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID<>"1"]]></Publish>
+
+            <Publish Dialog="ExitDialog" Control="Finish"
+                    Event="EndDialog" Value="Return" Order="999">1</Publish>
+
+            <Publish Dialog="WelcomeDlg" Control="Next"
+                    Event="NewDialog" Value="VerifyReadyDlg">Installed AND PATCH</Publish>
+
+            {{#unless license}}
+            <Publish Dialog="WelcomeDlg" Control="Next"
+                    Event="NewDialog" Value="InstallDirDlg" Order="2">NOT Installed</Publish>
+            <Publish Dialog="InstallDirDlg" Control="Back"
+                    Event="NewDialog" Value="WelcomeDlg" Order="2">NOT Installed</Publish>
+            {{else}}
+            <Publish Dialog="WelcomeDlg" Control="Next"
+                    Event="NewDialog" Value="LicenseAgreementDlg">NOT Installed</Publish>
+            <Publish Dialog="LicenseAgreementDlg" Control="Back"
+                    Event="NewDialog" Value="WelcomeDlg">1</Publish>
+            <Publish Dialog="LicenseAgreementDlg" Control="Next"
+                    Event="NewDialog" Value="InstallDirDlg">LicenseAccepted = "1"</Publish>
+            <Publish Dialog="InstallDirDlg" Control="Back"
+                    Event="NewDialog" Value="LicenseAgreementDlg">1</Publish>
+            {{/unless}}
+
+            <Publish Dialog="InstallDirDlg" Control="Next"
+                    Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish>
+            <Publish Dialog="InstallDirDlg" Control="Next"
+                    Event="DoAction" Value="WixUIValidatePath" Order="2">NOT WIXUI_DONTVALIDATEPATH</Publish>
+            <Publish Dialog="InstallDirDlg" Control="Next"
+                    Event="SpawnDialog" Value="InvalidDirDlg" Order="3"><![CDATA[NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID<>"1"]]></Publish>
+            <Publish Dialog="InstallDirDlg" Control="Next"
+                    Event="NewDialog" Value="VerifyReadyDlg" Order="4"><![CDATA[WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID="1"]]></Publish>
+            <Publish Dialog="InstallDirDlg" Control="ChangeFolder"
+                    Property="_BrowseProperty" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish>
+            <Publish Dialog="InstallDirDlg" Control="ChangeFolder"
+                    Event="SpawnDialog" Value="BrowseDlg" Order="2">1</Publish>
+
+            <Publish Dialog="VerifyReadyDlg" Control="Back"
+                    Event="NewDialog" Value="InstallDirDlg" Order="1">NOT Installed</Publish>
+            <Publish Dialog="VerifyReadyDlg" Control="Back"
+                    Event="NewDialog" Value="MaintenanceTypeDlg" Order="2">Installed AND NOT PATCH</Publish>
+            <Publish Dialog="VerifyReadyDlg" Control="Back"
+                    Event="NewDialog" Value="WelcomeDlg" Order="2">Installed AND PATCH</Publish>
+
+            <Publish Dialog="MaintenanceWelcomeDlg" Control="Next"
+                    Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+
+            <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton"
+                    Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+
+            <!-- Route removal through the AppData confirmation dialog. -->
+            <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton"
+                Event="NewDialog" Value="AppDataRemovalDlg"
+                Order="2">1</Publish>
+
+            <Publish Dialog="MaintenanceTypeDlg" Control="Back"
+                    Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
+
+            <Property Id="ARPNOMODIFY" Value="1" />
+        </UI>
+
+        <UIRef Id="WixUI_Common" />
+    </Fragment>
+
 </Wix>

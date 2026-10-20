@@ -3,7 +3,7 @@
 import json
 import os
 from typing import List, Dict, Any
-from apps.processor.parser.nu_account import NuAccountParser
+from parser.nu_account import NuAccountParser
 
 
 class BenchmarkNuParser:

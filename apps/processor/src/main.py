@@ -2,13 +2,16 @@ import os
 import sys
 import uuid
 import warnings
+import logging
+from pathlib import Path
 
 os.environ['PYTHONWARNINGS'] = 'ignore'
 warnings.filterwarnings('ignore')
-# Make project root importable for apps.processor.*
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-sys.path.insert(0, project_root)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', stream=sys.stderr)
+log = logging.getLogger('processor')
+# Normalize path and add processor root to sys.path
+processor_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(processor_root))
 from extraction.inspection import inspect_pdf
 from extraction.extractor import extract_native_text
 from extraction.artifacts import write_artifacts
@@ -20,14 +23,20 @@ CONTRACT_VERSION = "1"
 
 def process_pdf(pdf_path):
     processing_id = str(uuid.uuid4())
+    log.info(f"process_pdf start pdf={pdf_path} processing_id={processing_id}")
+    log.info(f"inspection start")
     inspection = inspect_pdf(pdf_path)
+    log.info(f"inspection done sha256={inspection['file']['sha256']}")
+    log.info(f"extraction start")
     extraction = extract_native_text(pdf_path)
+    log.info(f"extraction done")
     artifacts_base = os.environ.get('ARTIFACTS_PATH')
     if not artifacts_base:
-        base = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-        artifacts_base = os.path.join(base, "data", "artifacts")
+        base = Path(__file__).resolve().parent.parent.parent
+        artifacts_base = str(base / "data" / "artifacts")
     artifact_dir = os.path.join(artifacts_base, processing_id)
     os.makedirs(artifact_dir, exist_ok=True)
+    log.info(f"writing artifacts to {artifact_dir}")
     write_artifacts(artifact_dir, inspection, extraction)
 
     # Create minimal manifest so parser can load it
@@ -35,12 +44,17 @@ def process_pdf(pdf_path):
     minimal_manifest = {"processing_id": processing_id, "input": {"sha256": inspection["file"]["sha256"]}}
     with open(os.path.join(artifact_dir, "manifest.json"), "w", encoding="utf-8") as f:
         _json.dump(minimal_manifest, f)
+    log.info(f"minimal manifest written")
 
     # Parsing & validation for Nu account statements
-    parser = NuAccountParser(processing_id)
+    log.info(f"parser start")
+    parser = NuAccountParser(processing_id, base_path=artifacts_base)
     parsed_doc = parser.parse()
+    log.info(f"parser done movements={len(parsed_doc.movements)}")
+    log.info(f"validation start")
     validator = NuAccountValidator()
     validation_result = validator.validate(parsed_doc)
+    log.info(f"validation done valid={validation_result.get('valid')}")
 
     manifest = {
         "processing_id": processing_id,
@@ -72,6 +86,7 @@ def process_pdf(pdf_path):
     import json
     with open(os.path.join(artifact_dir, "manifest.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
+    log.info(f"manifest written")
     # Save parsed document for later use
     with open(os.path.join(artifact_dir, "parsed.json"), "w", encoding="utf-8") as f:
         json.dump({
@@ -79,6 +94,8 @@ def process_pdf(pdf_path):
             "summary": parsed_doc.summary,
             "movements": [m.__dict__ for m in parsed_doc.movements]
         }, f, ensure_ascii=False, indent=2)
+    log.info(f"parsed.json written movements={len(parsed_doc.movements)}")
+    log.info(f"process_pdf complete")
     return manifest
 
 if __name__ == "__main__":
@@ -91,5 +108,6 @@ if __name__ == "__main__":
         m = process_pdf(sys.argv[1])
         sys.stdout.write(json.dumps(m, ensure_ascii=False))
     except Exception as e:
+        log.error(f"Processor error: {e}", exc_info=True)
         sys.stderr.write(f"Processor error: {e}\n")
         sys.exit(1)

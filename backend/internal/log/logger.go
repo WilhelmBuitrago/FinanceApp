@@ -10,6 +10,14 @@ import (
 var runID int
 var file *os.File
 
+func logWrite(msg string) {
+	if file == nil {
+		return
+	}
+	ts := time.Now().Format("15:04:05")
+	fmt.Fprintf(file, "[%s] %s\n", ts, msg)
+}
+
 func InitRun(logDir string) (*os.File, error) {
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return nil, err
@@ -42,4 +50,20 @@ func LogMsg(msg string) {
 	}
 	ts := time.Now().Format("15:04:05")
 	fmt.Fprintf(file, "[%s] %s\n", ts, msg)
+}
+
+func Info(msg string) {
+	logWrite("[INFO] " + msg)
+}
+
+func Warn(msg string) {
+	logWrite("[WARN] " + msg)
+}
+
+func Error(msg string) {
+	logWrite("[ERROR] " + msg)
+}
+
+func Debug(msg string) {
+	logWrite("[DEBUG] " + msg)
 }

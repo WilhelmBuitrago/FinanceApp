@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"financeapp/backend/internal/api"
+	"financeapp/backend/internal/log"
 	"financeapp/backend/internal/repositories"
 )
 
@@ -32,9 +33,12 @@ func New(db *sql.DB, persistence *repositories.Persistence) *Application {
 }
 
 func (a *Application) Start(ctx context.Context) error {
+	log.Info("Application health check")
 	if err := a.HealthCheck(ctx); err != nil {
+		log.Error(fmt.Sprintf("health check failed: %v", err))
 		return fmt.Errorf("health check failed: %w", err)
 	}
+	log.Info("Health check ok")
 	router := api.NewRouter(a.DocRepo, a.ImportJobRepo, a.Persistence.AccountRepo, a.Persistence.MovementRepo, a.Persistence.FinancialEventRepo, a.Persistence.SourceEntryRepo, a.Persistence.CategoryRepo, func(ctx context.Context, id string) error {
 		return a.ImportService.Import(ctx, id)
 	})
@@ -48,26 +52,35 @@ func (a *Application) Start(ctx context.Context) error {
 		Handler: router,
 	}
 	go func() {
+		log.Info(fmt.Sprintf("HTTP server listening on %s", addr))
 		fmt.Printf("HTTP server listening on %s\n", addr)
 		if err := a.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Error(fmt.Sprintf("server error: %v", err))
 			fmt.Printf("server error: %v\n", err)
 		}
 	}()
+	log.Info("Application started")
 	fmt.Println("Application started")
 	return nil
 }
 
 func (a *Application) Stop(ctx context.Context) error {
+	log.Info("Application stopping")
 	if a.Server != nil {
 		if err := a.Server.Shutdown(ctx); err != nil {
+			log.Error(fmt.Sprintf("server shutdown error: %v", err))
 			return err
 		}
+		log.Info("HTTP server shutdown")
 	}
 	if a.DB != nil {
 		if err := a.DB.Close(); err != nil {
+			log.Error(fmt.Sprintf("db close error: %v", err))
 			return err
 		}
+		log.Info("Database closed")
 	}
+	log.Info("Application stopped")
 	fmt.Println("Application stopped")
 	return nil
 }
