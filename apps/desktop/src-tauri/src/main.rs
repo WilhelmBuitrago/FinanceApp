@@ -22,6 +22,7 @@ struct BackendHandle {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             // Resolve Tauri resource directory.
             let resource_dir = app.path().resource_dir()?;

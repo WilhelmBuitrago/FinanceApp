@@ -305,6 +305,68 @@ jobs:
           Write-Host "Firma: $(Split-Path $newSig -Leaf)"
 
 
+
+      - name: Generate updater manifest
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $msiDir = "apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi"
+          $msis = @(Get-ChildItem $msiDir -Filter "FinanceApp_*_x64.msi" -File)
+
+          if ($msis.Count -ne 1) {
+            throw "Se esperaba exactamente un MSI renombrado; encontrados: $($msis.Count)"
+          }
+
+          $msi = $msis[0]
+
+          if ($msi.BaseName -notmatch '^FinanceApp_(\d+\.\d+\.\d+)_x64$') {
+            throw "Nombre de MSI inesperado: $($msi.Name)"
+          }
+
+          $version = $Matches[1]
+          $expectedTag = "v$version"
+
+          if ($env:GITHUB_REF_NAME -ne $expectedTag) {
+            throw "La etiqueta $env:GITHUB_REF_NAME no coincide con la versión del MSI $version"
+          }
+
+          $signaturePath = "$($msi.FullName).sig"
+
+          if (-not (Test-Path -LiteralPath $signaturePath)) {
+            throw "No se encontró la firma: $signaturePath"
+          }
+
+          $signature = (Get-Content -LiteralPath $signaturePath -Raw).Trim()
+
+          if ([string]::IsNullOrWhiteSpace($signature)) {
+            throw "El archivo de firma está vacío"
+          }
+
+          $manifest = @{
+            version = $version
+            notes = "Actualización de FinanceApp $version"
+            pub_date = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+            platforms = @{
+              "windows-x86_64" = @{
+                signature = $signature
+                url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$expectedTag/$($msi.Name)"
+              }
+            }
+          }
+
+          $manifestPath = Join-Path $msiDir "latest.json"
+
+          $json = $manifest | ConvertTo-Json -Depth 5
+          $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+          [System.IO.File]::WriteAllText($manifestPath, $json, $utf8NoBom)
+          
+          Write-Host "Manifiesto generado:"
+          Get-Content -LiteralPath $manifestPath -Raw
+
+
+
       - name: Upload Artifact
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v7
@@ -316,11 +378,13 @@ jobs:
           if-no-files-found: error
 
       - name: Publish Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           files: |
             apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
             apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.sig
+            apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/latest.json
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { purgeAllData } from '../api/admin';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { SectionHeader } from '../components/SectionHeader';
+import { check } from '@tauri-apps/plugin-updater';
 
 /* Configuración — data management. The purge deletes EVERYTHING (accounts,
    documents, movements, events, relations, installments, categories) via
@@ -14,6 +15,13 @@ export default function SettingsPage() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Actualizaciones
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState<any>(null);
+  const [updateConfirming, setUpdateConfirming] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   // Categorías desde backend
   const [categories, setCategories] = useState<any[]>([]);
@@ -100,6 +108,45 @@ export default function SettingsPage() {
     }
   };
 
+  const handleCheckUpdates = async () => {
+    setCheckingUpdate(true);
+    setUpdateError(null);
+    setUpdateProgress(null);
+    try {
+      const update = await check();
+      if (update) {
+        setUpdateAvailable(update);
+        setUpdateConfirming(true);
+      } else {
+        setUpdateProgress('FinanceApp está actualizado.');
+        setTimeout(() => setUpdateProgress(null), 3000);
+      }
+    } catch (e: any) {
+      setUpdateError(e?.message || 'Error verificando actualizaciones.');
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
+  const handleInstallUpdate = async () => {
+    if (!updateAvailable) return;
+    setUpdateConfirming(false);
+    setUpdateProgress(`Descargando versión ${updateAvailable.version}...`);
+    try {
+      // El plugin permite callback de progreso
+      await updateAvailable.downloadAndInstall((event) => {
+        const percent = event?.data?.progress?.percent ?? 0;
+        if (percent) {
+          setUpdateProgress(`Descargando ${updateAvailable.version}... ${Math.round(percent * 100)}%`);
+        }
+      });
+      setUpdateProgress('Instalación completada. Reiniciando...');
+    } catch (e: any) {
+      setUpdateError(e?.message || 'Falló la instalación de la actualización.');
+      setUpdateProgress(null);
+    }
+  };
+
   return (
     <div className="max-w-2xl space-y-8">
       <header className="space-y-1">
@@ -178,6 +225,28 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      <section aria-label="Actualizaciones" className="space-y-3">
+        <SectionHeader title="Actualizaciones" />
+        <div className="rounded-[12px] border border-line bg-surface p-5 space-y-3">
+          <p className="text-body text-ink-2">
+            Verifica si hay una nueva versión de FinanceApp disponible.
+          </p>
+          <button
+            onClick={handleCheckUpdates}
+            disabled={checkingUpdate}
+            className="inline-flex h-8 items-center rounded-[8px] bg-violet-600 px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-violet-700 disabled:opacity-60"
+          >
+            {checkingUpdate ? 'Buscando...' : 'Buscar Actualizaciones'}
+          </button>
+          {updateProgress && (
+            <p className="text-body text-ink-2" role="status">{updateProgress}</p>
+          )}
+          {updateError && (
+            <p className="text-body text-neg" role="alert">{updateError}</p>
+          )}
+        </div>
+      </section>
+
       {confirming && (
         <ConfirmModal
           title="¿Borrar todos los datos?"
@@ -186,6 +255,17 @@ export default function SettingsPage() {
           onConfirm={confirm}
           onCancel={() => setConfirming(false)}
           busy={busy}
+        />
+      )}
+
+      {updateConfirming && updateAvailable && (
+        <ConfirmModal
+          title="Actualización disponible"
+          message={`Se encontró la versión ${updateAvailable.version}. ¿Deseas instalarla? La aplicación se reiniciará al finalizar.`}
+          confirmLabel="Instalar"
+          onConfirm={handleInstallUpdate}
+          onCancel={() => setUpdateConfirming(false)}
+          busy={!!updateProgress}
         />
       )}
     </div>
