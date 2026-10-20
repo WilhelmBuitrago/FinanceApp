@@ -1,13 +1,24 @@
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
 
 use std::path::PathBuf;
 use std::process::{Child, Command};
+use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
 use tauri::Manager;
 
+
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
+
+struct BackendHandle {
+    child: Mutex<Option<Child>>,
+}
+
 
 fn main() {
     tauri::Builder::default()
@@ -19,15 +30,9 @@ fn main() {
             // Backend executable.
             let backend_path = resources_dir.join("financeapp-backend.exe");
 
-            eprintln!("DEBUG Tauri resource_dir: {}", resource_dir.display());
-            eprintln!("DEBUG Resources dir: {}", resources_dir.display());
-            eprintln!("DEBUG Backend path: {}", backend_path.display());
-            eprintln!(
-                "DEBUG Current dir: {}",
-                std::env::current_dir()
-                    .unwrap_or_default()
-                    .display()
-            );
+            // eprintln!("DEBUG Tauri resource_dir: {}", resource_dir.display());
+            // eprintln!("DEBUG Resources dir: {}", resources_dir.display());
+            // eprintln!("DEBUG Backend path: {}", backend_path.display());
 
             if !backend_path.is_file() {
                 return Err(std::io::Error::new(
@@ -137,10 +142,10 @@ fn main() {
                 .into());
             }
 
-            eprintln!("DEBUG Processor script: {}", processor_script.display());
-            eprintln!("DEBUG Processor requirements: {}", requirements_file.display());
-            eprintln!("DEBUG Python marker: {}", marker_path.display());
-            eprintln!("DEBUG Python executable: {}", python_path.display());
+            // eprintln!("DEBUG Processor script: {}", processor_script.display());
+            // eprintln!("DEBUG Processor requirements: {}", requirements_file.display());
+            // eprintln!("DEBUG Python marker: {}", marker_path.display());
+            // eprintln!("DEBUG Python executable: {}", python_path.display());
 
             let mut cmd = Command::new(&backend_path);
             cmd.current_dir(backend_dir);
@@ -193,7 +198,7 @@ fn main() {
 
             // Start backend.
             let mut child: Child = cmd.spawn().map_err(|e| {
-                eprintln!("Failed to start backend: {}", e);
+                // eprintln!("Failed to start backend: {}", e);
                 std::io::Error::other(format!(
                     "Failed to start backend at {}: {}",
                     backend_path.display(),
@@ -201,7 +206,7 @@ fn main() {
                 ))
             })?;
 
-            eprintln!("Backend started with PID {}", child.id());
+            // eprintln!("Backend started with PID {}", child.id());
 
             // Wait for the backend health endpoint.
             let health_url = "http://127.0.0.1:8081/health";
@@ -213,16 +218,12 @@ fn main() {
 
                 if let Ok(resp) = reqwest::blocking::get(health_url) {
                     if resp.status().is_success() {
-                        eprintln!(
-                            "Backend health OK after {} attempts",
-                            attempts
-                        );
                         break;
                     }
                 }
 
                 if attempts >= max_attempts {
-                    eprintln!("Backend health check timeout");
+                    // eprintln!("Backend health check timeout");
 
                     let _ = child.kill();
                     let _ = child.wait();
@@ -237,10 +238,27 @@ fn main() {
             }
 
             // Keep the child handle managed by Tauri.
-            app.manage(child);
+            let handle = BackendHandle {
+                child: Mutex::new(Some(child)),
+            };
+            app.manage(handle);
 
             Ok(())
+        })
+        .on_window_event(|app, event| {
+            use tauri::WindowEvent;
+            if let WindowEvent::CloseRequested { api: _, .. } = event {
+                if let Some(handle) = app.try_state::<BackendHandle>() {
+                    if let Ok(mut guard) = handle.child.lock() {
+                        if let Some(mut child) = guard.take() {
+                            let _ = child.kill();
+                            let _ = child.wait();
+                        }
+                    }
+                }
+            }
         })
         .run(tauri::generate_context!())
         .expect("error while running Tauri application");
 }
+
