@@ -148,7 +148,7 @@ export default function DashboardPage() {
       <div className="flex items-baseline justify-between gap-4">
         <div>
           <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">
-            {greeting()}, Wilhelm
+            {greeting()}
           </h1>
           <p className="text-meta text-ink-3">{formatDate(todayIso())}</p>
         </div>
