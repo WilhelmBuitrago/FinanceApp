@@ -1,0 +1,113 @@
+FINANCEAPP — PROPRIETARY SOURCE-VISIBLE LICENSE
+
+Copyright © 2026 Wilhelm David Buitrago Garcia. All rights reserved.
+
+1. OWNERSHIP
+  
+  FinanceApp, including its original source code, application logic, 
+  architecture, documentation, designs, and other original materials, 
+  is protected by applicable copyright and intellectual property laws.
+
+  Unless otherwise indicated, 
+  these materials are owned by Wilhelm David Buitrago Garcia ("the Author").
+
+  This license applies only to materials owned or controlled by the Author. 
+  Third-party components remain subject to their respective licenses.
+
+2. PUBLIC ACCESS
+
+  The FinanceApp repository is publicly accessible for viewing, 
+  reading, and evaluation purposes.
+  
+  Public availability of the repository does not grant any general license 
+  or permission to use, reproduce, modify, distribute, sublicense, 
+  or commercially exploit the Software, except as expressly stated in this 
+  license or required by applicable law.
+
+3. RESTRICTIONS
+
+  Except where expressly authorized in writing by the Author 
+  or permitted by applicable law, no person or entity may:
+  
+    (a) Copy, reproduce, or redistribute the Software or substantial 
+        portions of its original source code.
+  
+    (b) Modify, adapt, translate, or create derivative works 
+        based on the Software.
+  
+    (c) Publish, distribute, sublicense, sell, rent, or otherwise 
+        commercially exploit the Software or derivative works.
+  
+    (d) Incorporate the Software or substantial portions of its 
+        original source code into another product or service.
+    (e) Remove or alter copyright notices or proprietary notices 
+        included in the Software.
+  
+  These restrictions apply to the Author's original materials and do not 
+  override rights granted by applicable law or licenses governing 
+  third-party components.
+
+4. NO GENERAL LICENSE GRANTED
+
+  Except for the limited permission to view the publicly available repository, 
+  no express or implied license is granted to the Software or the Author's 
+  intellectual property.
+  
+  Any additional permission must be granted expressly in writing by the Author.
+
+5. THIRD-PARTY COMPONENTS
+
+  FinanceApp may include or depend on third-party libraries, frameworks, tools,
+  and other materials governed by separate licenses.
+  
+  Those components remain subject to their respective license terms. 
+  Nothing in this license is intended to restrict rights that third-party licenses 
+  independently grant or to relicense third-party materials as proprietary.
+  
+  Users and redistributors are responsible for identifying and complying with the 
+  applicable licenses for those components.
+
+6. TRADEMARKS AND BRANDING
+
+  The FinanceApp name, logo, and associated branding may not be used in a manner 
+  that suggests endorsement, affiliation, or authorization by the Author without 
+  prior written permission, except where permitted by applicable law.
+
+7. NO WARRANTY
+
+  To the maximum extent permitted by applicable law, the Software is provided 
+  "AS IS", without warranties of any kind, whether express or implied, including 
+  warranties of merchantability, fitness for a particular purpose, and non-infringement.
+  
+  Nothing in this section excludes warranties or liabilities that cannot 
+  legally be excluded.
+
+8. LIMITATION OF LIABILITY
+
+  To the maximum extent permitted by applicable law, the Author shall not be 
+  liable for claims, damages, or other liabilities arising from the use of, 
+  inability to use, or distribution of the Software.
+  
+  This limitation does not apply to liability that cannot legally be excluded 
+  under applicable law.
+
+9. PERMISSIONS AND EXCEPTIONS
+  
+  The Author may grant specific permissions, exceptions, or separate 
+  licenses in writing.
+  
+  A permission granted to one person or entity does not automatically 
+  extend to others.
+
+10. GOVERNING LAW
+
+  This license is subject to applicable copyright and intellectual property laws. 
+  Any governing-law or jurisdiction provision shall be determined in accordance 
+  with applicable law and the circumstances of the parties.
+
+11. RESERVATION OF RIGHTS
+
+  All rights not expressly granted by this license are reserved by the Author.
+
+  The absence of a specific prohibition does not constitute permission 
+  where authorization is legally required.
