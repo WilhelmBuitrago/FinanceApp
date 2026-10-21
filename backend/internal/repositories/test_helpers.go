@@ -30,17 +30,13 @@ func setupTestDB(t *testing.T) *sql.DB {
 func applyMigrations(t *testing.T, sqlDB *sql.DB) error {
 	t.Helper()
 	migrations := []string{
-		"db/migrations/0001_initial_schema.sql",
-		"db/migrations/0002_import_jobs.sql",
+		"../db/migrations/0001_initial_schema.sql",
+		"../db/migrations/0002_import_jobs.sql",
 	}
 	for _, path := range migrations {
 		content, err := os.ReadFile(path)
 		if err != nil {
-			alt := "../../" + path
-			content, err = os.ReadFile(alt)
-			if err != nil {
-				return err
-			}
+			return err
 		}
 		stmts := strings.Split(string(content), ";")
 		for _, s := range stmts {

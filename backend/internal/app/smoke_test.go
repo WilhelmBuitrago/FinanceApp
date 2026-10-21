@@ -28,7 +28,7 @@ func TestSmokeAccountCreateGet(t *testing.T) {
 	}
 
 	// Run migrations
-	migrationPath := filepath.Join("..", "..", "db", "migrations", "0001_initial_schema.sql")
+	migrationPath := filepath.Join("..", "db", "migrations", "0001_initial_schema.sql")
 	migrationFile, err := os.Open(migrationPath)
 	if err != nil {
 		t.Fatalf("open migration: %v", err)
