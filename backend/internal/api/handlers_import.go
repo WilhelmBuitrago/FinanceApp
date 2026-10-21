@@ -276,7 +276,7 @@ func GetJobHandler(w http.ResponseWriter, r *http.Request, repo *repositories.Im
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(job)
+	encodeJSON(w,job)
 }
 
 func int64Ptr(v int64) *int64 { return &v }

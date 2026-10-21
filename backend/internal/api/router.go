@@ -31,7 +31,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status":"ok"})
+		encodeJSON(w, map[string]string{"status":"ok"})
 	})
 	uploadHandler := NewUploadHandler(cfg, docRepo, importRepo, accountRepo, movementRepo, eventRepo, sourceEntryRepo)
 	mux.HandleFunc("POST /documents/upload", uploadHandler.Handle)
@@ -44,7 +44,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(inst)
+		encodeJSON(w,inst)
 	})
 	mux.HandleFunc("POST /accounts", func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
@@ -106,7 +106,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(created)
+		encodeJSON(w,created)
 	})
 	mux.HandleFunc("POST /jobs", CreateJobHandler)
 	mux.HandleFunc("GET /jobs/", func(w http.ResponseWriter, r *http.Request) {
@@ -194,7 +194,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(accounts)
+		encodeJSON(w,accounts)
 	})
 	mux.HandleFunc("GET /movements", func(w http.ResponseWriter, r *http.Request) {
 		movements, err := movementRepo.List(r.Context())
@@ -221,7 +221,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			out = append(out, movementDTO{Movement: m, CategoryName: catName, CategoryID: catID})
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(out)
+		encodeJSON(w,out)
 	})
 	mux.HandleFunc("POST /movements", func(w http.ResponseWriter, r *http.Request) {
 		logpkg.LogMsg("[MOVEMENT CREATE] Request received")
@@ -248,7 +248,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 					logpkg.LogMsg(fmt.Sprintf("[MOVEMENT CREATE] Duplicate found %s", m.ID))
 					w.Header().Set("Content-Type", "application/json")
 					w.WriteHeader(http.StatusConflict)
-					_ = json.NewEncoder(w).Encode(map[string]string{"error":"duplicate","redirect":"/review"})
+					encodeJSON(w,map[string]string{"error":"duplicate","redirect":"/review"})
 					return
 				}
 			}
@@ -287,7 +287,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 		logpkg.LogMsg(fmt.Sprintf("[MOVEMENT CREATE] Created movement %s", mvID))
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(map[string]string{"id": mvID})
+		encodeJSON(w,map[string]string{"id": mvID})
 	})
 	mux.HandleFunc("GET /documents", func(w http.ResponseWriter, r *http.Request) {
 		documents, err := docRepo.List(r.Context())
@@ -296,7 +296,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(documents)
+		encodeJSON(w,documents)
 	})
 
 	// Read-only traceability chain: Movement -> Financial Event -> Source Entry -> Document
@@ -307,7 +307,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(doc)
+		encodeJSON(w,doc)
 	})
 	mux.HandleFunc("GET /financial-events/{id}", func(w http.ResponseWriter, r *http.Request) {
 		event, err := eventRepo.GetByID(r.Context(), r.PathValue("id"))
@@ -316,7 +316,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(event)
+		encodeJSON(w,event)
 	})
 	mux.HandleFunc("GET /source-entries/{id}", func(w http.ResponseWriter, r *http.Request) {
 		entry, err := sourceEntryRepo.GetByID(r.Context(), r.PathValue("id"))
@@ -325,7 +325,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(entry)
+		encodeJSON(w,entry)
 	})
 
 	// Account entity + its movements and documents (read-only)
@@ -336,7 +336,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(account)
+		encodeJSON(w,account)
 	})
 	mux.HandleFunc("GET /accounts/{id}/movements", func(w http.ResponseWriter, r *http.Request) {
 		movements, err := movementRepo.ListByAccount(r.Context(), r.PathValue("id"))
@@ -363,7 +363,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			out = append(out, movementDTO{Movement: m, CategoryName: catName, CategoryID: catID})
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(out)
+		encodeJSON(w,out)
 	})
 	mux.HandleFunc("GET /accounts/{id}/documents", func(w http.ResponseWriter, r *http.Request) {
 		documents, err := docRepo.ListByAccount(r.Context(), r.PathValue("id"))
@@ -372,7 +372,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(documents)
+		encodeJSON(w,documents)
 	})
 
 	mux.HandleFunc("GET /documents/recent", func(w http.ResponseWriter, r *http.Request) {
@@ -386,7 +386,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			docs = docs[:3]
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(docs)
+		encodeJSON(w,docs)
 	})
 
 	mux.HandleFunc("GET /movements/recent", func(w http.ResponseWriter, r *http.Request) {
@@ -414,7 +414,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			out = append(out, movementDTO{Movement: m, CategoryName: catName})
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(out)
+		encodeJSON(w,out)
 	})
 
 	// Dashboard aggregates
@@ -459,7 +459,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			out = append(out, point{Date: d, Inflow: v.inflow, Outflow: v.outflow, Net: v.inflow - v.outflow})
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(out)
+		encodeJSON(w,out)
 	})
 
 	mux.HandleFunc("GET /dashboard/income-distribution", func(w http.ResponseWriter, r *http.Request) {
@@ -501,7 +501,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			out = append(out, map[string]interface{}{"category": k, "amount_minor": v})
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(out)
+		encodeJSON(w,out)
 	})
 
 	mux.HandleFunc("GET /dashboard/expense-distribution", func(w http.ResponseWriter, r *http.Request) {
@@ -543,7 +543,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			out = append(out, map[string]interface{}{"category": k, "amount_minor": v})
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(out)
+		encodeJSON(w,out)
 	})
 
 	// Admin purge endpoint
@@ -603,7 +603,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(cats)
+		encodeJSON(w,cats)
 	})
 	mux.HandleFunc("POST /categories", func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
@@ -634,7 +634,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 		logpkg.LogMsg(fmt.Sprintf("[CATEGORY CREATE] %s %s", created.ID, created.Name))
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(created)
+		encodeJSON(w,created)
 	})
 	mux.HandleFunc("PUT /categories/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
@@ -655,7 +655,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 		logpkg.LogMsg(fmt.Sprintf("[CATEGORY UPDATE] %s -> %s", id, req.Name))
 		logpkg.LogMsg(fmt.Sprintf("[REVIEW TRIGGER] Category %s edited, movements with this category should be reviewed", id))
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(existing)
+		encodeJSON(w,existing)
 	})
 	mux.HandleFunc("DELETE /categories/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
