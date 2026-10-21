@@ -21,6 +21,20 @@ func (r *MovementRepository) Create(ctx context.Context, mv domain.Movement, com
 	if r.db.Querier == nil {
 		return domain.Movement{}, ErrUnavailable
 	}
+	// The SQLite schema does not declare foreign keys on movements, so the
+	// repository enforces referential integrity before inserting.
+	if _, err := r.db.Querier.GetAccount(ctx, mv.AccountID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.Movement{}, ErrConstraint
+		}
+		return domain.Movement{}, translateError(err)
+	}
+	if _, err := r.db.Querier.GetFinancialEvent(ctx, mv.FinancialEventID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.Movement{}, ErrConstraint
+		}
+		return domain.Movement{}, translateError(err)
+	}
 	// In real implementation, use transaction. Here we simulate with Querier.
 	params := db.CreateMovementParams{
 		ID:               mv.ID,
