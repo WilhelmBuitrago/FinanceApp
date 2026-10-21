@@ -1,6 +1,7 @@
-package log
+package tests
 
 import (
+	"financeapp/backend/internal/log"
 	"fmt"
 	"os"
 	"regexp"
@@ -14,7 +15,7 @@ import (
 // access to the shared file.
 func TestLogger_ConcurrentWrites(t *testing.T) {
 	dir := t.TempDir()
-	f, err := InitRun(dir)
+	f, err := log.InitRun(dir)
 	if err != nil {
 		t.Fatalf("InitRun: %v", err)
 	}
@@ -27,7 +28,7 @@ func TestLogger_ConcurrentWrites(t *testing.T) {
 		go func(w int) {
 			defer wg.Done()
 			for i := 0; i < msgs; i++ {
-				Info(fmt.Sprintf("worker-%d msg-%d", w, i))
+				log.Info(fmt.Sprintf("worker-%d msg-%d", w, i))
 			}
 		}(w)
 	}

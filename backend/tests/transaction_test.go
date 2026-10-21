@@ -1,6 +1,7 @@
-package repositories
+package tests
 
 import (
+	"financeapp/backend/internal/repositories"
 	"context"
 	"testing"
 	"time"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestTransaction_RollbackOnComponentFailure(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -30,13 +31,13 @@ func TestTransaction_RollbackOnComponentFailure(t *testing.T) {
 	// Verify movement was created? Current implementation does not rollback.
 	// The test verifies error taxonomy and that system remains consistent.
 	// At minimum, error is returned.
-	if err != ErrConstraint && err != ErrInternal && err != ErrConflict {
+	if err != repositories.ErrConstraint && err != repositories.ErrInternal && err != repositories.ErrConflict {
 		t.Logf("error received: %v", err)
 	}
 }
 
 func TestTransaction_RollbackOnInstallmentFailure(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 

@@ -1,6 +1,7 @@
-package repositories
+package tests
 
 import (
+	"financeapp/backend/internal/repositories"
 	"context"
 	"errors"
 	"testing"
@@ -10,7 +11,7 @@ import (
 )
 
 func TestInstallmentPlan_Create_WithInstallments_RoundTrip(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -46,13 +47,12 @@ func TestInstallmentPlan_Create_WithInstallments_RoundTrip(t *testing.T) {
 	if len(ins) != 3 { t.Fatalf("expected 3 installments, got %d", len(ins)) }
 }
 
-func int64Ptr(v int64) *int64 { return &v }
 
 // TestInstallmentPlan_DuplicateNumber_Conflict pins the contract: a duplicate
-// installment number inside a plan is rejected with ErrConflict. The unique
+// installment number inside a plan is rejected with repositories.ErrConflict. The unique
 // index is the backstop; this test keeps the taxonomy stable regardless of it.
 func TestInstallmentPlan_DuplicateNumber_Conflict(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -75,7 +75,7 @@ func TestInstallmentPlan_DuplicateNumber_Conflict(t *testing.T) {
 		{ID: "dup-2", InstallmentNumber: 2, TotalInstallments: 3, Status: "EXPECTED", CreatedAt: now, UpdatedAt: now},
 		{ID: "dup-3", InstallmentNumber: 2, TotalInstallments: 3, Status: "EXPECTED", CreatedAt: now, UpdatedAt: now},
 	}
-	if _, err := p.InstallmentPlanRepo.Create(ctx, plan, installments); !errors.Is(err, ErrConflict) {
-		t.Fatalf("expected ErrConflict for duplicate installment number, got %v", err)
+	if _, err := p.InstallmentPlanRepo.Create(ctx, plan, installments); !errors.Is(err, repositories.ErrConflict) {
+		t.Fatalf("expected repositories.ErrConflict for duplicate installment number, got %v", err)
 	}
 }

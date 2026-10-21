@@ -1,6 +1,7 @@
-package repositories
+package tests
 
 import (
+	"financeapp/backend/internal/repositories"
 	"context"
 	"testing"
 	"time"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestAccount_Create_GetByID_RoundTrip(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 	acc := domain.Account{
@@ -39,19 +40,19 @@ func TestAccount_Create_GetByID_RoundTrip(t *testing.T) {
 }
 
 func TestAccount_GetByID_NotFound(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	_, err := p.AccountRepo.GetByID(ctx, "nonexistent")
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if err != ErrNotFound {
-		t.Fatalf("expected ErrNotFound, got %v", err)
+	if err != repositories.ErrNotFound {
+		t.Fatalf("expected repositories.ErrNotFound, got %v", err)
 	}
 }
 
 func TestAccount_ListByUserID(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 	accounts := []domain.Account{
@@ -74,7 +75,7 @@ func TestAccount_ListByUserID(t *testing.T) {
 }
 
 func TestAccount_List_ReturnsEmpty(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	list, err := p.AccountRepo.List(ctx)
 	if err != nil {

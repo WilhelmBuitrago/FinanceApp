@@ -1,6 +1,7 @@
-package repositories
+package tests
 
 import (
+	"financeapp/backend/internal/repositories"
 	"context"
 	"testing"
 	"time"
@@ -9,16 +10,16 @@ import (
 )
 
 func TestErrors_Taxonomy_NotFound(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	_, err := p.AccountRepo.GetByID(ctx, "does-not-exist")
-	if err != ErrNotFound {
-		t.Fatalf("expected ErrNotFound, got %v", err)
+	if err != repositories.ErrNotFound {
+		t.Fatalf("expected repositories.ErrNotFound, got %v", err)
 	}
 }
 
 func TestErrors_Taxonomy_Constraint(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 	acc := domain.Account{ID: "acc-const", UserID: "u", Name: "A", AccountType: "BANK_ACCOUNT", Currency: "USD", Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
@@ -28,7 +29,7 @@ func TestErrors_Taxonomy_Constraint(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error on duplicate")
 	}
-	if err != ErrConflict && err != ErrConstraint {
-		t.Fatalf("expected ErrConflict or ErrConstraint, got %v", err)
+	if err != repositories.ErrConflict && err != repositories.ErrConstraint {
+		t.Fatalf("expected repositories.ErrConflict or repositories.ErrConstraint, got %v", err)
 	}
 }

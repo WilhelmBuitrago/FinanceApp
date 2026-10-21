@@ -1,6 +1,7 @@
-package repositories
+package tests
 
 import (
+	"financeapp/backend/internal/repositories"
 	"context"
 	"testing"
 )
@@ -8,11 +9,11 @@ import (
 func TestReadModelList(t *testing.T) {
 	// This is a smoke test – in production we'd spin up an in-memory SQLite.
 	// Here we only verify that List methods compile and return a slice without panicking
-	// when Querier is nil – they should return ErrUnavailable.
+	// when Querier is nil – they should return repositories.ErrUnavailable.
 	ctx := context.Background()
-	repo := &AccountRepository{db: &DB{Querier: nil}}
+	repo := repositories.NewAccountRepository(&repositories.DB{Querier: nil})
 	_, err := repo.List(ctx)
 	if err == nil {
-		t.Fatalf("expected ErrUnavailable")
+		t.Fatalf("expected repositories.ErrUnavailable")
 	}
 }

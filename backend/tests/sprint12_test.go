@@ -1,4 +1,4 @@
-package api
+package tests
 
 import (
 	"testing"
@@ -29,7 +29,6 @@ func TestSprint12_AccountCreationNu(t *testing.T) {
 	}
 }
 
-func strPtr(s string) *string { return &s }
 
 func TestSprint12_DocumentRequiresAccount(t *testing.T) {
 	doc := domain.Document{

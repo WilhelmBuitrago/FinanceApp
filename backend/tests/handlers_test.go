@@ -1,6 +1,7 @@
-package api
+package tests
 
 import (
+	"financeapp/backend/internal/api"
 	"database/sql"
 	"net/http"
 	"net/http/httptest"
@@ -25,7 +26,7 @@ func newTestRouter(t *testing.T) (http.Handler, *sql.DB) {
 		t.Fatalf("apply migrations: %v", err)
 	}
 	repoDB := &repositories.DB{Querier: db.New(sqlDB)}
-	router := NewRouter(config.Load(),
+	router := api.NewRouter(config.Load(),
 		repositories.NewDocumentRepository(repoDB),
 		repositories.NewImportJobRepo(&repositories.DB{Querier: db.New(sqlDB)}),
 		repositories.NewAccountRepository(repoDB),

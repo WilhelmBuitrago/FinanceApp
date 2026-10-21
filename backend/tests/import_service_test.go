@@ -1,6 +1,7 @@
-package app
+package tests
 
 import (
+	"financeapp/backend/internal/app"
 	"context"
 	"database/sql"
 	"os"
@@ -50,7 +51,7 @@ func TestImportRollback(t *testing.T) {
 	querier := db.New(sqlDB)
 	persistence := &repositories.Persistence{DB: sqlDB, Querier: querier}
 	importJobRepo := repositories.NewImportJobRepo(&repositories.DB{Querier: db.New(sqlDB)})
-	service := NewImportService(config.Load(), persistence, importJobRepo)
+	service := app.NewImportService(config.Load(), persistence, importJobRepo)
 
 	// Simulate failure by making financial_events insert fail via constraint: we will insert a bad event_type by monkey patching? Instead we rely on validation false.
 

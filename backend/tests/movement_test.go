@@ -1,6 +1,7 @@
-package repositories
+package tests
 
 import (
+	"financeapp/backend/internal/repositories"
 	"context"
 	"errors"
 	"testing"
@@ -10,7 +11,7 @@ import (
 )
 
 func TestMovement_Create_WithComponents_RoundTrip(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -62,7 +63,7 @@ func TestMovement_Create_WithComponents_RoundTrip(t *testing.T) {
 }
 
 func TestMovement_ForeignKeyViolation(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -86,13 +87,13 @@ func TestMovement_ForeignKeyViolation(t *testing.T) {
 		t.Fatal("expected foreign key error")
 	}
 	// translateError maps constraint violation
-	if err != ErrConstraint && err != ErrUnavailable {
+	if err != repositories.ErrConstraint && err != repositories.ErrUnavailable {
 		t.Logf("got error %v", err)
 	}
 }
 
 func TestMovement_DuplicateDocumentaryValues_Independence(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -125,7 +126,7 @@ func TestMovement_DuplicateDocumentaryValues_Independence(t *testing.T) {
 // separate instruments bound to an account, so the breakdown must cover the
 // five types this issuer produces.
 func TestMovement_ComponentTypes_NuCatalog(t *testing.T) {
-	p := NewTestPersistence(t)
+	p := repositories.NewTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -162,7 +163,7 @@ func TestMovement_ComponentTypes_NuCatalog(t *testing.T) {
 	legacyComps := []domain.MovementComponent{
 		{ID: "legacy-c1", MovementID: "mv-legacy-type", ComponentType: "SEGURO", AmountMinor: 5000, CreatedAt: now, UpdatedAt: now},
 	}
-	if _, err := p.MovementRepo.Create(ctx, legacy, legacyComps); !errors.Is(err, ErrConstraint) {
-		t.Fatalf("expected legacy Spanish component type to be rejected with ErrConstraint, got %v", err)
+	if _, err := p.MovementRepo.Create(ctx, legacy, legacyComps); !errors.Is(err, repositories.ErrConstraint) {
+		t.Fatalf("expected legacy Spanish component type to be rejected with repositories.ErrConstraint, got %v", err)
 	}
 }

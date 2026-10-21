@@ -1,6 +1,10 @@
-package domain
+package tests
 
-import "testing"
+import (
+	"testing"
+
+	"financeapp/backend/internal/domain"
+)
 
 func TestClassifyEventType(t *testing.T) {
 	tests := []struct {
@@ -28,12 +32,12 @@ func TestClassifyEventType(t *testing.T) {
 }
 
 func TestEventMovementConsistency(t *testing.T) {
-	fe := FinancialEvent{
+	fe := domain.FinancialEvent{
 		ID:        "fe1",
 		EventType: "INCOME",
 		EventDate: strPtr("2026-01-01"),
 	}
-	mv := Movement{
+	mv := domain.Movement{
 		ID:               "mv1",
 		FinancialEventID: fe.ID,
 		AccountID:        "acc1",
@@ -48,4 +52,3 @@ func TestEventMovementConsistency(t *testing.T) {
 	}
 }
 
-func strPtr(s string) *string { return &s }

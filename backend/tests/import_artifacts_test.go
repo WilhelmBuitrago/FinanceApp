@@ -1,6 +1,7 @@
-package app
+package tests
 
 import (
+	"financeapp/backend/internal/app"
 	"context"
 	"database/sql"
 	"os"
@@ -69,7 +70,7 @@ func TestImportService_ReadsConfiguredArtifactsPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	service := NewImportService(config.Load(), persistence, jobRepo)
+	service := app.NewImportService(config.Load(), persistence, jobRepo)
 	if err := service.Import(context.Background(), "job-imp"); err != nil {
 		t.Fatalf("import from configured artifacts path failed: %v", err)
 	}

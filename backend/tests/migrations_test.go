@@ -1,6 +1,7 @@
-package db
+package tests
 
 import (
+	"financeapp/backend/internal/db"
 	"database/sql"
 	"testing"
 
@@ -16,11 +17,11 @@ func TestApplyMigrations(t *testing.T) {
 	if _, err := sqlDB.Exec("PRAGMA foreign_keys = ON"); err != nil {
 		t.Fatalf("pragma: %v", err)
 	}
-	if err := Apply(sqlDB); err != nil {
+	if err := db.Apply(sqlDB); err != nil {
 		t.Fatalf("apply: %v", err)
 	}
 	// idempotent
-	if err := Apply(sqlDB); err != nil {
+	if err := db.Apply(sqlDB); err != nil {
 		t.Fatalf("apply twice: %v", err)
 	}
 	tables := []string{"documents", "financial_events", "movements", "import_jobs"}

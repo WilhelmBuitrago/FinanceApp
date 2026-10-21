@@ -100,6 +100,16 @@ Tauri las setea al spawnear el backend (`apps/desktop/src-tauri/src/main.rs`):
 - El instalador deja el marcador `%PROGRAMDATA%\FinanceApp\.python-ready`
   con el `venv_path` creado por `prepare-python.ps1`.
 
+## Pruebas
+
+Todas las pruebas del backend viven en `backend/tests/` (una sola carpeta, un
+solo paquete `tests`). Se corren con `go test ./...` desde `backend/` como
+siempre. Los helpers compartidos están en `tests/helpers_test.go`; la
+persistencia de pruebas se construye con `repositories.NewTestPersistence`,
+que aplica las migraciones reales resolviendo la ruta por ubicación del
+código (no por directorio de trabajo), así los tests corren desde cualquier
+lugar.
+
 ## Duplicados de cuotas (operación)
 
 La unicidad del número de cuota por plan está garantizada por el índice

@@ -2,8 +2,11 @@ package repositories
 
 import (
 	"database/sql"
+	"fmt"
 	_ "modernc.org/sqlite"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -12,8 +15,7 @@ import (
 
 func setupTestDB(t *testing.T) *sql.DB {
 	t.Helper()
-	dbPath := ":memory:"
-	sqlDB, err := sql.Open("sqlite", dbPath)
+	sqlDB, err := sql.Open("sqlite", ":memory:")
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
@@ -27,18 +29,25 @@ func setupTestDB(t *testing.T) *sql.DB {
 	return sqlDB
 }
 
+// applyMigrations applies every migration in internal/db/migrations in
+// filename order. The directory is resolved from this file's location, not
+// from the process working directory, so tests can run from any package.
 func applyMigrations(t *testing.T, sqlDB *sql.DB) error {
 	t.Helper()
-	migrations := []string{
-		"../db/migrations/0001_initial_schema.sql",
-		"../db/migrations/0002_import_jobs.sql",
-		"../db/migrations/0003_import_review_staging.sql",
-		"../db/migrations/0004_align_schema_with_generated_queries.sql",
-		"../db/migrations/0005_expand_component_types.sql",
-		"../db/migrations/0006_normalize_component_types.sql",
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		return fmt.Errorf("cannot resolve test helper location")
 	}
-	for _, path := range migrations {
-		content, err := os.ReadFile(path)
+	migrationsDir := filepath.Join(filepath.Dir(thisFile), "..", "db", "migrations")
+	entries, err := os.ReadDir(migrationsDir)
+	if err != nil {
+		return fmt.Errorf("read migrations dir: %w", err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".sql") {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(migrationsDir, entry.Name()))
 		if err != nil {
 			return err
 		}
@@ -49,7 +58,7 @@ func applyMigrations(t *testing.T, sqlDB *sql.DB) error {
 				continue
 			}
 			if _, err := sqlDB.Exec(s); err != nil {
-				return err
+				return fmt.Errorf("%s: %w", entry.Name(), err)
 			}
 		}
 	}
