@@ -13,8 +13,5 @@ INSERT INTO event_relations (
     ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) RETURNING id, event_id_a, event_id_b, relation_type, status, confidence, reason, created_at, updated_at;
 
--- name: GetEventRelation :one
-SELECT id, event_id_a, event_id_b, relation_type, status, confidence, reason, created_at, updated_at FROM event_relations WHERE id = ?;
-
 -- name: ListRelationsByEvent :many
 SELECT id, event_id_a, event_id_b, relation_type, status, confidence, reason, created_at, updated_at FROM event_relations WHERE event_id_a = ? OR event_id_b = ?;

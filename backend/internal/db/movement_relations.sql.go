@@ -65,27 +65,6 @@ func (q *Queries) CreateMovementRelation(ctx context.Context, arg CreateMovement
 	return i, err
 }
 
-const getMovementRelation = `-- name: GetMovementRelation :one
-SELECT id, movement_id_a, movement_id_b, relation_type, status, confidence, reason, created_at, updated_at FROM movement_relations WHERE id = ?
-`
-
-func (q *Queries) GetMovementRelation(ctx context.Context, id string) (MovementRelation, error) {
-	row := q.db.QueryRowContext(ctx, getMovementRelation, id)
-	var i MovementRelation
-	err := row.Scan(
-		&i.ID,
-		&i.MovementIDA,
-		&i.MovementIDB,
-		&i.RelationType,
-		&i.Status,
-		&i.Confidence,
-		&i.Reason,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
 const listRelationsByMovement = `-- name: ListRelationsByMovement :many
 SELECT id, movement_id_a, movement_id_b, relation_type, status, confidence, reason, created_at, updated_at FROM movement_relations WHERE movement_id_a = ? OR movement_id_b = ?
 `

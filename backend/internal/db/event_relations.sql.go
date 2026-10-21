@@ -65,27 +65,6 @@ func (q *Queries) CreateEventRelation(ctx context.Context, arg CreateEventRelati
 	return i, err
 }
 
-const getEventRelation = `-- name: GetEventRelation :one
-SELECT id, event_id_a, event_id_b, relation_type, status, confidence, reason, created_at, updated_at FROM event_relations WHERE id = ?
-`
-
-func (q *Queries) GetEventRelation(ctx context.Context, id string) (EventRelation, error) {
-	row := q.db.QueryRowContext(ctx, getEventRelation, id)
-	var i EventRelation
-	err := row.Scan(
-		&i.ID,
-		&i.EventIDA,
-		&i.EventIDB,
-		&i.RelationType,
-		&i.Status,
-		&i.Confidence,
-		&i.Reason,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
 const listRelationsByEvent = `-- name: ListRelationsByEvent :many
 SELECT id, event_id_a, event_id_b, relation_type, status, confidence, reason, created_at, updated_at FROM event_relations WHERE event_id_a = ? OR event_id_b = ?
 `
