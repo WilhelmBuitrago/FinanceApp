@@ -63,7 +63,3 @@ func Warn(msg string) {
 func Error(msg string) {
 	logWrite("[ERROR] " + msg)
 }
-
-func Debug(msg string) {
-	logWrite("[DEBUG] " + msg)
-}
