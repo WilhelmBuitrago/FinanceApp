@@ -5,14 +5,15 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"os"
 
 	"financeapp/backend/internal/api"
+	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/log"
 	"financeapp/backend/internal/repositories"
 )
 
 type Application struct {
+	Cfg          config.Config
 	DB           *sql.DB
 	Persistence  *repositories.Persistence
 	ImportJobRepo *repositories.ImportJobRepo
@@ -21,9 +22,10 @@ type Application struct {
 	Server       *http.Server
 }
 
-func New(db *sql.DB, persistence *repositories.Persistence) *Application {
+func New(cfg config.Config, db *sql.DB, persistence *repositories.Persistence) *Application {
 	importJobRepo := repositories.NewImportJobRepo(db)
 	return &Application{
+		Cfg:          cfg,
 		DB:           db,
 		Persistence:  persistence,
 		ImportJobRepo: importJobRepo,
@@ -39,13 +41,10 @@ func (a *Application) Start(ctx context.Context) error {
 		return fmt.Errorf("health check failed: %w", err)
 	}
 	log.Info("Health check ok")
-	router := api.NewRouter(a.DocRepo, a.ImportJobRepo, a.Persistence.AccountRepo, a.Persistence.MovementRepo, a.Persistence.FinancialEventRepo, a.Persistence.SourceEntryRepo, a.Persistence.CategoryRepo, func(ctx context.Context, id string) error {
+	router := api.NewRouter(a.Cfg, a.DocRepo, a.ImportJobRepo, a.Persistence.AccountRepo, a.Persistence.MovementRepo, a.Persistence.FinancialEventRepo, a.Persistence.SourceEntryRepo, a.Persistence.CategoryRepo, func(ctx context.Context, id string) error {
 		return a.ImportService.Import(ctx, id)
 	})
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8081"
-	}
+	port := a.Cfg.Port
 	addr := ":" + port
 	a.Server = &http.Server{
 		Addr:    addr,

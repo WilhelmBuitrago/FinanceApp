@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"crypto/sha256"
 	"time"
+	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/domain/entities"
 	"financeapp/backend/internal/repositories"
@@ -22,6 +23,7 @@ type UploadResponse struct {
 }
 
 type UploadHandler struct {
+	cfg            config.Config
 	docRepo         *repositories.DocumentRepository
 	jobRepo         *repositories.ImportJobRepo
 	accountRepo     *repositories.AccountRepository
@@ -30,8 +32,8 @@ type UploadHandler struct {
 	sourceEntryRepo *repositories.SourceEntryRepository
 }
 
-func NewUploadHandler(docRepo *repositories.DocumentRepository, jobRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository) *UploadHandler {
-	return &UploadHandler{docRepo: docRepo, jobRepo: jobRepo, accountRepo: accountRepo, movementRepo: movementRepo, eventRepo: eventRepo, sourceEntryRepo: sourceEntryRepo}
+func NewUploadHandler(cfg config.Config, docRepo *repositories.DocumentRepository, jobRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository) *UploadHandler {
+	return &UploadHandler{cfg: cfg, docRepo: docRepo, jobRepo: jobRepo, accountRepo: accountRepo, movementRepo: movementRepo, eventRepo: eventRepo, sourceEntryRepo: sourceEntryRepo}
 }
 
 func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
@@ -79,14 +81,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	docsBase := os.Getenv("DOCUMENTS_PATH")
-	if docsBase == "" {
-		if appdata := os.Getenv("APPDATA"); appdata != "" {
-			docsBase = filepath.Join(appdata, "FinanceApp", "data", "documents")
-		} else {
-			docsBase = "data/documents"
-		}
-	}
+	docsBase := h.cfg.DocumentsPath
 	dstPath := filepath.Join(docsBase, "raw", hdr.Filename)
 	if err := os.MkdirAll(filepath.Dir(dstPath), 0755); err != nil {
 		http.Error(w, "cannot create dir", http.StatusInternalServerError)
@@ -174,14 +169,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Stage source entries from parsed artifact
-	artifactsBase := os.Getenv("ARTIFACTS_PATH")
-	if artifactsBase == "" {
-		if appdata := os.Getenv("APPDATA"); appdata != "" {
-			artifactsBase = filepath.Join(appdata, "FinanceApp", "data", "artifacts")
-		} else {
-			artifactsBase = "data/artifacts"
-		}
-	}
+	artifactsBase := h.cfg.ArtifactsPath
 	artifactPath := filepath.Join(artifactsBase, res.ProcessingID, "parsed.json")
 	if data, err := os.ReadFile(artifactPath); err == nil {
 		var parsed struct {

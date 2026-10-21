@@ -6,13 +6,14 @@ import (
 )
 
 type Config struct {
-	DatabasePath  string
-	ArtifactsPath string
-	LogsPath      string
-	Environment   string
-	PythonPath    string
-	Port          string
-	PythonVersion string
+	DatabasePath   string
+	DocumentsPath  string
+	ArtifactsPath  string
+	LogsPath       string
+	Environment    string
+	PythonPath     string
+	Port           string
+	PythonVersion  string
 }
 
 func defaultAppData() string {
@@ -39,6 +40,10 @@ func Load() Config {
 	if dbPath == "" {
 		dbPath = filepath.Join(defaultPath("data/db"), "finance.db")
 	}
+	documents := os.Getenv("DOCUMENTS_PATH")
+	if documents == "" {
+		documents = defaultPath("data/documents")
+	}
 	artifacts := os.Getenv("ARTIFACTS_PATH")
 	if artifacts == "" {
 		artifacts = defaultPath("data/artifacts")
@@ -63,12 +68,13 @@ func Load() Config {
 		port = "8081"
 	}
 	return Config{
-		DatabasePath:  dbPath,
-		ArtifactsPath: artifacts,
-		LogsPath:      logs,
-		Environment:   env,
-		PythonPath:    python,
-		Port:          port,
-		PythonVersion: "3.12.10",
+		DatabasePath:   dbPath,
+		DocumentsPath:  documents,
+		ArtifactsPath:  artifacts,
+		LogsPath:       logs,
+		Environment:    env,
+		PythonPath:     python,
+		Port:           port,
+		PythonVersion:  "3.12.10",
 	}
 }

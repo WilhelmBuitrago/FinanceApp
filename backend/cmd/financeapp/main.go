@@ -79,7 +79,7 @@ func main() {
 
 	persistence := repositories.NewPersistence(sqlDB)
 
-	application := app.New(sqlDB, persistence)
+	application := app.New(cfg, sqlDB, persistence)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	_ "modernc.org/sqlite"
 	"time"
+	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/repositories"
 	logpkg "financeapp/backend/internal/log"
@@ -26,13 +27,13 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
-func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository, categoryRepo *repositories.CategoryRepository, confirmHandler func(context.Context, string) error) http.Handler {
+func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository, categoryRepo *repositories.CategoryRepository, confirmHandler func(context.Context, string) error) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"status":"ok"})
 	})
-	uploadHandler := NewUploadHandler(docRepo, importRepo, accountRepo, movementRepo, eventRepo, sourceEntryRepo)
+	uploadHandler := NewUploadHandler(cfg, docRepo, importRepo, accountRepo, movementRepo, eventRepo, sourceEntryRepo)
 	mux.HandleFunc("POST /documents/upload", uploadHandler.Handle)
 	mux.HandleFunc("GET /institutions", func(w http.ResponseWriter, r *http.Request) {
 		inst := []map[string]interface{}{
@@ -124,7 +125,7 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 			http.Error(w, `{"error":"processing not ready"}`, http.StatusBadRequest)
 			return
 		}
-		artifactPath := fmt.Sprintf("data/artifacts/%s/parsed.json", *job.ProcessingID)
+		artifactPath := filepath.Join(cfg.ArtifactsPath, *job.ProcessingID, "parsed.json")
 		data, err := os.ReadFile(artifactPath)
 		if err != nil {
 			http.Error(w, `{"error":"parsed not found"}`, http.StatusNotFound)
@@ -145,7 +146,7 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 			http.Error(w, `{"error":"processing not ready"}`, http.StatusBadRequest)
 			return
 		}
-		artifactPath := fmt.Sprintf("data/artifacts/%s/manifest.json", *job.ProcessingID)
+		artifactPath := filepath.Join(cfg.ArtifactsPath, *job.ProcessingID, "manifest.json")
 		data, err := os.ReadFile(artifactPath)
 		if err != nil {
 			http.Error(w, `{"error":"manifest not found"}`, http.StatusNotFound)
@@ -548,14 +549,8 @@ func NewRouter(docRepo *repositories.DocumentRepository, importRepo *repositorie
 	// Admin purge endpoint
 	mux.HandleFunc("DELETE /admin/purge", func(w http.ResponseWriter, r *http.Request) {
 		// Simple dev purge - deletes all domain data using Go driver
-		dbPath := os.Getenv("DATABASE_PATH")
-		if dbPath == "" {
-			dbPath = "data/finance.db"
-		}
-		logDir := os.Getenv("LOGS_PATH")
-		if logDir == "" {
-			logDir = "logs"
-		}
+		dbPath := cfg.DatabasePath
+		logDir := cfg.LogsPath
 		logErr := func(msg string) {
 			logFile := filepath.Join(logDir, time.Now().Format("02-01-2006.log"))
 			if f, _ := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644); f != nil {
