@@ -165,7 +165,9 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		doc.Status = "PROCESSED"
 		doc.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
-		_, _ = h.docRepo.Update(r.Context(), doc)
+		if _, err := h.docRepo.Update(r.Context(), doc); err != nil {
+			log.Error(fmt.Sprintf("document status update to PROCESSED failed: %v", err))
+		}
 	}
 
 	// Stage source entries from parsed artifact
@@ -199,7 +201,10 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 					CreatedAt:             now,
 					UpdatedAt:             now,
 				}
-				_, _ = h.sourceEntryRepo.Create(r.Context(), se)
+				if _, err := h.sourceEntryRepo.Create(r.Context(), se); err != nil {
+				h.failJob(w, r, job, fmt.Sprintf("staging source entry failed: %v", err))
+				return
+			}
 
 				// Auto-import: create financial event and movement
 				eventType := "INCOME"
@@ -217,7 +222,10 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 					CreatedAt:         now,
 					UpdatedAt:         now,
 				}
-				_, _ = h.eventRepo.Create(r.Context(), fe)
+				if _, err := h.eventRepo.Create(r.Context(), fe); err != nil {
+				h.failJob(w, r, job, fmt.Sprintf("staging financial event failed: %v", err))
+				return
+			}
 
 				mvID := fmt.Sprintf("%s_mv_%d_%d", docID, m.PageNumber, m.Sequence)
 				mv := domain.Movement{
@@ -232,7 +240,10 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 					CreatedAt:        now,
 					UpdatedAt:        now,
 				}
-				_, _ = h.movementRepo.Create(r.Context(), mv, []domain.MovementComponent{})
+				if _, err := h.movementRepo.Create(r.Context(), mv, []domain.MovementComponent{}); err != nil {
+				h.failJob(w, r, job, fmt.Sprintf("staging movement failed: %v", err))
+				return
+			}
 			}
 		}
 	}
@@ -251,7 +262,9 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		docUpd.Status = "IMPORTED"
 		docUpd.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
-		_, _ = h.docRepo.Update(r.Context(), docUpd)
+		if _, err := h.docRepo.Update(r.Context(), docUpd); err != nil {
+			log.Error(fmt.Sprintf("document status update to IMPORTED failed: %v", err))
+		}
 	}
 
 	resp := UploadResponse{
@@ -261,12 +274,14 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(resp)
+	encodeJSON(w, resp)
 }
 
 func CreateJobHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
-	_, _ = w.Write([]byte(`{"message":"job creation scaffold"}`))
+	if _, err := w.Write([]byte(`{"message":"job creation scaffold"}`)); err != nil {
+		log.Error(fmt.Sprintf("job scaffold response write failed: %v", err))
+	}
 }
 
 func GetJobHandler(w http.ResponseWriter, r *http.Request, repo *repositories.ImportJobRepo, id string) {
@@ -281,5 +296,18 @@ func GetJobHandler(w http.ResponseWriter, r *http.Request, repo *repositories.Im
 
 func int64Ptr(v int64) *int64 { return &v }
 func sPtr(s string) *string { return &s }
+
+// failJob marks the import job as FAILED and reports the failure to the
+// caller: a partially staged import must never look like a success.
+func (h *UploadHandler) failJob(w http.ResponseWriter, r *http.Request, job entities.ImportJob, reason string) {
+	job.Status = "FAILED"
+	job.Error = &reason
+	finished := time.Now().UTC().Format(time.RFC3339)
+	job.FinishedAt = &finished
+	if _, err := h.jobRepo.Update(r.Context(), job); err != nil {
+		log.Error(fmt.Sprintf("failed to record job failure: %v", err))
+	}
+	http.Error(w, fmt.Sprintf(`{"error":%q}`, reason), http.StatusInternalServerError)
+}
 
 

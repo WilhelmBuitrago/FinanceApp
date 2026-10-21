@@ -182,7 +182,11 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			}
 		}
 		// reload job
-		job, _ = importRepo.GetByID(r.Context(), id)
+		job, err = importRepo.GetByID(r.Context(), id)
+		if err != nil {
+			http.Error(w, `{"error":"job reload failed"}`, http.StatusInternalServerError)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"`+job.Status+`","id":"`+id+`"}`))
@@ -668,15 +672,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 	mux.HandleFunc("DELETE /categories/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		// Soft delete for safety, but we can physically delete for now
-		dbPath := os.Getenv("DATABASE_PATH")
-		if dbPath == "" {
-			if appdata := os.Getenv("APPDATA"); appdata != "" {
-				dbPath = filepath.Join(appdata, "FinanceApp", "data", "db", "finance.db")
-			} else {
-				dbPath = "./data/finance.db"
-			}
-		}
-		dbConn, err := sql.Open("sqlite", dbPath)
+		dbConn, err := sql.Open("sqlite", cfg.DatabasePath)
 		if err != nil {
 			http.Error(w, `{"error":"db open failed"}`, http.StatusInternalServerError)
 			return
@@ -707,15 +703,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			http.Error(w, `{"error":"no financial event"}`, http.StatusBadRequest)
 			return
 		}
-		dbPath := os.Getenv("DATABASE_PATH")
-		if dbPath == "" {
-			if appdata := os.Getenv("APPDATA"); appdata != "" {
-				dbPath = filepath.Join(appdata, "FinanceApp", "data", "db", "finance.db")
-			} else {
-				dbPath = "./data/finance.db"
-			}
-		}
-		dbConn, err := sql.Open("sqlite", dbPath)
+		dbConn, err := sql.Open("sqlite", cfg.DatabasePath)
 		if err != nil { http.Error(w, `{"error":"db open"}`, http.StatusInternalServerError); return }
 		defer dbConn.Close()
 		_, err = dbConn.ExecContext(r.Context(), "UPDATE financial_events SET category_id = ?, updated_at = ? WHERE id = ?", body.CategoryID, time.Now().UTC().Format(time.RFC3339), mv.FinancialEventID)
@@ -724,18 +712,14 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 	})
 	mux.HandleFunc("DELETE /movements/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
-		dbPath := os.Getenv("DATABASE_PATH")
-		if dbPath == "" {
-			if appdata := os.Getenv("APPDATA"); appdata != "" {
-				dbPath = filepath.Join(appdata, "FinanceApp", "data", "db", "finance.db")
-			} else {
-				dbPath = "./data/finance.db"
-			}
-		}
-		dbConn, err := sql.Open("sqlite", dbPath)
+		dbConn, err := sql.Open("sqlite", cfg.DatabasePath)
 		if err != nil { http.Error(w, `{"error":"db"}`, http.StatusInternalServerError); return }
 		defer dbConn.Close()
-		_, _ = dbConn.ExecContext(r.Context(), "DELETE FROM movements WHERE id = ?", id)
+		if _, err := dbConn.ExecContext(r.Context(), "DELETE FROM movements WHERE id = ?", id); err != nil {
+			logpkg.LogMsg(fmt.Sprintf("[MOVEMENT DELETE] failed id=%s err=%v", id, err))
+			http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+			return
+		}
 		w.WriteHeader(http.StatusNoContent)
 	})
 	mux.HandleFunc("DELETE /accounts/{id}/movements/{mid}", func(w http.ResponseWriter, r *http.Request) {
