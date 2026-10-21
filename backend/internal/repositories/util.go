@@ -6,27 +6,6 @@ import (
 	"strings"
 )
 
-func toInterface(s *string) interface{} {
-	if s == nil {
-		return nil
-	}
-	return *s
-}
-
-func toInterfaceInt64(i *int64) interface{} {
-	if i == nil {
-		return nil
-	}
-	return *i
-}
-
-func toInterfaceFloat64(f *float64) interface{} {
-	if f == nil {
-		return nil
-	}
-	return *f
-}
-
 func toNullString(s *string) sql.NullString {
 	if s == nil {
 		return sql.NullString{}

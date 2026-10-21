@@ -77,14 +77,7 @@ func main() {
 	}
 	log.Info("Migrations applied")
 
-	querier := db.New(sqlDB)
-
-	repoDB := &repositories.DB{
-		Querier: querier,
-	}
-
 	persistence := repositories.NewPersistence(sqlDB)
-	_ = repoDB
 
 	application := app.New(sqlDB, persistence)
 
