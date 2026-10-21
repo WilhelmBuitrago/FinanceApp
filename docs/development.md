@@ -99,3 +99,22 @@ Tauri las setea al spawnear el backend (`apps/desktop/src-tauri/src/main.rs`):
 
 - El instalador deja el marcador `%PROGRAMDATA%\FinanceApp\.python-ready`
   con el `venv_path` creado por `prepare-python.ps1`.
+
+## Duplicados de cuotas (operación)
+
+La unicidad del número de cuota por plan está garantizada por el índice
+`uq_installments_plan_number` y validada antes de insertar en
+`InstallmentPlanRepository.Create` (`ErrConflict` si el número ya existe en
+el plan). Para bases manipuladas a mano o restauradas desde un backup, esta
+query detecta duplicados antes de que una migración falle al crear el índice:
+
+```sql
+SELECT installment_plan_id, installment_number, COUNT(*) AS veces, GROUP_CONCAT(id) AS ids
+FROM installments
+GROUP BY installment_plan_id, installment_number
+HAVING COUNT(*) > 1;
+```
+
+Si devuelve filas, decidir qué cuota sobrevive y borrar el resto conservando
+la más antigua (`MIN(rowid)`). Nunca automático: borrar registros
+financieros es una decisión del producto, no de la infraestructura.
