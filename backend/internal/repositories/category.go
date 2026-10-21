@@ -66,10 +66,6 @@ func (r *CategoryRepository) List(ctx context.Context, status string) ([]domain.
 	return out, nil
 }
 
-func (r *CategoryRepository) Update(ctx context.Context, cat domain.Category) (domain.Category, error) {
-	return domain.Category{}, ErrInvalid
-}
-
 func mapDBCategoryToDomain(c db.Category) domain.Category {
 	return domain.Category{
 		ID:           c.ID,

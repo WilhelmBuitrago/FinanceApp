@@ -17,16 +17,6 @@ func TestErrors_Taxonomy_NotFound(t *testing.T) {
 	}
 }
 
-func TestErrors_Taxonomy_Invalid(t *testing.T) {
-	p := NewTestPersistence(t)
-	ctx := context.Background()
-	acc := domain.Account{ID: "a", UserID: "u", Name: "n", AccountType: "BANK_ACCOUNT", Currency: "USD", Status: "ACTIVE", CreatedAt: "2026-01-01T00:00:00Z", UpdatedAt: "2026-01-01T00:00:00Z"}
-	_, err := p.AccountRepo.Update(ctx, acc)
-	if err != ErrInvalid {
-		t.Fatalf("expected ErrInvalid, got %v", err)
-	}
-}
-
 func TestErrors_Taxonomy_Constraint(t *testing.T) {
 	p := NewTestPersistence(t)
 	ctx := context.Background()

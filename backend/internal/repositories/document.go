@@ -88,8 +88,22 @@ func (r *DocumentRepository) List(ctx context.Context) ([]domain.Document, error
 	return out, nil
 }
 
+// Update persists the mutable document fields: status and updated_at. During
+// the import confirm flow this is what moves a document to PROCESSED and
+// later IMPORTED.
 func (r *DocumentRepository) Update(ctx context.Context, doc domain.Document) (domain.Document, error) {
-	return domain.Document{}, ErrInvalid
+	if r.db.Querier == nil {
+		return domain.Document{}, ErrUnavailable
+	}
+	dbDoc, err := r.db.Querier.UpdateDocument(ctx, db.UpdateDocumentParams{
+		ID:        doc.ID,
+		Status:    doc.Status,
+		UpdatedAt: doc.UpdatedAt,
+	})
+	if err != nil {
+		return domain.Document{}, translateError(err)
+	}
+	return mapDBDocumentToDomain(dbDoc), nil
 }
 
 func mapDBDocumentToDomain(d db.Document) domain.Document {

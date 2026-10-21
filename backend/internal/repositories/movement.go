@@ -142,10 +142,6 @@ func (r *MovementRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r *MovementRepository) Update(ctx context.Context, mv domain.Movement) (domain.Movement, error) {
-	return domain.Movement{}, ErrInvalid
-}
-
 func mapDBMovementToDomain(m db.Movement) domain.Movement {
 	return domain.Movement{
 		ID:               m.ID,

@@ -70,10 +70,6 @@ func (r *FinancialEventRepository) ListByType(ctx context.Context, eventType str
 	return out, nil
 }
 
-func (r *FinancialEventRepository) Update(ctx context.Context, fe domain.FinancialEvent) (domain.FinancialEvent, error) {
-	return domain.FinancialEvent{}, ErrInvalid
-}
-
 func mapDBFinancialEventToDomain(f db.FinancialEvent) domain.FinancialEvent {
 	return domain.FinancialEvent{
 		ID:                 f.ID,

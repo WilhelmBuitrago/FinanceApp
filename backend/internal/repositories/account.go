@@ -85,11 +85,6 @@ func (r *AccountRepository) List(ctx context.Context) ([]domain.Account, error) 
 	return out, nil
 }
 
-func (r *AccountRepository) Update(ctx context.Context, acc domain.Account) (domain.Account, error) {
-	// Update not implemented in SQL
-	return domain.Account{}, ErrInvalid
-}
-
 func mapDBAccountToDomain(a db.Account) domain.Account {
 	return domain.Account{
 		ID:              a.ID,

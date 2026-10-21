@@ -75,10 +75,6 @@ func (r *SourceEntryRepository) ListByDocument(ctx context.Context, documentID s
 	return out, nil
 }
 
-func (r *SourceEntryRepository) Update(ctx context.Context, se domain.SourceEntry) (domain.SourceEntry, error) {
-	return domain.SourceEntry{}, ErrInvalid
-}
-
 func mapDBSourceEntryToDomain(s db.SourceEntry) domain.SourceEntry {
 	return domain.SourceEntry{
 		ID:                    s.ID,

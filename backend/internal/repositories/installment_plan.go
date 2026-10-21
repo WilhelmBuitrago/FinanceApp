@@ -126,10 +126,6 @@ func (r *InstallmentPlanRepository) ListInstallments(ctx context.Context, planID
 	return out, nil
 }
 
-func (r *InstallmentPlanRepository) Update(ctx context.Context, plan domain.InstallmentPlan) (domain.InstallmentPlan, error) {
-	return domain.InstallmentPlan{}, ErrInvalid
-}
-
 func mapDBInstallmentPlanToDomain(p db.InstallmentPlan) domain.InstallmentPlan {
 	return domain.InstallmentPlan{
 		ID:                    p.ID,

@@ -73,19 +73,6 @@ func TestAccount_ListByUserID(t *testing.T) {
 	}
 }
 
-func TestAccount_Update_Invalid(t *testing.T) {
-	p := NewTestPersistence(t)
-	ctx := context.Background()
-	acc := domain.Account{ID: "acc-upd", UserID: "u", Name: "N", AccountType: "BANK_ACCOUNT", Currency: "USD", Status: "ACTIVE", CreatedAt: "2026-01-01T00:00:00Z", UpdatedAt: "2026-01-01T00:00:00Z"}
-	_, err := p.AccountRepo.Update(ctx, acc)
-	if err == nil {
-		t.Fatal("expected error for Update")
-	}
-	if err != ErrInvalid {
-		t.Fatalf("expected ErrInvalid, got %v", err)
-	}
-}
-
 func TestAccount_List_ReturnsEmpty(t *testing.T) {
 	p := NewTestPersistence(t)
 	ctx := context.Background()
