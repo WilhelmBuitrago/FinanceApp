@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	"embed"
-	"io/fs"
 	"sort"
 	"strings"
 )
@@ -52,6 +51,3 @@ func Apply(sqlDB *sql.DB) error {
 	}
 	return nil
 }
-
-// ensure fs import is used for ReadDir typing across Go versions
-var _ = fs.ValidPath
