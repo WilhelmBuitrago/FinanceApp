@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
+	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/log"
@@ -15,12 +17,13 @@ import (
 )
 
 type ImportService struct {
+	cfg           config.Config
 	persistence   *repositories.Persistence
 	importJobRepo *repositories.ImportJobRepo
 }
 
-func NewImportService(p *repositories.Persistence, ijRepo *repositories.ImportJobRepo) *ImportService {
-	return &ImportService{persistence: p, importJobRepo: ijRepo}
+func NewImportService(cfg config.Config, p *repositories.Persistence, ijRepo *repositories.ImportJobRepo) *ImportService {
+	return &ImportService{cfg: cfg, persistence: p, importJobRepo: ijRepo}
 }
 
 func (s *ImportService) Import(ctx context.Context, jobID string) error {
@@ -52,7 +55,7 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 	accountID := *doc.AccountID
 
 	log.Info("Import: reading parsed.json")
-	parsedPath := fmt.Sprintf("C:\\Users\\wilhe\\Documents\\FinanceApp\\data\\artifacts\\%s\\parsed.json", processingID)
+	parsedPath := filepath.Join(s.cfg.ArtifactsPath, processingID, "parsed.json")
 	data, err := os.ReadFile(parsedPath)
 	if err != nil {
 		log.Error("Import: failed to read parsed.json")
@@ -81,7 +84,7 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 	log.Info(fmt.Sprintf("Import: parsed %d movements", len(parsed.Movements)))
 	// Validation check
 	log.Info("Import: reading manifest.json")
-	manifestPath := fmt.Sprintf("C:\\Users\\wilhe\\Documents\\FinanceApp\\data\\artifacts\\%s\\manifest.json", processingID)
+	manifestPath := filepath.Join(s.cfg.ArtifactsPath, processingID, "manifest.json")
 	mData, err := os.ReadFile(manifestPath)
 	if err != nil {
 		log.Error("Import: failed to read manifest.json")
@@ -200,9 +203,11 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 	}
 
 	log.Info("Import: committing transaction")
-	if err := tx.Commit(); err != nil {
-		log.Error("Import: commit failed")
-		return fmt.Errorf("commit: %w", err)
+	if commitErr := tx.Commit(); commitErr != nil {
+		log.Error(fmt.Sprintf("Import: commit failed: %v", commitErr))
+		// Keep the deferred rollback armed: a failed commit may leave an open tx.
+		err = commitErr
+		return fmt.Errorf("commit: %w", commitErr)
 	}
 	log.Info("Import complete")
 	return nil

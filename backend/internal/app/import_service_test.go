@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/repositories"
 )
@@ -37,21 +39,23 @@ func TestImportRollback(t *testing.T) {
 	_, _ = sqlDB.Exec(`INSERT INTO import_jobs(id,document_id,status,created_at,processing_id) VALUES(?,?,?,?,?)`, jobID, docID, "VALIDATING", now, procID)
 
 	// create parsed.json with one movement to trigger error later
-	os.MkdirAll("data/artifacts/"+procID, 0755)
+	artifacts := t.TempDir()
+	t.Setenv("ARTIFACTS_PATH", artifacts)
+	os.MkdirAll(filepath.Join(artifacts, procID), 0755)
 	parsed := `{"validation":{"valid":true},"movements":[{"date_original":"01","date_normalized":"2026-01-01","description_original":"test","amount_normalized":100,"page_number":1,"sequence":1}]}`
-	os.WriteFile("data/artifacts/"+procID+"/parsed.json", []byte(parsed), 0644)
+	os.WriteFile(filepath.Join(artifacts, procID, "parsed.json"), []byte(parsed), 0644)
 	manifest := `{"validation":{"valid":true}}`
-	os.WriteFile("data/artifacts/"+procID+"/manifest.json", []byte(manifest), 0644)
+	os.WriteFile(filepath.Join(artifacts, procID, "manifest.json"), []byte(manifest), 0644)
 
 	querier := db.New(sqlDB)
 	persistence := &repositories.Persistence{DB: sqlDB, Querier: querier}
 	importJobRepo := repositories.NewImportJobRepo(sqlDB)
-	service := NewImportService(persistence, importJobRepo)
+	service := NewImportService(config.Load(), persistence, importJobRepo)
 
 	// Simulate failure by making financial_events insert fail via constraint: we will insert a bad event_type by monkey patching? Instead we rely on validation false.
 
 	// For rollback test, we can set validation false to ensure no transaction starts
-	os.WriteFile("data/artifacts/"+procID+"/manifest.json", []byte(`{"validation":{"valid":false}}`), 0644)
+	os.WriteFile(filepath.Join(artifacts, procID, "manifest.json"), []byte(`{"validation":{"valid":false}}`), 0644)
 	err = service.Import(context.Background(), jobID)
 	if err == nil { t.Fatal("expected error") }
 

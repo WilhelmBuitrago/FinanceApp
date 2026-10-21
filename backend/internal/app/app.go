@@ -30,7 +30,7 @@ func New(cfg config.Config, db *sql.DB, persistence *repositories.Persistence) *
 		Persistence:  persistence,
 		ImportJobRepo: importJobRepo,
 		DocRepo:      persistence.DocumentRepo,
-		ImportService: NewImportService(persistence, importJobRepo),
+		ImportService: NewImportService(cfg, persistence, importJobRepo),
 	}
 }
 
