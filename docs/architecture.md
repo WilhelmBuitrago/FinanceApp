@@ -49,11 +49,15 @@ Go lee `manifest.json` y `parsed.json`. La ruta base se configura con
 
 ## Notas conocidas (a resolver en v0.1.1)
 
-- Migraciones duplicadas: `backend/db/migrations/` y
-  `backend/internal/db/migrations/` contienen el mismo juego de archivos.
-  Falta unificar la fuente de verdad.
-- `backend/internal/bootstrap/bootstrap.go` referencia
-  `apps/processor/requirements.txt`, pero solo existe `requirements-lock.txt`.
-- `cmd/bootstrap/main.go` no pertenece al módulo Go (no compila) y no tiene
-  referencias en el repo. Pendiente de decisión: mover a `backend/cmd/` o
-  eliminar.
+- Cinco pruebas de `internal/repositories` fallan con errores de dominio
+  (`internal error`, `service unavailable`, `expected foreign key error`).
+  El fallo es previo a la unificación de migraciones y quedó pendiente de
+  diagnóstico.
+
+## Historial de limpieza
+
+- Migraciones unificadas en `internal/db/migrations/` (fuente de producción,
+  embebida con `go:embed`); `sqlc.yaml` y las pruebas apuntan ahí.
+- `EnsurePythonEnv` (que referenciaba `apps/processor/requirements.txt`,
+  inexistente) fue eliminado: su único consumidor era el bootstrap muerto.
+  La instalación usa `requirements-lock.txt` offline con wheels verificados.

@@ -50,30 +50,6 @@ func withNoWindow(cmd *exec.Cmd) {
 	}
 }
 
-func EnsurePythonEnv(baseDir string) error {
-	venvPath := filepath.Join(baseDir, ".venv")
-	if _, err := os.Stat(venvPath); os.IsNotExist(err) {
-		fmt.Println("Creating Python virtual environment...")
-		cmd := exec.Command("python", "-m", "venv", venvPath)
-		withNoWindow(cmd)
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("venv creation failed: %w", err)
-		}
-	}
-	pip := filepath.Join(venvPath, "Scripts", "pip.exe")
-	if runtime.GOOS != "windows" {
-		pip = filepath.Join(venvPath, "bin", "pip")
-	}
-	fmt.Println("Installing processor requirements...")
-	reqPath := filepath.Join(baseDir, "apps", "processor", "requirements.txt")
-	cmd := exec.Command(pip, "install", "-r", reqPath)
-	withNoWindow(cmd)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("pip install failed: %w", err)
-	}
-	return nil
-}
-
 const (
 	PythonVersion = "3.12.10"
 	PythonURL     = "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.zip"
