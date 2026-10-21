@@ -35,6 +35,7 @@ func applyMigrations(t *testing.T, sqlDB *sql.DB) error {
 		"../db/migrations/0003_import_review_staging.sql",
 		"../db/migrations/0004_align_schema_with_generated_queries.sql",
 		"../db/migrations/0005_expand_component_types.sql",
+		"../db/migrations/0006_normalize_component_types.sql",
 	}
 	for _, path := range migrations {
 		content, err := os.ReadFile(path)

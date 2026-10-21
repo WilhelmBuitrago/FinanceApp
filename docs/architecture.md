@@ -49,14 +49,16 @@ Go lee `manifest.json` y `parsed.json`. La ruta base se configura con
 
 ## Notas de dominio
 
-- **Catálogo de componentes de movimiento** — regla dura en el plano:
-  `CAPITAL`, `INTEREST`, `FEE` (cuota de manejo), `SEGURO`, `MORA`. Vive como
-  CHECK en `movement_components.component_type`; la migración 0005 lo amplió
-  desde el par inicial. Cada tarjeta de crédito es un instrumento separado
-  asociado a una cuenta (una tarjeta Nu no equivale a una de otro banco), así
-  que el catálogo crece por emisor. SQLite no permite alterar un CHECK:
-  ampliarlo exige recrear la tabla (procedimiento en
+- **Catálogo de componentes de movimiento** — regla dura en el plano, en
+  inglés: `CAPITAL`, `INTEREST`, `FEE` (cuota de manejo), `INSURANCE`,
+  `LATE_FEE`. Vive como CHECK en `movement_components.component_type`
+  (migraciones 0005 y 0006). Cada tarjeta de crédito es un instrumento
+  separado asociado a una cuenta (una tarjeta Nu no equivale a una de otro
+  banco), así que el catálogo crece por emisor. SQLite no permite alterar un
+  CHECK: ampliarlo exige recrear la tabla (procedimiento en
   `0005_expand_component_types.sql`), barato mientras la tabla está vacía.
+  La migración 0006 normalizó los valores a inglés y traduce los datos
+  existentes (`SEGURO`→`INSURANCE`, `MORA`→`LATE_FEE`) antes de copiarlos.
 - **Cuotas por plan** — el índice único
   `(installment_plan_id, installment_number)` garantiza un número de cuota por
   plan. Pendiente de decisión: procedimiento si una base preexistente llegara

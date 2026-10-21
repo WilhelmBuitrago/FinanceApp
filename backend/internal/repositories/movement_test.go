@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -142,8 +143,8 @@ func TestMovement_ComponentTypes_NuCatalog(t *testing.T) {
 		{ID: "nu-c1", MovementID: "mv-nu-types", ComponentType: "CAPITAL", AmountMinor: 200000, CreatedAt: now, UpdatedAt: now},
 		{ID: "nu-c2", MovementID: "mv-nu-types", ComponentType: "INTEREST", AmountMinor: 30000, CreatedAt: now, UpdatedAt: now},
 		{ID: "nu-c3", MovementID: "mv-nu-types", ComponentType: "FEE", AmountMinor: 10000, CreatedAt: now, UpdatedAt: now},
-		{ID: "nu-c4", MovementID: "mv-nu-types", ComponentType: "SEGURO", AmountMinor: 8000, CreatedAt: now, UpdatedAt: now},
-		{ID: "nu-c5", MovementID: "mv-nu-types", ComponentType: "MORA", AmountMinor: 2000, CreatedAt: now, UpdatedAt: now},
+		{ID: "nu-c4", MovementID: "mv-nu-types", ComponentType: "INSURANCE", AmountMinor: 8000, CreatedAt: now, UpdatedAt: now},
+		{ID: "nu-c5", MovementID: "mv-nu-types", ComponentType: "LATE_FEE", AmountMinor: 2000, CreatedAt: now, UpdatedAt: now},
 	}
 	if _, err := p.MovementRepo.Create(ctx, mv, comps); err != nil {
 		t.Fatalf("Nu component catalog rejected: %v", err)
@@ -154,5 +155,14 @@ func TestMovement_ComponentTypes_NuCatalog(t *testing.T) {
 	}
 	if len(got) != 5 {
 		t.Fatalf("expected 5 components, got %d", len(got))
+	}
+
+	// Legacy Spanish values are rejected after the normalization to English.
+	legacy := domain.Movement{ID: "mv-legacy-type", FinancialEventID: "fe-nu-types", AccountID: "acc-nu-types", MovementDate: "2026-10-02", AmountMinor: 5000, Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
+	legacyComps := []domain.MovementComponent{
+		{ID: "legacy-c1", MovementID: "mv-legacy-type", ComponentType: "SEGURO", AmountMinor: 5000, CreatedAt: now, UpdatedAt: now},
+	}
+	if _, err := p.MovementRepo.Create(ctx, legacy, legacyComps); !errors.Is(err, ErrConstraint) {
+		t.Fatalf("expected legacy Spanish component type to be rejected with ErrConstraint, got %v", err)
 	}
 }
