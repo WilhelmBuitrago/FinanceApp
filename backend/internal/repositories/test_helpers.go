@@ -9,8 +9,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"financeapp/backend/internal/db"
 )
 
 func setupTestDB(t *testing.T) *sql.DB {
@@ -70,18 +68,4 @@ func NewTestPersistence(t *testing.T) *Persistence {
 	sqlDB := setupTestDB(t)
 	p := NewPersistence(sqlDB)
 	return p
-}
-
-func NewTestQuerier(t *testing.T) db.Querier {
-	t.Helper()
-	sqlDB := setupTestDB(t)
-	return db.New(sqlDB)
-}
-
-func NewTestDBQuerierPersistence(t *testing.T) (*sql.DB, db.Querier, *Persistence) {
-	t.Helper()
-	sqlDB := setupTestDB(t)
-	querier := db.New(sqlDB)
-	persistence := NewPersistence(sqlDB)
-	return sqlDB, querier, persistence
 }
