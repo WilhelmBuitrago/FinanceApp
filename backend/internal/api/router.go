@@ -227,13 +227,13 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 		logpkg.LogMsg("[MOVEMENT CREATE] Request received")
 		force := r.URL.Query().Get("force") == "true"
 		var req struct {
-			AmountMinor   int64  `json:"amountMinor"`
-			Type          string `json:"type"`
-			AccountID     string `json:"accountId"`
-			ToAccountID   string `json:"toAccountId,omitempty"`
-			Description   string `json:"description"`
-			Date          string `json:"date"`
-			CategoryID    string `json:"categoryId,omitempty"`
+			AmountMinor int64  `json:"amount_minor"`
+			Type        string `json:"type"`
+			AccountID   string `json:"account_id"`
+			ToAccountID string `json:"to_account_id,omitempty"`
+			Description string `json:"description"`
+			Date        string `json:"date"`
+			CategoryID  string `json:"category_id,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			logpkg.LogMsg("[MOVEMENT CREATE] Invalid body: " + err.Error())
@@ -270,7 +270,11 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
-		_, _ = eventRepo.Create(r.Context(), fe)
+		if _, err := eventRepo.Create(r.Context(), fe); err != nil {
+			logpkg.LogMsg(fmt.Sprintf("[MOVEMENT CREATE] financial event create failed: %v", err))
+			writeRepoError(w, err)
+			return
+		}
 		mvID := fmt.Sprintf("mv_manual_%d", time.Now().UnixNano())
 		mv := domain.Movement{
 			ID: mvID,
@@ -283,7 +287,11 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
-		_, _ = movementRepo.Create(r.Context(), mv, []domain.MovementComponent{})
+		if _, err := movementRepo.Create(r.Context(), mv, []domain.MovementComponent{}); err != nil {
+			logpkg.LogMsg(fmt.Sprintf("[MOVEMENT CREATE] movement create failed: %v", err))
+			writeRepoError(w, err)
+			return
+		}
 		logpkg.LogMsg(fmt.Sprintf("[MOVEMENT CREATE] Created movement %s", mvID))
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
