@@ -4,13 +4,21 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
-var runID int
-var file *os.File
+// Guards every write to the shared log file: the HTTP server handles requests
+// in concurrent goroutines and all of them log.
+var (
+	mu    sync.Mutex
+	runID int
+	file  *os.File
+)
 
 func logWrite(msg string) {
+	mu.Lock()
+	defer mu.Unlock()
 	if file == nil {
 		return
 	}
@@ -28,6 +36,8 @@ func InitRun(logDir string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	mu.Lock()
+	defer mu.Unlock()
 	file = f
 	runID++
 	ts := time.Now().Format("15:04:05")
@@ -40,11 +50,15 @@ func Log(f *os.File, msg string) {
 	if f == nil {
 		return
 	}
+	mu.Lock()
+	defer mu.Unlock()
 	ts := time.Now().Format("15:04:05")
 	fmt.Fprintf(f, "[%s] %s\n", ts, msg)
 }
 
 func LogMsg(msg string) {
+	mu.Lock()
+	defer mu.Unlock()
 	if file == nil {
 		return
 	}
