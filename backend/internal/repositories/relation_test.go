@@ -30,7 +30,7 @@ func TestRelation_MovementRelation_CreateList(t *testing.T) {
 	if err != nil { t.Fatalf("create relation: %v", err) }
 	if created.ID != rel.ID { t.Fatalf("id mismatch") }
 
-	list, err := p.RelationRepo.ListMovementRelations(ctx, "mv-r1", "")
+	list, err := p.RelationRepo.ListMovementRelations(ctx, "mv-r1")
 	if err != nil { t.Fatalf("list: %v", err) }
 	if len(list) == 0 { t.Fatalf("expected at least one relation") }
 }

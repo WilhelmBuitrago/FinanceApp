@@ -59,11 +59,12 @@ func (r *RelationRepository) CreateEventRelation(ctx context.Context, rel domain
 	return mapDBEventRelationToDomain(dbRel), nil
 }
 
-func (r *RelationRepository) ListMovementRelations(ctx context.Context, movementID string, direction string) ([]domain.MovementRelation, error) {
+// ListMovementRelations returns every relation a movement takes part in,
+// incoming or outgoing (the query matches either side).
+func (r *RelationRepository) ListMovementRelations(ctx context.Context, movementID string) ([]domain.MovementRelation, error) {
 	if r.db.Querier == nil {
 		return nil, ErrUnavailable
 	}
-	// Simplified: list by movement_id_a
 	params := db.ListRelationsByMovementParams{
 		MovementIDA: movementID,
 		MovementIDB: movementID,

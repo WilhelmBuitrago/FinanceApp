@@ -95,6 +95,10 @@ Thumbs.db
 *.exe
 *.dll
 
+# Local runtime and build outputs (carpetas operativas del backend)
+backend/logs/
+backend/out/
+
 # ==================================================
 # Skills
 # ==================================================

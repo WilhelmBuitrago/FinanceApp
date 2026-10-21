@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"financeapp/backend/internal/log"
 )
@@ -21,15 +20,11 @@ func RunProcessor(pdfPath string, accountID string) (*ProcessorResult, error) {
 	log.Info(fmt.Sprintf("RunProcessor start pdf=%s account=%s", pdfPath, accountID))
 	pythonPath := os.Getenv("PROCESSOR_PYTHON")
 	if pythonPath == "" {
-		if os.PathSeparator == '\\' {
-			pythonPath = filepath.Join(os.Getenv("APPDATA"), "FinanceApp", "venv", "Scripts", "python.exe")
-		} else {
-			pythonPath = filepath.Join(os.Getenv("APPDATA"), "FinanceApp", "venv", "bin", "python")
-		}
+		return nil, fmt.Errorf("PROCESSOR_PYTHON not set: the desktop shell passes the prepared runtime path")
 	}
 	scriptPath := os.Getenv("PROCESSOR_SCRIPT")
 	if scriptPath == "" {
-		scriptPath = filepath.Join(os.Getenv("APPDATA"), "FinanceApp", "processor", "src", "main.py")
+		return nil, fmt.Errorf("PROCESSOR_SCRIPT not set: the desktop shell passes the processor entrypoint")
 	}
 	log.Info(fmt.Sprintf("Processor python=%s script=%s", pythonPath, scriptPath))
 	cmd := exec.Command(pythonPath, scriptPath, pdfPath)
