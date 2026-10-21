@@ -23,14 +23,13 @@ type Application struct {
 }
 
 func New(cfg config.Config, db *sql.DB, persistence *repositories.Persistence) *Application {
-	importJobRepo := repositories.NewImportJobRepo(db)
 	return &Application{
 		Cfg:          cfg,
 		DB:           db,
 		Persistence:  persistence,
-		ImportJobRepo: importJobRepo,
+		ImportJobRepo: persistence.ImportJobRepo,
 		DocRepo:      persistence.DocumentRepo,
-		ImportService: NewImportService(cfg, persistence, importJobRepo),
+		ImportService: NewImportService(cfg, persistence, persistence.ImportJobRepo),
 	}
 }
 

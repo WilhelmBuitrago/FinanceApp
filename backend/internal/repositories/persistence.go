@@ -17,6 +17,7 @@ type Persistence struct {
 	MovementRepo        *MovementRepository
 	InstallmentPlanRepo *InstallmentPlanRepository
 	RelationRepo        *RelationRepository
+	ImportJobRepo       *ImportJobRepo
 }
 
 func NewPersistence(sqlDB *sql.DB) *Persistence {
@@ -35,5 +36,6 @@ func NewPersistence(sqlDB *sql.DB) *Persistence {
 		MovementRepo:        NewMovementRepository(repoDB),
 		InstallmentPlanRepo: NewInstallmentPlanRepository(repoDB),
 		RelationRepo:        NewRelationRepository(repoDB),
+		ImportJobRepo:       NewImportJobRepo(repoDB),
 	}
 }

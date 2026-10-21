@@ -49,7 +49,7 @@ func TestImportService_ReadsConfiguredArtifactsPath(t *testing.T) {
 		t.Fatalf("document: %v", err)
 	}
 
-	jobRepo := repositories.NewImportJobRepo(sqlDB)
+	jobRepo := repositories.NewImportJobRepo(&repositories.DB{Querier: db.New(sqlDB)})
 	procID := "proc-imp"
 	if _, err := jobRepo.Create(context.Background(), entities.ImportJob{
 		ID: "job-imp", DocumentID: "doc-imp", Status: "PROCESSING",

@@ -3,46 +3,78 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"errors"
+
+	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/domain/entities"
 )
 
 type ImportJobRepo struct {
-	db *sql.DB
+	db *DB
 }
 
-func NewImportJobRepo(db *sql.DB) *ImportJobRepo {
+func NewImportJobRepo(db *DB) *ImportJobRepo {
 	return &ImportJobRepo{db: db}
 }
 
 func (r *ImportJobRepo) Create(ctx context.Context, job entities.ImportJob) (entities.ImportJob, error) {
-	_, err := r.db.ExecContext(ctx, `INSERT INTO import_jobs(id, document_id, status, created_at, processing_id) VALUES(?,?,?,?,?)`,
-		job.ID, job.DocumentID, job.Status, job.CreatedAt, job.ProcessingID)
-	if err != nil {
-		return entities.ImportJob{}, err
+	if r.db.Querier == nil {
+		return entities.ImportJob{}, ErrUnavailable
 	}
-	return job, nil
+	dbJob, err := r.db.Querier.CreateImportJob(ctx, db.CreateImportJobParams{
+		ID:           job.ID,
+		DocumentID:   job.DocumentID,
+		Status:       job.Status,
+		CreatedAt:    job.CreatedAt,
+		ProcessingID: toNullString(job.ProcessingID),
+	})
+	if err != nil {
+		return entities.ImportJob{}, translateError(err)
+	}
+	return mapDBImportJobToEntities(dbJob), nil
 }
 
 func (r *ImportJobRepo) GetByID(ctx context.Context, id string) (entities.ImportJob, error) {
-	row := r.db.QueryRowContext(ctx, `SELECT id, document_id, status, created_at, started_at, finished_at, error, processing_id FROM import_jobs WHERE id=?`, id)
-	var job entities.ImportJob
-	var started, finished, errStr sql.NullString
-	var processing sql.NullString
-	if err := row.Scan(&job.ID, &job.DocumentID, &job.Status, &job.CreatedAt, &started, &finished, &errStr, &processing); err != nil {
-		return entities.ImportJob{}, err
+	if r.db.Querier == nil {
+		return entities.ImportJob{}, ErrUnavailable
 	}
-	if started.Valid { s := started.String; job.StartedAt = &s }
-	if finished.Valid { s := finished.String; job.FinishedAt = &s }
-	if errStr.Valid { s := errStr.String; job.Error = &s }
-	if processing.Valid { s := processing.String; job.ProcessingID = &s }
-	return job, nil
+	dbJob, err := r.db.Querier.GetImportJob(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entities.ImportJob{}, ErrNotFound
+		}
+		return entities.ImportJob{}, translateError(err)
+	}
+	return mapDBImportJobToEntities(dbJob), nil
 }
 
 func (r *ImportJobRepo) Update(ctx context.Context, job entities.ImportJob) (entities.ImportJob, error) {
-	_, err := r.db.ExecContext(ctx, `UPDATE import_jobs SET status=?, started_at=?, finished_at=?, error=?, processing_id=? WHERE id=?`,
-		job.Status, job.StartedAt, job.FinishedAt, job.Error, job.ProcessingID, job.ID)
-	if err != nil {
-		return entities.ImportJob{}, err
+	if r.db.Querier == nil {
+		return entities.ImportJob{}, ErrUnavailable
 	}
-	return job, nil
+	dbJob, err := r.db.Querier.UpdateImportJob(ctx, db.UpdateImportJobParams{
+		ID:           job.ID,
+		Status:       job.Status,
+		StartedAt:    toNullString(job.StartedAt),
+		FinishedAt:   toNullString(job.FinishedAt),
+		Error:        toNullString(job.Error),
+		ProcessingID: toNullString(job.ProcessingID),
+	})
+	if err != nil {
+		return entities.ImportJob{}, translateError(err)
+	}
+	return mapDBImportJobToEntities(dbJob), nil
+}
+
+func mapDBImportJobToEntities(j db.ImportJob) entities.ImportJob {
+	return entities.ImportJob{
+		ID:           j.ID,
+		DocumentID:   j.DocumentID,
+		Status:       j.Status,
+		CreatedAt:    j.CreatedAt,
+		StartedAt:    fromNullString(j.StartedAt),
+		FinishedAt:   fromNullString(j.FinishedAt),
+		Error:        fromNullString(j.Error),
+		ProcessingID: fromNullString(j.ProcessingID),
+	}
 }

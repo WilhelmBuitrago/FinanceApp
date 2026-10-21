@@ -27,7 +27,7 @@ func newTestRouter(t *testing.T) (http.Handler, *sql.DB) {
 	repoDB := &repositories.DB{Querier: db.New(sqlDB)}
 	router := NewRouter(config.Load(),
 		repositories.NewDocumentRepository(repoDB),
-		repositories.NewImportJobRepo(sqlDB),
+		repositories.NewImportJobRepo(&repositories.DB{Querier: db.New(sqlDB)}),
 		repositories.NewAccountRepository(repoDB),
 		repositories.NewMovementRepository(repoDB),
 		repositories.NewFinancialEventRepository(repoDB),

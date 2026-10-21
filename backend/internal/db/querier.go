@@ -15,6 +15,7 @@ type Querier interface {
 	CreateDocument(ctx context.Context, arg CreateDocumentParams) (Document, error)
 	CreateEventRelation(ctx context.Context, arg CreateEventRelationParams) (EventRelation, error)
 	CreateFinancialEvent(ctx context.Context, arg CreateFinancialEventParams) (FinancialEvent, error)
+	CreateImportJob(ctx context.Context, arg CreateImportJobParams) (ImportJob, error)
 	CreateInstallment(ctx context.Context, arg CreateInstallmentParams) (Installment, error)
 	CreateInstallmentPlan(ctx context.Context, arg CreateInstallmentPlanParams) (InstallmentPlan, error)
 	CreateMovement(ctx context.Context, arg CreateMovementParams) (Movement, error)
@@ -27,6 +28,7 @@ type Querier interface {
 	GetDocument(ctx context.Context, id string) (Document, error)
 	GetEventRelation(ctx context.Context, id string) (EventRelation, error)
 	GetFinancialEvent(ctx context.Context, id string) (FinancialEvent, error)
+	GetImportJob(ctx context.Context, id string) (ImportJob, error)
 	GetInstallment(ctx context.Context, id string) (Installment, error)
 	GetInstallmentPlan(ctx context.Context, id string) (InstallmentPlan, error)
 	GetMovement(ctx context.Context, id string) (Movement, error)
@@ -46,6 +48,7 @@ type Querier interface {
 	ListRelationsByEvent(ctx context.Context, arg ListRelationsByEventParams) ([]EventRelation, error)
 	ListRelationsByMovement(ctx context.Context, arg ListRelationsByMovementParams) ([]MovementRelation, error)
 	ListSourceEntriesByDocument(ctx context.Context, documentID string) ([]SourceEntry, error)
+	UpdateImportJob(ctx context.Context, arg UpdateImportJobParams) (ImportJob, error)
 }
 
 var _ Querier = (*Queries)(nil)

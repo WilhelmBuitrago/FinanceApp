@@ -194,10 +194,12 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 		}
 	}
 
-	// Update job to SUCCESS within same tx
-	log.Info("Import: updating job status to SUCCESS")
-	_, err = tx.ExecContext(ctx, `UPDATE import_jobs SET status=?, finished_at=? WHERE id=?`, "SUCCESS", now, jobID)
-	if err != nil {
+	// Update job to SUCCESS within same tx (repo bound to the transaction so
+	// the status change commits or rolls back with the movements).
+	jobTxRepo := repositories.NewImportJobRepo(&repositories.DB{Querier: db.New(tx)})
+	job.Status = "SUCCESS"
+	job.FinishedAt = &now
+	if _, err := jobTxRepo.Update(ctx, job); err != nil {
 		log.Error("Import: failed to update job to SUCCESS")
 		return fmt.Errorf("update job success: %w", err)
 	}
