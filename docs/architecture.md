@@ -45,7 +45,20 @@ Go lee `manifest.json` y `parsed.json`. La ruta base se configura con
 - Versión fijada: **3.12.10 x64 embebible**, verificada por SHA256.
 - Dependencias fijas en `apps/processor/requirements-lock.txt`.
 - Ruedas pre-descargadas (`resources/python-wheels`) para instalación offline.
-- Bootstrap idempotente con marcador de estado (`.python-ready`).
+- La preparación es del **instalador**: `prepare-python.ps1` crea el venv
+  versionado y el marcador `.python-ready` en `%PROGRAMDATA%\FinanceApp`.
+- El backend **solo valida** al arrancar (`internal/bootstrap/python_runtime.go`):
+  marcador, hash de requirements, versión e imports. No descarga ni instala.
+
+## Configuración y pruebas
+
+- Tauri pasa al backend las rutas por variables de entorno
+  (`DATABASE_PATH`, `ARTIFACTS_PATH`, `LOGS_PATH`, `PORT`, `PROCESSOR_*`);
+  `internal/config` las lee con defaults bajo `%APPDATA%\FinanceApp` y es la
+  única fuente: los handlers y el servicio de importación las reciben
+  inyectadas, nada resuelve rutas relativas.
+- Todas las pruebas viven en `backend/tests/` (package `tests`, de caja
+  negra) y se corren con `go test ./...` desde `backend/`.
 
 ## Notas de dominio
 
