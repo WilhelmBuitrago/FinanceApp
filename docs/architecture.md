@@ -47,12 +47,20 @@ Go lee `manifest.json` y `parsed.json`. La ruta base se configura con
 - Ruedas pre-descargadas (`resources/python-wheels`) para instalación offline.
 - Bootstrap idempotente con marcador de estado (`.python-ready`).
 
-## Notas conocidas (a resolver en v0.1.1)
+## Notas de dominio
 
-- Cinco pruebas de `internal/repositories` fallan con errores de dominio
-  (`internal error`, `service unavailable`, `expected foreign key error`).
-  El fallo es previo a la unificación de migraciones y quedó pendiente de
-  diagnóstico.
+- **Catálogo de componentes de movimiento** — regla dura en el plano:
+  `CAPITAL`, `INTEREST`, `FEE` (cuota de manejo), `SEGURO`, `MORA`. Vive como
+  CHECK en `movement_components.component_type`; la migración 0005 lo amplió
+  desde el par inicial. Cada tarjeta de crédito es un instrumento separado
+  asociado a una cuenta (una tarjeta Nu no equivale a una de otro banco), así
+  que el catálogo crece por emisor. SQLite no permite alterar un CHECK:
+  ampliarlo exige recrear la tabla (procedimiento en
+  `0005_expand_component_types.sql`), barato mientras la tabla está vacía.
+- **Cuotas por plan** — el índice único
+  `(installment_plan_id, installment_number)` garantiza un número de cuota por
+  plan. Pendiente de decisión: procedimiento si una base preexistente llegara
+  a tener duplicados al momento de crear el índice.
 
 ## Historial de limpieza
 

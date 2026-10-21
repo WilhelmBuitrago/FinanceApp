@@ -118,3 +118,41 @@ func TestMovement_DuplicateDocumentaryValues_Independence(t *testing.T) {
 		t.Fatal("independence broken")
 	}
 }
+
+// TestMovement_ComponentTypes_NuCatalog pins the credit-card component catalog:
+// capital, interest, fee (cuota de manejo), seguro and mora. Nu cards are
+// separate instruments bound to an account, so the breakdown must cover the
+// five types this issuer produces.
+func TestMovement_ComponentTypes_NuCatalog(t *testing.T) {
+	p := NewTestPersistence(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	acc := domain.Account{ID: "acc-nu-types", UserID: "u", Name: "Nu", AccountType: "CREDIT_CARD", Currency: "COP", Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
+	if _, err := p.AccountRepo.Create(ctx, acc); err != nil {
+		t.Fatalf("acc: %v", err)
+	}
+	fe := domain.FinancialEvent{ID: "fe-nu-types", EventType: "EXPENSE", Status: "ACTIVE", VerificationStatus: "VERIFIED", CreatedAt: now, UpdatedAt: now}
+	if _, err := p.FinancialEventRepo.Create(ctx, fe); err != nil {
+		t.Fatalf("event: %v", err)
+	}
+
+	mv := domain.Movement{ID: "mv-nu-types", FinancialEventID: "fe-nu-types", AccountID: "acc-nu-types", MovementDate: "2026-10-01", AmountMinor: 250000, Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
+	comps := []domain.MovementComponent{
+		{ID: "nu-c1", MovementID: "mv-nu-types", ComponentType: "CAPITAL", AmountMinor: 200000, CreatedAt: now, UpdatedAt: now},
+		{ID: "nu-c2", MovementID: "mv-nu-types", ComponentType: "INTEREST", AmountMinor: 30000, CreatedAt: now, UpdatedAt: now},
+		{ID: "nu-c3", MovementID: "mv-nu-types", ComponentType: "FEE", AmountMinor: 10000, CreatedAt: now, UpdatedAt: now},
+		{ID: "nu-c4", MovementID: "mv-nu-types", ComponentType: "SEGURO", AmountMinor: 8000, CreatedAt: now, UpdatedAt: now},
+		{ID: "nu-c5", MovementID: "mv-nu-types", ComponentType: "MORA", AmountMinor: 2000, CreatedAt: now, UpdatedAt: now},
+	}
+	if _, err := p.MovementRepo.Create(ctx, mv, comps); err != nil {
+		t.Fatalf("Nu component catalog rejected: %v", err)
+	}
+	got, err := p.MovementRepo.ListComponents(ctx, "mv-nu-types")
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(got) != 5 {
+		t.Fatalf("expected 5 components, got %d", len(got))
+	}
+}
