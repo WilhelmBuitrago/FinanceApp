@@ -80,3 +80,31 @@ the consequence is real, stop and ask the maintainer instead of improvising.
   check fails, say it failed and show why.
 - Keep the maintainer in control: he decides delivery, branches, merges and
   anything user-visible.
+
+## 6. Folder READMEs (standard)
+
+Every main folder of the repository keeps a `README.md` with exactly three
+sections, in this order:
+
+1. **Resumen** — what lives in the folder and what it is for, in two to four
+   lines.
+2. **Estructura** — the folder rendered as a tree with working relative
+   hyperlinks: one entry per file or directory, each with a one-line purpose
+   note. Links resolve from the README's own location.
+3. **Estado** — the current verified state: versions, what passes (with the
+   command that proves it), what is pending or broken. Never list a check you
+   did not run.
+
+Rules:
+
+- "Main folders" are the runtime and product folders (`apps/desktop`,
+  `apps/processor`, `backend`, `docs`) plus any new top-level folder holding
+  product code or shipped configuration.
+- Folder READMEs follow the repository documentation language (Spanish);
+  code artifacts stay English.
+- A folder README is updated in the same commit that adds, moves or removes
+  files in it: the tree is a map of the folder, not a changelog.
+- The root `README.md` is the product page (badges, download, license) and
+  keeps its own format; this standard applies to every other folder.
+- Local user data (`data/`, `backend/data/`, `backend/logs/`, `backend/out/`)
+  never enters the repository and gets no README.
