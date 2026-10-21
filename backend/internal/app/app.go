@@ -52,14 +52,11 @@ func (a *Application) Start(ctx context.Context) error {
 	}
 	go func() {
 		log.Info(fmt.Sprintf("HTTP server listening on %s", addr))
-		fmt.Printf("HTTP server listening on %s\n", addr)
 		if err := a.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Error(fmt.Sprintf("server error: %v", err))
-			fmt.Printf("server error: %v\n", err)
 		}
 	}()
 	log.Info("Application started")
-	fmt.Println("Application started")
 	return nil
 }
 
@@ -80,7 +77,6 @@ func (a *Application) Stop(ctx context.Context) error {
 		log.Info("Database closed")
 	}
 	log.Info("Application stopped")
-	fmt.Println("Application stopped")
 	return nil
 }
 
