@@ -48,6 +48,7 @@ type Querier interface {
 	ListRelationsByEvent(ctx context.Context, arg ListRelationsByEventParams) ([]EventRelation, error)
 	ListRelationsByMovement(ctx context.Context, arg ListRelationsByMovementParams) ([]MovementRelation, error)
 	ListSourceEntriesByDocument(ctx context.Context, documentID string) ([]SourceEntry, error)
+	UpdateDocument(ctx context.Context, arg UpdateDocumentParams) (Document, error)
 	UpdateImportJob(ctx context.Context, arg UpdateImportJobParams) (ImportJob, error)
 }
 

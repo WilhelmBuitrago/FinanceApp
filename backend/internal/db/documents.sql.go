@@ -194,3 +194,37 @@ func (q *Queries) ListDocumentsByAccount(ctx context.Context, accountID sql.Null
 	}
 	return items, nil
 }
+
+const updateDocument = `-- name: UpdateDocument :one
+UPDATE documents SET status = ?, updated_at = ?
+WHERE id = ?
+RETURNING id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at
+`
+
+type UpdateDocumentParams struct {
+	Status    string `json:"status"`
+	UpdatedAt string `json:"updated_at"`
+	ID        string `json:"id"`
+}
+
+func (q *Queries) UpdateDocument(ctx context.Context, arg UpdateDocumentParams) (Document, error) {
+	row := q.db.QueryRowContext(ctx, updateDocument, arg.Status, arg.UpdatedAt, arg.ID)
+	var i Document
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.DocumentType,
+		&i.Institution,
+		&i.DocumentName,
+		&i.PeriodStart,
+		&i.PeriodEnd,
+		&i.DocumentDate,
+		&i.FileHash,
+		&i.SourceUri,
+		&i.Status,
+		&i.MetadataJson,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
