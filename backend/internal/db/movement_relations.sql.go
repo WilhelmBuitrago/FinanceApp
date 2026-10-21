@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createMovementRelation = `-- name: CreateMovementRelation :one
@@ -26,15 +27,15 @@ INSERT INTO movement_relations (
 `
 
 type CreateMovementRelationParams struct {
-	ID           string      `json:"id"`
-	MovementIDA  string      `json:"movement_id_a"`
-	MovementIDB  string      `json:"movement_id_b"`
-	RelationType string      `json:"relation_type"`
-	Status       string      `json:"status"`
-	Confidence   interface{} `json:"confidence"`
-	Reason       interface{} `json:"reason"`
-	CreatedAt    string      `json:"created_at"`
-	UpdatedAt    string      `json:"updated_at"`
+	ID           string          `json:"id"`
+	MovementIDA  string          `json:"movement_id_a"`
+	MovementIDB  string          `json:"movement_id_b"`
+	RelationType string          `json:"relation_type"`
+	Status       string          `json:"status"`
+	Confidence   sql.NullFloat64 `json:"confidence"`
+	Reason       sql.NullString  `json:"reason"`
+	CreatedAt    string          `json:"created_at"`
+	UpdatedAt    string          `json:"updated_at"`
 }
 
 func (q *Queries) CreateMovementRelation(ctx context.Context, arg CreateMovementRelationParams) (MovementRelation, error) {

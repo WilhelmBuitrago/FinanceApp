@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createDocument = `-- name: CreateDocument :one
@@ -31,20 +32,20 @@ INSERT INTO documents (
 `
 
 type CreateDocumentParams struct {
-	ID           string      `json:"id"`
-	AccountID    interface{} `json:"account_id"`
-	DocumentType string      `json:"document_type"`
-	Institution  interface{} `json:"institution"`
-	DocumentName interface{} `json:"document_name"`
-	PeriodStart  interface{} `json:"period_start"`
-	PeriodEnd    interface{} `json:"period_end"`
-	DocumentDate interface{} `json:"document_date"`
-	FileHash     interface{} `json:"file_hash"`
-	SourceUri    interface{} `json:"source_uri"`
-	Status       string      `json:"status"`
-	MetadataJson interface{} `json:"metadata_json"`
-	CreatedAt    string      `json:"created_at"`
-	UpdatedAt    string      `json:"updated_at"`
+	ID           string         `json:"id"`
+	AccountID    sql.NullString `json:"account_id"`
+	DocumentType string         `json:"document_type"`
+	Institution  sql.NullString `json:"institution"`
+	DocumentName sql.NullString `json:"document_name"`
+	PeriodStart  sql.NullString `json:"period_start"`
+	PeriodEnd    sql.NullString `json:"period_end"`
+	DocumentDate sql.NullString `json:"document_date"`
+	FileHash     sql.NullString `json:"file_hash"`
+	SourceUri    sql.NullString `json:"source_uri"`
+	Status       string         `json:"status"`
+	MetadataJson sql.NullString `json:"metadata_json"`
+	CreatedAt    string         `json:"created_at"`
+	UpdatedAt    string         `json:"updated_at"`
 }
 
 func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) (Document, error) {
@@ -156,7 +157,7 @@ const listDocumentsByAccount = `-- name: ListDocumentsByAccount :many
 SELECT id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at FROM documents WHERE account_id = ? ORDER BY document_date DESC
 `
 
-func (q *Queries) ListDocumentsByAccount(ctx context.Context, accountID interface{}) ([]Document, error) {
+func (q *Queries) ListDocumentsByAccount(ctx context.Context, accountID sql.NullString) ([]Document, error) {
 	rows, err := q.db.QueryContext(ctx, listDocumentsByAccount, accountID)
 	if err != nil {
 		return nil, err

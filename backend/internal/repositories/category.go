@@ -24,8 +24,8 @@ func (r *CategoryRepository) Create(ctx context.Context, cat domain.Category) (d
 	params := db.CreateCategoryParams{
 		ID:           cat.ID,
 		Name:         cat.Name,
-		ParentID:     toInterface(cat.ParentID),
-		CategoryType: toInterface(cat.CategoryType),
+		ParentID:     toNullString(cat.ParentID),
+		CategoryType: toNullString(cat.CategoryType),
 		Status:       cat.Status,
 		CreatedAt:    cat.CreatedAt,
 		UpdatedAt:    cat.UpdatedAt,
@@ -71,21 +71,11 @@ func (r *CategoryRepository) Update(ctx context.Context, cat domain.Category) (d
 }
 
 func mapDBCategoryToDomain(c db.Category) domain.Category {
-	var parent *string
-	if c.ParentID != nil {
-		v := c.ParentID.(string)
-		parent = &v
-	}
-	var catType *string
-	if c.CategoryType != nil {
-		v := c.CategoryType.(string)
-		catType = &v
-	}
 	return domain.Category{
 		ID:           c.ID,
 		Name:         c.Name,
-		ParentID:     parent,
-		CategoryType: catType,
+		ParentID:     fromNullString(c.ParentID),
+		CategoryType: fromNullString(c.CategoryType),
 		Status:       c.Status,
 		CreatedAt:    c.CreatedAt,
 		UpdatedAt:    c.UpdatedAt,

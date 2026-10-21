@@ -25,8 +25,8 @@ func (r *RelationRepository) CreateMovementRelation(ctx context.Context, rel dom
 		MovementIDB:  rel.MovementIDB,
 		RelationType: rel.RelationType,
 		Status:       rel.Status,
-		Confidence:   toInterfaceFloat64(rel.Confidence),
-		Reason:       toInterface(rel.Reason),
+		Confidence:   toNullFloat64(rel.Confidence),
+		Reason:       toNullString(rel.Reason),
 		CreatedAt:    rel.CreatedAt,
 		UpdatedAt:    rel.UpdatedAt,
 	}
@@ -47,8 +47,8 @@ func (r *RelationRepository) CreateEventRelation(ctx context.Context, rel domain
 		EventIDB:     rel.EventIDB,
 		RelationType: rel.RelationType,
 		Status:       rel.Status,
-		Confidence:   toInterfaceFloat64(rel.Confidence),
-		Reason:       toInterface(rel.Reason),
+		Confidence:   toNullFloat64(rel.Confidence),
+		Reason:       toNullString(rel.Reason),
 		CreatedAt:    rel.CreatedAt,
 		UpdatedAt:    rel.UpdatedAt,
 	}
@@ -99,56 +99,28 @@ func (r *RelationRepository) ListEventRelations(ctx context.Context, eventID str
 }
 
 func mapDBMovementRelationToDomain(r db.MovementRelation) domain.MovementRelation {
-	floatPtr := func(v interface{}) *float64 {
-		if v == nil {
-			return nil
-		}
-		f := v.(float64)
-		return &f
-	}
-	strPtr := func(v interface{}) *string {
-		if v == nil {
-			return nil
-		}
-		s := v.(string)
-		return &s
-	}
 	return domain.MovementRelation{
 		ID:           r.ID,
 		MovementIDA:  r.MovementIDA,
 		MovementIDB:  r.MovementIDB,
 		RelationType: r.RelationType,
 		Status:       r.Status,
-		Confidence:   floatPtr(r.Confidence),
-		Reason:       strPtr(r.Reason),
+		Confidence:   fromNullFloat64(r.Confidence),
+		Reason:       fromNullString(r.Reason),
 		CreatedAt:    r.CreatedAt,
 		UpdatedAt:    r.UpdatedAt,
 	}
 }
 
 func mapDBEventRelationToDomain(r db.EventRelation) domain.EventRelation {
-	floatPtr := func(v interface{}) *float64 {
-		if v == nil {
-			return nil
-		}
-		f := v.(float64)
-		return &f
-	}
-	strPtr := func(v interface{}) *string {
-		if v == nil {
-			return nil
-		}
-		s := v.(string)
-		return &s
-	}
 	return domain.EventRelation{
 		ID:           r.ID,
 		EventIDA:     r.EventIDA,
 		EventIDB:     r.EventIDB,
 		RelationType: r.RelationType,
 		Status:       r.Status,
-		Confidence:   floatPtr(r.Confidence),
-		Reason:       strPtr(r.Reason),
+		Confidence:   fromNullFloat64(r.Confidence),
+		Reason:       fromNullString(r.Reason),
 		CreatedAt:    r.CreatedAt,
 		UpdatedAt:    r.UpdatedAt,
 	}

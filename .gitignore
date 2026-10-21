@@ -14,7 +14,7 @@
 *.sqlite3
 *.sql
 !/backend/internal/db/migrations/*.sql
-!/backend/db/migrations/*.sql
+!/backend/db/queries/*.sql
 
 # ==================================================
 # Private data and generated artifacts (root only)

@@ -24,15 +24,15 @@ func (r *InstallmentPlanRepository) Create(ctx context.Context, plan domain.Inst
 	params := db.CreateInstallmentPlanParams{
 		ID:                    plan.ID,
 		AccountID:             plan.AccountID,
-		OriginEventID:         toInterface(plan.OriginEventID),
-		TotalAmountMinor:      toInterfaceInt64(plan.TotalAmountMinor),
+		OriginEventID:         toNullString(plan.OriginEventID),
+		TotalAmountMinor:      toNullInt64(plan.TotalAmountMinor),
 		TotalInstallments:     plan.TotalInstallments,
 		PaidInstallments:      plan.PaidInstallments,
-		RemainingInstallments: toInterfaceInt64(plan.RemainingInstallments),
+		RemainingInstallments: toNullInt64(plan.RemainingInstallments),
 		Status:                plan.Status,
-		StartDate:             toInterface(plan.StartDate),
-		ExpectedEndDate:       toInterface(plan.ExpectedEndDate),
-		MetadataJson:          toInterface(plan.MetadataJson),
+		StartDate:             toNullString(plan.StartDate),
+		ExpectedEndDate:       toNullString(plan.ExpectedEndDate),
+		MetadataJson:          toNullString(plan.MetadataJson),
 		CreatedAt:             plan.CreatedAt,
 		UpdatedAt:             plan.UpdatedAt,
 	}
@@ -47,14 +47,14 @@ func (r *InstallmentPlanRepository) Create(ctx context.Context, plan domain.Inst
 			InstallmentPlanID:   dbPlan.ID,
 			InstallmentNumber:   ins.InstallmentNumber,
 			TotalInstallments:   ins.TotalInstallments,
-			ExpectedAmountMinor: toInterfaceInt64(ins.ExpectedAmountMinor),
-			CapitalAmountMinor:  toInterfaceInt64(ins.CapitalAmountMinor),
-			InterestAmountMinor: toInterfaceInt64(ins.InterestAmountMinor),
+			ExpectedAmountMinor: toNullInt64(ins.ExpectedAmountMinor),
+			CapitalAmountMinor:  toNullInt64(ins.CapitalAmountMinor),
+			InterestAmountMinor: toNullInt64(ins.InterestAmountMinor),
 			Status:              ins.Status,
-			ExpectedDate:        toInterface(ins.ExpectedDate),
-			DocumentedDate:      toInterface(ins.DocumentedDate),
-			MovementID:          toInterface(ins.MovementID),
-			MetadataJson:        toInterface(ins.MetadataJson),
+			ExpectedDate:        toNullString(ins.ExpectedDate),
+			DocumentedDate:      toNullString(ins.DocumentedDate),
+			MovementID:          toNullString(ins.MovementID),
+			MetadataJson:        toNullString(ins.MetadataJson),
 			CreatedAt:           ins.CreatedAt,
 			UpdatedAt:           ins.UpdatedAt,
 		}
@@ -115,65 +115,37 @@ func (r *InstallmentPlanRepository) Update(ctx context.Context, plan domain.Inst
 }
 
 func mapDBInstallmentPlanToDomain(p db.InstallmentPlan) domain.InstallmentPlan {
-	int64Ptr := func(v interface{}) *int64 {
-		if v == nil {
-			return nil
-		}
-		i := v.(int64)
-		return &i
-	}
-	strPtr := func(v interface{}) *string {
-		if v == nil {
-			return nil
-		}
-		s := v.(string)
-		return &s
-	}
 	return domain.InstallmentPlan{
 		ID:                    p.ID,
 		AccountID:             p.AccountID,
-		OriginEventID:         strPtr(p.OriginEventID),
-		TotalAmountMinor:      int64Ptr(p.TotalAmountMinor),
+		OriginEventID:         fromNullString(p.OriginEventID),
+		TotalAmountMinor:      fromNullInt64(p.TotalAmountMinor),
 		TotalInstallments:     p.TotalInstallments,
 		PaidInstallments:      p.PaidInstallments,
-		RemainingInstallments: int64Ptr(p.RemainingInstallments),
+		RemainingInstallments: fromNullInt64(p.RemainingInstallments),
 		Status:                p.Status,
-		StartDate:             strPtr(p.StartDate),
-		ExpectedEndDate:       strPtr(p.ExpectedEndDate),
-		MetadataJson:          strPtr(p.MetadataJson),
+		StartDate:             fromNullString(p.StartDate),
+		ExpectedEndDate:       fromNullString(p.ExpectedEndDate),
+		MetadataJson:          fromNullString(p.MetadataJson),
 		CreatedAt:             p.CreatedAt,
 		UpdatedAt:             p.UpdatedAt,
 	}
 }
 
 func mapDBInstallmentToDomain(i db.Installment) domain.Installment {
-	int64Ptr := func(v interface{}) *int64 {
-		if v == nil {
-			return nil
-		}
-		iv := v.(int64)
-		return &iv
-	}
-	strPtr := func(v interface{}) *string {
-		if v == nil {
-			return nil
-		}
-		s := v.(string)
-		return &s
-	}
 	return domain.Installment{
 		ID:                  i.ID,
 		InstallmentPlanID:   i.InstallmentPlanID,
 		InstallmentNumber:   i.InstallmentNumber,
 		TotalInstallments:   i.TotalInstallments,
-		ExpectedAmountMinor: int64Ptr(i.ExpectedAmountMinor),
-		CapitalAmountMinor:  int64Ptr(i.CapitalAmountMinor),
-		InterestAmountMinor: int64Ptr(i.InterestAmountMinor),
+		ExpectedAmountMinor: fromNullInt64(i.ExpectedAmountMinor),
+		CapitalAmountMinor:  fromNullInt64(i.CapitalAmountMinor),
+		InterestAmountMinor: fromNullInt64(i.InterestAmountMinor),
 		Status:              i.Status,
-		ExpectedDate:        strPtr(i.ExpectedDate),
-		DocumentedDate:      strPtr(i.DocumentedDate),
-		MovementID:          strPtr(i.MovementID),
-		MetadataJson:        strPtr(i.MetadataJson),
+		ExpectedDate:        fromNullString(i.ExpectedDate),
+		DocumentedDate:      fromNullString(i.DocumentedDate),
+		MovementID:          fromNullString(i.MovementID),
+		MetadataJson:        fromNullString(i.MetadataJson),
 		CreatedAt:           i.CreatedAt,
 		UpdatedAt:           i.UpdatedAt,
 	}

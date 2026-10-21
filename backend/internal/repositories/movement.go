@@ -40,12 +40,12 @@ func (r *MovementRepository) Create(ctx context.Context, mv domain.Movement, com
 		ID:               mv.ID,
 		FinancialEventID: mv.FinancialEventID,
 		AccountID:        mv.AccountID,
-		SourceEntryID:    toInterface(mv.SourceEntryID),
+		SourceEntryID:    toNullString(mv.SourceEntryID),
 		MovementDate:     mv.MovementDate,
 		AmountMinor:      mv.AmountMinor,
-		Description:      toInterface(mv.Description),
+		Description:      toNullString(mv.Description),
 		Status:           mv.Status,
-		MetadataJson:     toInterface(mv.MetadataJson),
+		MetadataJson:     toNullString(mv.MetadataJson),
 		CreatedAt:        mv.CreatedAt,
 		UpdatedAt:        mv.UpdatedAt,
 	}
@@ -60,8 +60,8 @@ func (r *MovementRepository) Create(ctx context.Context, mv domain.Movement, com
 			MovementID:    dbMv.ID,
 			ComponentType: comp.ComponentType,
 			AmountMinor:   comp.AmountMinor,
-			Description:   toInterface(comp.Description),
-			MetadataJson:  toInterface(comp.MetadataJson),
+			Description:   toNullString(comp.Description),
+			MetadataJson:  toNullString(comp.MetadataJson),
 			CreatedAt:     comp.CreatedAt,
 			UpdatedAt:     comp.UpdatedAt,
 		}
@@ -147,43 +147,29 @@ func (r *MovementRepository) Update(ctx context.Context, mv domain.Movement) (do
 }
 
 func mapDBMovementToDomain(m db.Movement) domain.Movement {
-	strPtr := func(v interface{}) *string {
-		if v == nil {
-			return nil
-		}
-		s := v.(string)
-		return &s
-	}
 	return domain.Movement{
 		ID:               m.ID,
 		FinancialEventID: m.FinancialEventID,
 		AccountID:        m.AccountID,
-		SourceEntryID:    strPtr(m.SourceEntryID),
+		SourceEntryID:    fromNullString(m.SourceEntryID),
 		MovementDate:     m.MovementDate,
 		AmountMinor:      m.AmountMinor,
-		Description:      strPtr(m.Description),
+		Description:      fromNullString(m.Description),
 		Status:           m.Status,
-		MetadataJson:     strPtr(m.MetadataJson),
+		MetadataJson:     fromNullString(m.MetadataJson),
 		CreatedAt:        m.CreatedAt,
 		UpdatedAt:        m.UpdatedAt,
 	}
 }
 
 func mapDBMovementComponentToDomain(c db.MovementComponent) domain.MovementComponent {
-	strPtr := func(v interface{}) *string {
-		if v == nil {
-			return nil
-		}
-		s := v.(string)
-		return &s
-	}
 	return domain.MovementComponent{
 		ID:            c.ID,
 		MovementID:    c.MovementID,
 		ComponentType: c.ComponentType,
 		AmountMinor:   c.AmountMinor,
-		Description:   strPtr(c.Description),
-		MetadataJson:  strPtr(c.MetadataJson),
+		Description:   fromNullString(c.Description),
+		MetadataJson:  fromNullString(c.MetadataJson),
 		CreatedAt:     c.CreatedAt,
 		UpdatedAt:     c.UpdatedAt,
 	}

@@ -1,7 +1,11 @@
 version: "2"
 sql:
   - engine: "sqlite"
-    schema: "internal/db/migrations/0001_initial_schema.sql"
+    schema:
+      - "internal/db/migrations/0001_initial_schema.sql"
+      - "internal/db/migrations/0002_import_jobs.sql"
+      - "internal/db/migrations/0003_import_review_staging.sql"
+      - "internal/db/migrations/0004_align_schema_with_generated_queries.sql"
     queries: "db/queries"
     gen:
       go:

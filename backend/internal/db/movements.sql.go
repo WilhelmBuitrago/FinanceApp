@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createMovement = `-- name: CreateMovement :one
@@ -28,17 +29,17 @@ INSERT INTO movements (
 `
 
 type CreateMovementParams struct {
-	ID               string      `json:"id"`
-	FinancialEventID string      `json:"financial_event_id"`
-	AccountID        string      `json:"account_id"`
-	SourceEntryID    interface{} `json:"source_entry_id"`
-	MovementDate     string      `json:"movement_date"`
-	AmountMinor      int64       `json:"amount_minor"`
-	Description      interface{} `json:"description"`
-	Status           string      `json:"status"`
-	MetadataJson     interface{} `json:"metadata_json"`
-	CreatedAt        string      `json:"created_at"`
-	UpdatedAt        string      `json:"updated_at"`
+	ID               string         `json:"id"`
+	FinancialEventID string         `json:"financial_event_id"`
+	AccountID        string         `json:"account_id"`
+	SourceEntryID    sql.NullString `json:"source_entry_id"`
+	MovementDate     string         `json:"movement_date"`
+	AmountMinor      int64          `json:"amount_minor"`
+	Description      sql.NullString `json:"description"`
+	Status           string         `json:"status"`
+	MetadataJson     sql.NullString `json:"metadata_json"`
+	CreatedAt        string         `json:"created_at"`
+	UpdatedAt        string         `json:"updated_at"`
 }
 
 func (q *Queries) CreateMovement(ctx context.Context, arg CreateMovementParams) (Movement, error) {
@@ -70,6 +71,15 @@ func (q *Queries) CreateMovement(ctx context.Context, arg CreateMovementParams) 
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const deleteMovement = `-- name: DeleteMovement :exec
+DELETE FROM movements WHERE id = ?
+`
+
+func (q *Queries) DeleteMovement(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteMovement, id)
+	return err
 }
 
 const getMovement = `-- name: GetMovement :one
@@ -171,13 +181,4 @@ func (q *Queries) ListMovementsByAccount(ctx context.Context, accountID string) 
 		return nil, err
 	}
 	return items, nil
-}
-
-const deleteMovement = `-- name: DeleteMovement :exec
-DELETE FROM movements WHERE id = ?
-`
-
-func (q *Queries) DeleteMovement(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteMovement, id)
-	return err
 }

@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createInstallmentPlan = `-- name: CreateInstallmentPlan :one
@@ -17,32 +18,32 @@ INSERT INTO installment_plans (
     total_amount_minor,
     total_installments,
     paid_installments,
-    remaining_installments,
     status,
     start_date,
-    expected_end_date,
-    metadata_json,
     created_at,
-    updated_at
+    updated_at,
+    remaining_installments,
+    expected_end_date,
+    metadata_json
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-) RETURNING id, account_id, origin_event_id, total_amount_minor, total_installments, paid_installments, remaining_installments, status, start_date, expected_end_date, metadata_json, created_at, updated_at
+) RETURNING id, account_id, origin_event_id, total_amount_minor, total_installments, paid_installments, status, start_date, created_at, updated_at, remaining_installments, expected_end_date, metadata_json
 `
 
 type CreateInstallmentPlanParams struct {
-	ID                    string      `json:"id"`
-	AccountID             string      `json:"account_id"`
-	OriginEventID         interface{} `json:"origin_event_id"`
-	TotalAmountMinor      interface{} `json:"total_amount_minor"`
-	TotalInstallments     int64       `json:"total_installments"`
-	PaidInstallments      int64       `json:"paid_installments"`
-	RemainingInstallments interface{} `json:"remaining_installments"`
-	Status                string      `json:"status"`
-	StartDate             interface{} `json:"start_date"`
-	ExpectedEndDate       interface{} `json:"expected_end_date"`
-	MetadataJson          interface{} `json:"metadata_json"`
-	CreatedAt             string      `json:"created_at"`
-	UpdatedAt             string      `json:"updated_at"`
+	ID                    string         `json:"id"`
+	AccountID             string         `json:"account_id"`
+	OriginEventID         sql.NullString `json:"origin_event_id"`
+	TotalAmountMinor      sql.NullInt64  `json:"total_amount_minor"`
+	TotalInstallments     int64          `json:"total_installments"`
+	PaidInstallments      int64          `json:"paid_installments"`
+	Status                string         `json:"status"`
+	StartDate             sql.NullString `json:"start_date"`
+	CreatedAt             string         `json:"created_at"`
+	UpdatedAt             string         `json:"updated_at"`
+	RemainingInstallments sql.NullInt64  `json:"remaining_installments"`
+	ExpectedEndDate       sql.NullString `json:"expected_end_date"`
+	MetadataJson          sql.NullString `json:"metadata_json"`
 }
 
 func (q *Queries) CreateInstallmentPlan(ctx context.Context, arg CreateInstallmentPlanParams) (InstallmentPlan, error) {
@@ -53,13 +54,13 @@ func (q *Queries) CreateInstallmentPlan(ctx context.Context, arg CreateInstallme
 		arg.TotalAmountMinor,
 		arg.TotalInstallments,
 		arg.PaidInstallments,
-		arg.RemainingInstallments,
 		arg.Status,
 		arg.StartDate,
-		arg.ExpectedEndDate,
-		arg.MetadataJson,
 		arg.CreatedAt,
 		arg.UpdatedAt,
+		arg.RemainingInstallments,
+		arg.ExpectedEndDate,
+		arg.MetadataJson,
 	)
 	var i InstallmentPlan
 	err := row.Scan(
@@ -69,19 +70,19 @@ func (q *Queries) CreateInstallmentPlan(ctx context.Context, arg CreateInstallme
 		&i.TotalAmountMinor,
 		&i.TotalInstallments,
 		&i.PaidInstallments,
-		&i.RemainingInstallments,
 		&i.Status,
 		&i.StartDate,
-		&i.ExpectedEndDate,
-		&i.MetadataJson,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.RemainingInstallments,
+		&i.ExpectedEndDate,
+		&i.MetadataJson,
 	)
 	return i, err
 }
 
 const getInstallmentPlan = `-- name: GetInstallmentPlan :one
-SELECT id, account_id, origin_event_id, total_amount_minor, total_installments, paid_installments, remaining_installments, status, start_date, expected_end_date, metadata_json, created_at, updated_at FROM installment_plans WHERE id = ?
+SELECT id, account_id, origin_event_id, total_amount_minor, total_installments, paid_installments, status, start_date, created_at, updated_at, remaining_installments, expected_end_date, metadata_json FROM installment_plans WHERE id = ?
 `
 
 func (q *Queries) GetInstallmentPlan(ctx context.Context, id string) (InstallmentPlan, error) {
@@ -94,19 +95,19 @@ func (q *Queries) GetInstallmentPlan(ctx context.Context, id string) (Installmen
 		&i.TotalAmountMinor,
 		&i.TotalInstallments,
 		&i.PaidInstallments,
-		&i.RemainingInstallments,
 		&i.Status,
 		&i.StartDate,
-		&i.ExpectedEndDate,
-		&i.MetadataJson,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.RemainingInstallments,
+		&i.ExpectedEndDate,
+		&i.MetadataJson,
 	)
 	return i, err
 }
 
 const listInstallmentPlansByAccount = `-- name: ListInstallmentPlansByAccount :many
-SELECT id, account_id, origin_event_id, total_amount_minor, total_installments, paid_installments, remaining_installments, status, start_date, expected_end_date, metadata_json, created_at, updated_at FROM installment_plans WHERE account_id = ? ORDER BY start_date DESC
+SELECT id, account_id, origin_event_id, total_amount_minor, total_installments, paid_installments, status, start_date, created_at, updated_at, remaining_installments, expected_end_date, metadata_json FROM installment_plans WHERE account_id = ? ORDER BY created_at DESC
 `
 
 func (q *Queries) ListInstallmentPlansByAccount(ctx context.Context, accountID string) ([]InstallmentPlan, error) {
@@ -125,13 +126,13 @@ func (q *Queries) ListInstallmentPlansByAccount(ctx context.Context, accountID s
 			&i.TotalAmountMinor,
 			&i.TotalInstallments,
 			&i.PaidInstallments,
-			&i.RemainingInstallments,
 			&i.Status,
 			&i.StartDate,
-			&i.ExpectedEndDate,
-			&i.MetadataJson,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.RemainingInstallments,
+			&i.ExpectedEndDate,
+			&i.MetadataJson,
 		); err != nil {
 			return nil, err
 		}

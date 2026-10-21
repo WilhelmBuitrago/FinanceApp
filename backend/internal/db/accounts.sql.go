@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createAccount = `-- name: CreateAccount :one
@@ -28,17 +29,17 @@ INSERT INTO accounts (
 `
 
 type CreateAccountParams struct {
-	ID              string      `json:"id"`
-	UserID          string      `json:"user_id"`
-	Name            string      `json:"name"`
-	AccountType     string      `json:"account_type"`
-	ParentAccountID interface{} `json:"parent_account_id"`
-	Currency        string      `json:"currency"`
-	Status          string      `json:"status"`
-	Institution     interface{} `json:"institution"`
-	MetadataJson    interface{} `json:"metadata_json"`
-	CreatedAt       string      `json:"created_at"`
-	UpdatedAt       string      `json:"updated_at"`
+	ID              string         `json:"id"`
+	UserID          string         `json:"user_id"`
+	Name            string         `json:"name"`
+	AccountType     string         `json:"account_type"`
+	ParentAccountID sql.NullString `json:"parent_account_id"`
+	Currency        string         `json:"currency"`
+	Status          string         `json:"status"`
+	Institution     sql.NullString `json:"institution"`
+	MetadataJson    sql.NullString `json:"metadata_json"`
+	CreatedAt       string         `json:"created_at"`
+	UpdatedAt       string         `json:"updated_at"`
 }
 
 func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error) {

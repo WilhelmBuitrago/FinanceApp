@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createFinancialEvent = `-- name: CreateFinancialEvent :one
@@ -28,17 +29,17 @@ INSERT INTO financial_events (
 `
 
 type CreateFinancialEventParams struct {
-	ID                 string      `json:"id"`
-	EventType          string      `json:"event_type"`
-	EventDate          interface{} `json:"event_date"`
-	Status             string      `json:"status"`
-	VerificationStatus string      `json:"verification_status"`
-	Description        interface{} `json:"description"`
-	CategoryID         interface{} `json:"category_id"`
-	Confidence         interface{} `json:"confidence"`
-	MetadataJson       interface{} `json:"metadata_json"`
-	CreatedAt          string      `json:"created_at"`
-	UpdatedAt          string      `json:"updated_at"`
+	ID                 string          `json:"id"`
+	EventType          string          `json:"event_type"`
+	EventDate          sql.NullString  `json:"event_date"`
+	Status             string          `json:"status"`
+	VerificationStatus string          `json:"verification_status"`
+	Description        sql.NullString  `json:"description"`
+	CategoryID         sql.NullString  `json:"category_id"`
+	Confidence         sql.NullFloat64 `json:"confidence"`
+	MetadataJson       sql.NullString  `json:"metadata_json"`
+	CreatedAt          string          `json:"created_at"`
+	UpdatedAt          string          `json:"updated_at"`
 }
 
 func (q *Queries) CreateFinancialEvent(ctx context.Context, arg CreateFinancialEventParams) (FinancialEvent, error) {

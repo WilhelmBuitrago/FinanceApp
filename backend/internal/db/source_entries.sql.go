@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createSourceEntry = `-- name: CreateSourceEntry :one
@@ -29,26 +30,26 @@ INSERT INTO source_entries (
     updated_at
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-) RETURNING id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at
+) RETURNING id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date
 `
 
 type CreateSourceEntryParams struct {
-	ID                    string      `json:"id"`
-	DocumentID            string      `json:"document_id"`
-	SourceReference       interface{} `json:"source_reference"`
-	RawDescription        interface{} `json:"raw_description"`
-	RawAmountMinor        interface{} `json:"raw_amount_minor"`
-	RawDate               interface{} `json:"raw_date"`
-	NormalizedDescription interface{} `json:"normalized_description"`
-	NormalizedAmountMinor interface{} `json:"normalized_amount_minor"`
-	NormalizedDate        interface{} `json:"normalized_date"`
-	PageNumber            interface{} `json:"page_number"`
-	RowNumber             interface{} `json:"row_number"`
-	Section               interface{} `json:"section"`
-	ExtractionID          interface{} `json:"extraction_id"`
-	MetadataJson          interface{} `json:"metadata_json"`
-	CreatedAt             string      `json:"created_at"`
-	UpdatedAt             string      `json:"updated_at"`
+	ID                    string         `json:"id"`
+	DocumentID            string         `json:"document_id"`
+	SourceReference       sql.NullString `json:"source_reference"`
+	RawDescription        sql.NullString `json:"raw_description"`
+	RawAmountMinor        sql.NullInt64  `json:"raw_amount_minor"`
+	RawDate               sql.NullString `json:"raw_date"`
+	NormalizedDescription sql.NullString `json:"normalized_description"`
+	NormalizedAmountMinor sql.NullInt64  `json:"normalized_amount_minor"`
+	NormalizedDate        sql.NullString `json:"normalized_date"`
+	PageNumber            sql.NullInt64  `json:"page_number"`
+	RowNumber             sql.NullInt64  `json:"row_number"`
+	Section               sql.NullString `json:"section"`
+	ExtractionID          sql.NullString `json:"extraction_id"`
+	MetadataJson          sql.NullString `json:"metadata_json"`
+	CreatedAt             string         `json:"created_at"`
+	UpdatedAt             string         `json:"updated_at"`
 }
 
 func (q *Queries) CreateSourceEntry(ctx context.Context, arg CreateSourceEntryParams) (SourceEntry, error) {
@@ -88,12 +89,17 @@ func (q *Queries) CreateSourceEntry(ctx context.Context, arg CreateSourceEntryPa
 		&i.MetadataJson,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ReviewStatus,
+		&i.SourceKey,
+		&i.CorrectedDescription,
+		&i.CorrectedAmountMinor,
+		&i.CorrectedDate,
 	)
 	return i, err
 }
 
 const getSourceEntry = `-- name: GetSourceEntry :one
-SELECT id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at FROM source_entries WHERE id = ?
+SELECT id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date FROM source_entries WHERE id = ?
 `
 
 func (q *Queries) GetSourceEntry(ctx context.Context, id string) (SourceEntry, error) {
@@ -116,12 +122,17 @@ func (q *Queries) GetSourceEntry(ctx context.Context, id string) (SourceEntry, e
 		&i.MetadataJson,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ReviewStatus,
+		&i.SourceKey,
+		&i.CorrectedDescription,
+		&i.CorrectedAmountMinor,
+		&i.CorrectedDate,
 	)
 	return i, err
 }
 
 const listSourceEntriesByDocument = `-- name: ListSourceEntriesByDocument :many
-SELECT id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at FROM source_entries WHERE document_id = ? ORDER BY row_number
+SELECT id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date FROM source_entries WHERE document_id = ?
 `
 
 func (q *Queries) ListSourceEntriesByDocument(ctx context.Context, documentID string) ([]SourceEntry, error) {
@@ -150,6 +161,11 @@ func (q *Queries) ListSourceEntriesByDocument(ctx context.Context, documentID st
 			&i.MetadataJson,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ReviewStatus,
+			&i.SourceKey,
+			&i.CorrectedDescription,
+			&i.CorrectedAmountMinor,
+			&i.CorrectedDate,
 		); err != nil {
 			return nil, err
 		}

@@ -23,17 +23,17 @@ func (r *DocumentRepository) Create(ctx context.Context, doc domain.Document) (d
 	}
 	params := db.CreateDocumentParams{
 		ID:           doc.ID,
-		AccountID:    toInterface(doc.AccountID),
+		AccountID:    toNullString(doc.AccountID),
 		DocumentType: doc.DocumentType,
-		Institution:  toInterface(doc.Institution),
-		DocumentName: toInterface(doc.DocumentName),
-		PeriodStart:  toInterface(doc.PeriodStart),
-		PeriodEnd:    toInterface(doc.PeriodEnd),
-		DocumentDate: toInterface(doc.DocumentDate),
-		FileHash:     toInterface(doc.FileHash),
-		SourceUri:    toInterface(doc.SourceUri),
+		Institution:  toNullString(doc.Institution),
+		DocumentName: toNullString(doc.DocumentName),
+		PeriodStart:  toNullString(doc.PeriodStart),
+		PeriodEnd:    toNullString(doc.PeriodEnd),
+		DocumentDate: toNullString(doc.DocumentDate),
+		FileHash:     toNullString(doc.FileHash),
+		SourceUri:    toNullString(doc.SourceUri),
 		Status:       doc.Status,
-		MetadataJson: toInterface(doc.MetadataJson),
+		MetadataJson: toNullString(doc.MetadataJson),
 		CreatedAt:    doc.CreatedAt,
 		UpdatedAt:    doc.UpdatedAt,
 	}
@@ -62,7 +62,7 @@ func (r *DocumentRepository) ListByAccount(ctx context.Context, accountID string
 	if r.db.Querier == nil {
 		return nil, ErrUnavailable
 	}
-	dbDocs, err := r.db.Querier.ListDocumentsByAccount(ctx, accountID)
+	dbDocs, err := r.db.Querier.ListDocumentsByAccount(ctx, toNullString(&accountID))
 	if err != nil {
 		return nil, translateError(err)
 	}
@@ -93,26 +93,19 @@ func (r *DocumentRepository) Update(ctx context.Context, doc domain.Document) (d
 }
 
 func mapDBDocumentToDomain(d db.Document) domain.Document {
-	strPtr := func(v interface{}) *string {
-		if v == nil {
-			return nil
-		}
-		s := v.(string)
-		return &s
-	}
 	return domain.Document{
 		ID:           d.ID,
-		AccountID:    strPtr(d.AccountID),
+		AccountID:    fromNullString(d.AccountID),
 		DocumentType: d.DocumentType,
-		Institution:  strPtr(d.Institution),
-		DocumentName: strPtr(d.DocumentName),
-		PeriodStart:  strPtr(d.PeriodStart),
-		PeriodEnd:    strPtr(d.PeriodEnd),
-		DocumentDate: strPtr(d.DocumentDate),
-		FileHash:     strPtr(d.FileHash),
-		SourceUri:    strPtr(d.SourceUri),
+		Institution:  fromNullString(d.Institution),
+		DocumentName: fromNullString(d.DocumentName),
+		PeriodStart:  fromNullString(d.PeriodStart),
+		PeriodEnd:    fromNullString(d.PeriodEnd),
+		DocumentDate: fromNullString(d.DocumentDate),
+		FileHash:     fromNullString(d.FileHash),
+		SourceUri:    fromNullString(d.SourceUri),
 		Status:       d.Status,
-		MetadataJson: strPtr(d.MetadataJson),
+		MetadataJson: fromNullString(d.MetadataJson),
 		CreatedAt:    d.CreatedAt,
 		UpdatedAt:    d.UpdatedAt,
 	}

@@ -6,6 +6,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 type Querier interface {
@@ -20,6 +21,7 @@ type Querier interface {
 	CreateMovementComponent(ctx context.Context, arg CreateMovementComponentParams) (MovementComponent, error)
 	CreateMovementRelation(ctx context.Context, arg CreateMovementRelationParams) (MovementRelation, error)
 	CreateSourceEntry(ctx context.Context, arg CreateSourceEntryParams) (SourceEntry, error)
+	DeleteMovement(ctx context.Context, id string) error
 	GetAccount(ctx context.Context, id string) (Account, error)
 	GetCategory(ctx context.Context, id string) (Category, error)
 	GetDocument(ctx context.Context, id string) (Document, error)
@@ -35,13 +37,12 @@ type Querier interface {
 	ListCategories(ctx context.Context, status string) ([]Category, error)
 	ListComponentsByMovement(ctx context.Context, movementID string) ([]MovementComponent, error)
 	ListDocumentsAll(ctx context.Context) ([]Document, error)
-	ListDocumentsByAccount(ctx context.Context, accountID interface{}) ([]Document, error)
+	ListDocumentsByAccount(ctx context.Context, accountID sql.NullString) ([]Document, error)
 	ListFinancialEventsByType(ctx context.Context, eventType string) ([]FinancialEvent, error)
 	ListInstallmentPlansByAccount(ctx context.Context, accountID string) ([]InstallmentPlan, error)
 	ListInstallmentsByPlan(ctx context.Context, installmentPlanID string) ([]Installment, error)
 	ListMovementsAll(ctx context.Context) ([]Movement, error)
 	ListMovementsByAccount(ctx context.Context, accountID string) ([]Movement, error)
-	DeleteMovement(ctx context.Context, id string) error
 	ListRelationsByEvent(ctx context.Context, arg ListRelationsByEventParams) ([]EventRelation, error)
 	ListRelationsByMovement(ctx context.Context, arg ListRelationsByMovementParams) ([]MovementRelation, error)
 	ListSourceEntriesByDocument(ctx context.Context, documentID string) ([]SourceEntry, error)

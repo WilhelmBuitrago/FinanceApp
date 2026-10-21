@@ -24,18 +24,18 @@ func (r *SourceEntryRepository) Create(ctx context.Context, se domain.SourceEntr
 	params := db.CreateSourceEntryParams{
 		ID:                    se.ID,
 		DocumentID:            se.DocumentID,
-		SourceReference:       toInterface(se.SourceReference),
-		RawDescription:        toInterface(se.RawDescription),
-		RawAmountMinor:        toInterfaceInt64(se.RawAmountMinor),
-		RawDate:               toInterface(se.RawDate),
-		NormalizedDescription: toInterface(se.NormalizedDescription),
-		NormalizedAmountMinor: toInterfaceInt64(se.NormalizedAmountMinor),
-		NormalizedDate:        toInterface(se.NormalizedDate),
-		PageNumber:            toInterfaceInt64(se.PageNumber),
-		RowNumber:             toInterfaceInt64(se.RowNumber),
-		Section:               toInterface(se.Section),
-		ExtractionID:          toInterface(se.ExtractionID),
-		MetadataJson:          toInterface(se.MetadataJson),
+		SourceReference:       toNullString(se.SourceReference),
+		RawDescription:        toNullString(se.RawDescription),
+		RawAmountMinor:        toNullInt64(se.RawAmountMinor),
+		RawDate:               toNullString(se.RawDate),
+		NormalizedDescription: toNullString(se.NormalizedDescription),
+		NormalizedAmountMinor: toNullInt64(se.NormalizedAmountMinor),
+		NormalizedDate:        toNullString(se.NormalizedDate),
+		PageNumber:            toNullInt64(se.PageNumber),
+		RowNumber:             toNullInt64(se.RowNumber),
+		Section:               toNullString(se.Section),
+		ExtractionID:          toNullString(se.ExtractionID),
+		MetadataJson:          toNullString(se.MetadataJson),
 		CreatedAt:             se.CreatedAt,
 		UpdatedAt:             se.UpdatedAt,
 	}
@@ -80,35 +80,21 @@ func (r *SourceEntryRepository) Update(ctx context.Context, se domain.SourceEntr
 }
 
 func mapDBSourceEntryToDomain(s db.SourceEntry) domain.SourceEntry {
-	int64Ptr := func(v interface{}) *int64 {
-		if v == nil {
-			return nil
-		}
-		i := v.(int64)
-		return &i
-	}
-	strPtr := func(v interface{}) *string {
-		if v == nil {
-			return nil
-		}
-		sv := v.(string)
-		return &sv
-	}
 	return domain.SourceEntry{
 		ID:                    s.ID,
 		DocumentID:            s.DocumentID,
-		SourceReference:       strPtr(s.SourceReference),
-		RawDescription:        strPtr(s.RawDescription),
-		RawAmountMinor:        int64Ptr(s.RawAmountMinor),
-		RawDate:               strPtr(s.RawDate),
-		NormalizedDescription: strPtr(s.NormalizedDescription),
-		NormalizedAmountMinor: int64Ptr(s.NormalizedAmountMinor),
-		NormalizedDate:        strPtr(s.NormalizedDate),
-		PageNumber:            int64Ptr(s.PageNumber),
-		RowNumber:             int64Ptr(s.RowNumber),
-		Section:               strPtr(s.Section),
-		ExtractionID:          strPtr(s.ExtractionID),
-		MetadataJson:          strPtr(s.MetadataJson),
+		SourceReference:       fromNullString(s.SourceReference),
+		RawDescription:        fromNullString(s.RawDescription),
+		RawAmountMinor:        fromNullInt64(s.RawAmountMinor),
+		RawDate:               fromNullString(s.RawDate),
+		NormalizedDescription: fromNullString(s.NormalizedDescription),
+		NormalizedAmountMinor: fromNullInt64(s.NormalizedAmountMinor),
+		NormalizedDate:        fromNullString(s.NormalizedDate),
+		PageNumber:            fromNullInt64(s.PageNumber),
+		RowNumber:             fromNullInt64(s.RowNumber),
+		Section:               fromNullString(s.Section),
+		ExtractionID:          fromNullString(s.ExtractionID),
+		MetadataJson:          fromNullString(s.MetadataJson),
 		CreatedAt:             s.CreatedAt,
 		UpdatedAt:             s.UpdatedAt,
 	}

@@ -4,158 +4,178 @@
 
 package db
 
+import (
+	"database/sql"
+)
+
 type Account struct {
-	ID              string      `json:"id"`
-	UserID          string      `json:"user_id"`
-	Name            string      `json:"name"`
-	AccountType     string      `json:"account_type"`
-	ParentAccountID interface{} `json:"parent_account_id"`
-	Currency        string      `json:"currency"`
-	Status          string      `json:"status"`
-	Institution     interface{} `json:"institution"`
-	MetadataJson    interface{} `json:"metadata_json"`
-	CreatedAt       string      `json:"created_at"`
-	UpdatedAt       string      `json:"updated_at"`
+	ID              string         `json:"id"`
+	UserID          string         `json:"user_id"`
+	Name            string         `json:"name"`
+	AccountType     string         `json:"account_type"`
+	ParentAccountID sql.NullString `json:"parent_account_id"`
+	Currency        string         `json:"currency"`
+	Status          string         `json:"status"`
+	Institution     sql.NullString `json:"institution"`
+	MetadataJson    sql.NullString `json:"metadata_json"`
+	CreatedAt       string         `json:"created_at"`
+	UpdatedAt       string         `json:"updated_at"`
 }
 
 type Category struct {
-	ID           string      `json:"id"`
-	Name         string      `json:"name"`
-	ParentID     interface{} `json:"parent_id"`
-	CategoryType interface{} `json:"category_type"`
-	Status       string      `json:"status"`
-	CreatedAt    string      `json:"created_at"`
-	UpdatedAt    string      `json:"updated_at"`
+	ID           string         `json:"id"`
+	Name         string         `json:"name"`
+	ParentID     sql.NullString `json:"parent_id"`
+	CategoryType sql.NullString `json:"category_type"`
+	Status       string         `json:"status"`
+	CreatedAt    string         `json:"created_at"`
+	UpdatedAt    string         `json:"updated_at"`
 }
 
 type Document struct {
-	ID           string      `json:"id"`
-	AccountID    interface{} `json:"account_id"`
-	DocumentType string      `json:"document_type"`
-	Institution  interface{} `json:"institution"`
-	DocumentName interface{} `json:"document_name"`
-	PeriodStart  interface{} `json:"period_start"`
-	PeriodEnd    interface{} `json:"period_end"`
-	DocumentDate interface{} `json:"document_date"`
-	FileHash     interface{} `json:"file_hash"`
-	SourceUri    interface{} `json:"source_uri"`
-	Status       string      `json:"status"`
-	MetadataJson interface{} `json:"metadata_json"`
-	CreatedAt    string      `json:"created_at"`
-	UpdatedAt    string      `json:"updated_at"`
+	ID           string         `json:"id"`
+	AccountID    sql.NullString `json:"account_id"`
+	DocumentType string         `json:"document_type"`
+	Institution  sql.NullString `json:"institution"`
+	DocumentName sql.NullString `json:"document_name"`
+	PeriodStart  sql.NullString `json:"period_start"`
+	PeriodEnd    sql.NullString `json:"period_end"`
+	DocumentDate sql.NullString `json:"document_date"`
+	FileHash     sql.NullString `json:"file_hash"`
+	SourceUri    sql.NullString `json:"source_uri"`
+	Status       string         `json:"status"`
+	MetadataJson sql.NullString `json:"metadata_json"`
+	CreatedAt    string         `json:"created_at"`
+	UpdatedAt    string         `json:"updated_at"`
 }
 
 type EventRelation struct {
-	ID           string      `json:"id"`
-	EventIDA     string      `json:"event_id_a"`
-	EventIDB     string      `json:"event_id_b"`
-	RelationType string      `json:"relation_type"`
-	Status       string      `json:"status"`
-	Confidence   interface{} `json:"confidence"`
-	Reason       interface{} `json:"reason"`
-	CreatedAt    string      `json:"created_at"`
-	UpdatedAt    string      `json:"updated_at"`
+	ID           string          `json:"id"`
+	EventIDA     string          `json:"event_id_a"`
+	EventIDB     string          `json:"event_id_b"`
+	RelationType string          `json:"relation_type"`
+	Status       string          `json:"status"`
+	Confidence   sql.NullFloat64 `json:"confidence"`
+	Reason       sql.NullString  `json:"reason"`
+	CreatedAt    string          `json:"created_at"`
+	UpdatedAt    string          `json:"updated_at"`
 }
 
 type FinancialEvent struct {
-	ID                 string      `json:"id"`
-	EventType          string      `json:"event_type"`
-	EventDate          interface{} `json:"event_date"`
-	Status             string      `json:"status"`
-	VerificationStatus string      `json:"verification_status"`
-	Description        interface{} `json:"description"`
-	CategoryID         interface{} `json:"category_id"`
-	Confidence         interface{} `json:"confidence"`
-	MetadataJson       interface{} `json:"metadata_json"`
-	CreatedAt          string      `json:"created_at"`
-	UpdatedAt          string      `json:"updated_at"`
+	ID                 string          `json:"id"`
+	EventType          string          `json:"event_type"`
+	EventDate          sql.NullString  `json:"event_date"`
+	Status             string          `json:"status"`
+	VerificationStatus string          `json:"verification_status"`
+	Description        sql.NullString  `json:"description"`
+	CategoryID         sql.NullString  `json:"category_id"`
+	Confidence         sql.NullFloat64 `json:"confidence"`
+	MetadataJson       sql.NullString  `json:"metadata_json"`
+	CreatedAt          string          `json:"created_at"`
+	UpdatedAt          string          `json:"updated_at"`
+}
+
+type ImportJob struct {
+	ID           string         `json:"id"`
+	DocumentID   string         `json:"document_id"`
+	Status       string         `json:"status"`
+	CreatedAt    string         `json:"created_at"`
+	StartedAt    sql.NullString `json:"started_at"`
+	FinishedAt   sql.NullString `json:"finished_at"`
+	Error        sql.NullString `json:"error"`
+	ProcessingID sql.NullString `json:"processing_id"`
 }
 
 type Installment struct {
-	ID                  string      `json:"id"`
-	InstallmentPlanID   string      `json:"installment_plan_id"`
-	InstallmentNumber   int64       `json:"installment_number"`
-	TotalInstallments   int64       `json:"total_installments"`
-	ExpectedAmountMinor interface{} `json:"expected_amount_minor"`
-	CapitalAmountMinor  interface{} `json:"capital_amount_minor"`
-	InterestAmountMinor interface{} `json:"interest_amount_minor"`
-	Status              string      `json:"status"`
-	ExpectedDate        interface{} `json:"expected_date"`
-	DocumentedDate      interface{} `json:"documented_date"`
-	MovementID          interface{} `json:"movement_id"`
-	MetadataJson        interface{} `json:"metadata_json"`
-	CreatedAt           string      `json:"created_at"`
-	UpdatedAt           string      `json:"updated_at"`
+	ID                  string         `json:"id"`
+	InstallmentPlanID   string         `json:"installment_plan_id"`
+	InstallmentNumber   int64          `json:"installment_number"`
+	TotalInstallments   int64          `json:"total_installments"`
+	ExpectedAmountMinor sql.NullInt64  `json:"expected_amount_minor"`
+	CapitalAmountMinor  sql.NullInt64  `json:"capital_amount_minor"`
+	InterestAmountMinor sql.NullInt64  `json:"interest_amount_minor"`
+	Status              string         `json:"status"`
+	ExpectedDate        sql.NullString `json:"expected_date"`
+	DocumentedDate      sql.NullString `json:"documented_date"`
+	MovementID          sql.NullString `json:"movement_id"`
+	MetadataJson        sql.NullString `json:"metadata_json"`
+	CreatedAt           string         `json:"created_at"`
+	UpdatedAt           string         `json:"updated_at"`
 }
 
 type InstallmentPlan struct {
-	ID                    string      `json:"id"`
-	AccountID             string      `json:"account_id"`
-	OriginEventID         interface{} `json:"origin_event_id"`
-	TotalAmountMinor      interface{} `json:"total_amount_minor"`
-	TotalInstallments     int64       `json:"total_installments"`
-	PaidInstallments      int64       `json:"paid_installments"`
-	RemainingInstallments interface{} `json:"remaining_installments"`
-	Status                string      `json:"status"`
-	StartDate             interface{} `json:"start_date"`
-	ExpectedEndDate       interface{} `json:"expected_end_date"`
-	MetadataJson          interface{} `json:"metadata_json"`
-	CreatedAt             string      `json:"created_at"`
-	UpdatedAt             string      `json:"updated_at"`
+	ID                    string         `json:"id"`
+	AccountID             string         `json:"account_id"`
+	OriginEventID         sql.NullString `json:"origin_event_id"`
+	TotalAmountMinor      sql.NullInt64  `json:"total_amount_minor"`
+	TotalInstallments     int64          `json:"total_installments"`
+	PaidInstallments      int64          `json:"paid_installments"`
+	Status                string         `json:"status"`
+	StartDate             sql.NullString `json:"start_date"`
+	CreatedAt             string         `json:"created_at"`
+	UpdatedAt             string         `json:"updated_at"`
+	RemainingInstallments sql.NullInt64  `json:"remaining_installments"`
+	ExpectedEndDate       sql.NullString `json:"expected_end_date"`
+	MetadataJson          sql.NullString `json:"metadata_json"`
 }
 
 type Movement struct {
-	ID               string      `json:"id"`
-	FinancialEventID string      `json:"financial_event_id"`
-	AccountID        string      `json:"account_id"`
-	SourceEntryID    interface{} `json:"source_entry_id"`
-	MovementDate     string      `json:"movement_date"`
-	AmountMinor      int64       `json:"amount_minor"`
-	Description      interface{} `json:"description"`
-	Status           string      `json:"status"`
-	MetadataJson     interface{} `json:"metadata_json"`
-	CreatedAt        string      `json:"created_at"`
-	UpdatedAt        string      `json:"updated_at"`
+	ID               string         `json:"id"`
+	FinancialEventID string         `json:"financial_event_id"`
+	AccountID        string         `json:"account_id"`
+	SourceEntryID    sql.NullString `json:"source_entry_id"`
+	MovementDate     string         `json:"movement_date"`
+	AmountMinor      int64          `json:"amount_minor"`
+	Description      sql.NullString `json:"description"`
+	Status           string         `json:"status"`
+	MetadataJson     sql.NullString `json:"metadata_json"`
+	CreatedAt        string         `json:"created_at"`
+	UpdatedAt        string         `json:"updated_at"`
 }
 
 type MovementComponent struct {
-	ID            string      `json:"id"`
-	MovementID    string      `json:"movement_id"`
-	ComponentType string      `json:"component_type"`
-	AmountMinor   int64       `json:"amount_minor"`
-	Description   interface{} `json:"description"`
-	MetadataJson  interface{} `json:"metadata_json"`
-	CreatedAt     string      `json:"created_at"`
-	UpdatedAt     string      `json:"updated_at"`
+	ID            string         `json:"id"`
+	MovementID    string         `json:"movement_id"`
+	ComponentType string         `json:"component_type"`
+	AmountMinor   int64          `json:"amount_minor"`
+	Description   sql.NullString `json:"description"`
+	MetadataJson  sql.NullString `json:"metadata_json"`
+	CreatedAt     string         `json:"created_at"`
+	UpdatedAt     string         `json:"updated_at"`
 }
 
 type MovementRelation struct {
-	ID           string      `json:"id"`
-	MovementIDA  string      `json:"movement_id_a"`
-	MovementIDB  string      `json:"movement_id_b"`
-	RelationType string      `json:"relation_type"`
-	Status       string      `json:"status"`
-	Confidence   interface{} `json:"confidence"`
-	Reason       interface{} `json:"reason"`
-	CreatedAt    string      `json:"created_at"`
-	UpdatedAt    string      `json:"updated_at"`
+	ID           string          `json:"id"`
+	MovementIDA  string          `json:"movement_id_a"`
+	MovementIDB  string          `json:"movement_id_b"`
+	RelationType string          `json:"relation_type"`
+	Status       string          `json:"status"`
+	Confidence   sql.NullFloat64 `json:"confidence"`
+	Reason       sql.NullString  `json:"reason"`
+	CreatedAt    string          `json:"created_at"`
+	UpdatedAt    string          `json:"updated_at"`
 }
 
 type SourceEntry struct {
-	ID                    string      `json:"id"`
-	DocumentID            string      `json:"document_id"`
-	SourceReference       interface{} `json:"source_reference"`
-	RawDescription        interface{} `json:"raw_description"`
-	RawAmountMinor        interface{} `json:"raw_amount_minor"`
-	RawDate               interface{} `json:"raw_date"`
-	NormalizedDescription interface{} `json:"normalized_description"`
-	NormalizedAmountMinor interface{} `json:"normalized_amount_minor"`
-	NormalizedDate        interface{} `json:"normalized_date"`
-	PageNumber            interface{} `json:"page_number"`
-	RowNumber             interface{} `json:"row_number"`
-	Section               interface{} `json:"section"`
-	ExtractionID          interface{} `json:"extraction_id"`
-	MetadataJson          interface{} `json:"metadata_json"`
-	CreatedAt             string      `json:"created_at"`
-	UpdatedAt             string      `json:"updated_at"`
+	ID                    string         `json:"id"`
+	DocumentID            string         `json:"document_id"`
+	SourceReference       sql.NullString `json:"source_reference"`
+	RawDescription        sql.NullString `json:"raw_description"`
+	RawAmountMinor        sql.NullInt64  `json:"raw_amount_minor"`
+	RawDate               sql.NullString `json:"raw_date"`
+	NormalizedDescription sql.NullString `json:"normalized_description"`
+	NormalizedAmountMinor sql.NullInt64  `json:"normalized_amount_minor"`
+	NormalizedDate        sql.NullString `json:"normalized_date"`
+	PageNumber            sql.NullInt64  `json:"page_number"`
+	RowNumber             sql.NullInt64  `json:"row_number"`
+	Section               sql.NullString `json:"section"`
+	ExtractionID          sql.NullString `json:"extraction_id"`
+	MetadataJson          sql.NullString `json:"metadata_json"`
+	CreatedAt             string         `json:"created_at"`
+	UpdatedAt             string         `json:"updated_at"`
+	ReviewStatus          string         `json:"review_status"`
+	SourceKey             sql.NullString `json:"source_key"`
+	CorrectedDescription  sql.NullString `json:"corrected_description"`
+	CorrectedAmountMinor  sql.NullInt64  `json:"corrected_amount_minor"`
+	CorrectedDate         sql.NullString `json:"corrected_date"`
 }

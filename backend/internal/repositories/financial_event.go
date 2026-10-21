@@ -24,13 +24,13 @@ func (r *FinancialEventRepository) Create(ctx context.Context, fe domain.Financi
 	params := db.CreateFinancialEventParams{
 		ID:                 fe.ID,
 		EventType:          fe.EventType,
-		EventDate:          toInterface(fe.EventDate),
+		EventDate:          toNullString(fe.EventDate),
 		Status:             fe.Status,
 		VerificationStatus: fe.VerificationStatus,
-		Description:        toInterface(fe.Description),
-		CategoryID:         toInterface(fe.CategoryID),
-		Confidence:         toInterfaceFloat64(fe.Confidence),
-		MetadataJson:       toInterface(fe.MetadataJson),
+		Description:        toNullString(fe.Description),
+		CategoryID:         toNullString(fe.CategoryID),
+		Confidence:         toNullFloat64(fe.Confidence),
+		MetadataJson:       toNullString(fe.MetadataJson),
 		CreatedAt:          fe.CreatedAt,
 		UpdatedAt:          fe.UpdatedAt,
 	}
@@ -75,30 +75,16 @@ func (r *FinancialEventRepository) Update(ctx context.Context, fe domain.Financi
 }
 
 func mapDBFinancialEventToDomain(f db.FinancialEvent) domain.FinancialEvent {
-	strPtr := func(v interface{}) *string {
-		if v == nil {
-			return nil
-		}
-		s := v.(string)
-		return &s
-	}
-	floatPtr := func(v interface{}) *float64 {
-		if v == nil {
-			return nil
-		}
-		fv := v.(float64)
-		return &fv
-	}
 	return domain.FinancialEvent{
 		ID:                 f.ID,
 		EventType:          f.EventType,
-		EventDate:          strPtr(f.EventDate),
+		EventDate:          fromNullString(f.EventDate),
 		Status:             f.Status,
 		VerificationStatus: f.VerificationStatus,
-		Description:        strPtr(f.Description),
-		CategoryID:         strPtr(f.CategoryID),
-		Confidence:         floatPtr(f.Confidence),
-		MetadataJson:       strPtr(f.MetadataJson),
+		Description:        fromNullString(f.Description),
+		CategoryID:         fromNullString(f.CategoryID),
+		Confidence:         fromNullFloat64(f.Confidence),
+		MetadataJson:       fromNullString(f.MetadataJson),
 		CreatedAt:          f.CreatedAt,
 		UpdatedAt:          f.UpdatedAt,
 	}
