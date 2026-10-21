@@ -40,8 +40,24 @@ func (r *InstallmentPlanRepository) Create(ctx context.Context, plan domain.Inst
 	if err != nil {
 		return domain.InstallmentPlan{}, translateError(err)
 	}
+	// One installment number per plan: reject duplicates up front so the
+	// caller gets a clear ErrConflict instead of a raw UNIQUE failure, and
+	// the request never reaches the database with an invalid set. The unique
+	// index remains the backstop.
+	existing, err := r.db.Querier.ListInstallmentsByPlan(ctx, dbPlan.ID)
+	if err != nil {
+		return domain.InstallmentPlan{}, translateError(err)
+	}
+	seenNumbers := make(map[int64]bool, len(existing)+len(installments))
+	for _, e := range existing {
+		seenNumbers[e.InstallmentNumber] = true
+	}
 	// Create installments
 	for _, ins := range installments {
+		if seenNumbers[ins.InstallmentNumber] {
+			return domain.InstallmentPlan{}, ErrConflict
+		}
+		seenNumbers[ins.InstallmentNumber] = true
 		iParams := db.CreateInstallmentParams{
 			ID:                  ins.ID,
 			InstallmentPlanID:   dbPlan.ID,

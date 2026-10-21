@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -46,3 +47,35 @@ func TestInstallmentPlan_Create_WithInstallments_RoundTrip(t *testing.T) {
 }
 
 func int64Ptr(v int64) *int64 { return &v }
+
+// TestInstallmentPlan_DuplicateNumber_Conflict pins the contract: a duplicate
+// installment number inside a plan is rejected with ErrConflict. The unique
+// index is the backstop; this test keeps the taxonomy stable regardless of it.
+func TestInstallmentPlan_DuplicateNumber_Conflict(t *testing.T) {
+	p := NewTestPersistence(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	acc := domain.Account{ID: "acc-dup-num", UserID: "u", Name: "Acc", AccountType: "BANK_ACCOUNT", Currency: "USD", Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
+	if _, err := p.AccountRepo.Create(ctx, acc); err != nil {
+		t.Fatalf("acc: %v", err)
+	}
+
+	plan := domain.InstallmentPlan{
+		ID:                "plan-dup-num",
+		AccountID:         "acc-dup-num",
+		TotalInstallments: 3,
+		PaidInstallments:  0,
+		Status:            "ACTIVE",
+		CreatedAt:         now,
+		UpdatedAt:         now,
+	}
+	installments := []domain.Installment{
+		{ID: "dup-1", InstallmentNumber: 1, TotalInstallments: 3, Status: "EXPECTED", CreatedAt: now, UpdatedAt: now},
+		{ID: "dup-2", InstallmentNumber: 2, TotalInstallments: 3, Status: "EXPECTED", CreatedAt: now, UpdatedAt: now},
+		{ID: "dup-3", InstallmentNumber: 2, TotalInstallments: 3, Status: "EXPECTED", CreatedAt: now, UpdatedAt: now},
+	}
+	if _, err := p.InstallmentPlanRepo.Create(ctx, plan, installments); !errors.Is(err, ErrConflict) {
+		t.Fatalf("expected ErrConflict for duplicate installment number, got %v", err)
+	}
+}
