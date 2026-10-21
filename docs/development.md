@@ -55,6 +55,33 @@ python -m pytest tests
 - Dependencias fijas en `requirements-lock.txt` (el build de release falla si
   no existe). Instalación local: `pip install -r requirements-lock.txt`.
 
+## Esquema y sqlc (código generado)
+
+El código de `backend/internal/db/` es **generado**: no se edita a mano. La
+cadena es: migraciones (`backend/internal/db/migrations/`) + consultas
+(`backend/db/queries/`) → sqlc genera el Go.
+
+Requisito local: `go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1`
+(misma versión que verifica la CI).
+
+Flujo para actualizar el esquema:
+
+1. Crear o editar una migración en `backend/internal/db/migrations/`.
+2. Actualizar las consultas en `backend/db/queries/` si hace falta.
+3. Regenerar: `cd backend && sqlc generate`.
+4. Verificar: `sqlc diff` (debe terminar sin diferencias).
+5. `go build ./... && go test ./...`.
+6. Commitear migración, consultas **y** código regenerado juntos.
+
+Reglas que evitan el desfase que rompió las pruebas de `repositories`:
+
+- El `SELECT`/`RETURNING` lista las columnas en el orden del esquema:
+  columnas de la tabla base primero, las agregadas por `ALTER` después. Con
+  otro orden sqlc genera tipos `...Row` en lugar del modelo.
+- Toda consulta termina en `;`.
+- La CI corre `sqlc diff` en cada push a `main`: si cambiás migraciones o
+  consultas sin regenerar, el pipeline falla y el commit ni llega a revisión.
+
 ## Variables de entorno del backend
 
 Tauri las setea al spawnear el backend (`apps/desktop/src-tauri/src/main.rs`):
