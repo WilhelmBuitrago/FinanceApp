@@ -46,16 +46,6 @@ func InitRun(logDir string) (*os.File, error) {
 	return f, nil
 }
 
-func LogMsg(msg string) {
-	mu.Lock()
-	defer mu.Unlock()
-	if file == nil {
-		return
-	}
-	ts := time.Now().Format("15:04:05")
-	fmt.Fprintf(file, "[%s] %s\n", ts, msg)
-}
-
 func Info(msg string) {
 	logWrite("[INFO] " + msg)
 }

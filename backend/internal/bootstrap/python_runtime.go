@@ -19,15 +19,6 @@ import (
 // resources/prepare-python.ps1) and recorded in the runtime marker.
 const PythonVersion = "3.12.10"
 
-// ProgramDataBase returns the machine-wide FinanceApp data directory written
-// by the installer.
-func ProgramDataBase() string {
-	if progData := os.Getenv("PROGRAMDATA"); progData != "" {
-		return filepath.Join(progData, "FinanceApp")
-	}
-	return filepath.Join(os.Getenv("SystemDrive"), "ProgramData", "FinanceApp")
-}
-
 // EnsurePythonRuntime validates the Python runtime marker left by the
 // installer. It never downloads or installs anything: preparing the runtime
 // is the installer's job (resources/prepare-python.ps1).
