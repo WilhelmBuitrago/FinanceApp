@@ -1,21 +1,6 @@
 import hashlib
 import os
-import warnings
-import sys
-from io import StringIO
-
-def _get_fitz():
-    # Suppress deprecation warning from fitz -> pymupdf which prints to stdout
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
-    sys.stdout = StringIO()
-    sys.stderr = StringIO()
-    try:
-        import fitz
-    finally:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
-    return fitz
+from extraction._fitz import _get_fitz
 
 def sha256_file(path):
     h = hashlib.sha256()

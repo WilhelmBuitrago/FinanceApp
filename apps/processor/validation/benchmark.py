@@ -2,6 +2,7 @@
 
 import json
 import os
+import sys
 from typing import List, Dict, Any
 from parser.nu_account import NuAccountParser
 
@@ -63,8 +64,8 @@ class BenchmarkNuParser:
             except Exception as e:
                 parsed_movements = []
                 parsed_count = 0
-                # Log error but continue
-                error_msg = str(e)
+                # Report to stderr and keep measuring the other documents.
+                print(f"[benchmark] parse failed for {pid}: {e}", file=sys.stderr)
 
             false_negatives = max(0, expected_count - parsed_count)
             false_positives = max(0, parsed_count - expected_count)
@@ -123,13 +124,5 @@ class BenchmarkNuParser:
             json.dump(self.summary, f, ensure_ascii=False, indent=2)
 
 
-if __name__ == "__main__":
-    import sys
-    base = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "artifacts"))
-    ids = [d for d in os.listdir(base) if os.path.isdir(os.path.join(base, d))]
-    gt_base = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "ground_truth"))
-    bench = BenchmarkNuParser(ids, gt_base)
-    bench.run()
-    report_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "benchmarks", "nu_parser_benchmark.json"))
-    bench.save_report(report_path)
-    print(json.dumps(bench.summary, indent=2))
+# The CLI for this benchmark lives in src/benchmark.py (argparse, path
+# resolution). This module is the library both entrypoints call.

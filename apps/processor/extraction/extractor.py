@@ -1,18 +1,4 @@
-import os
-import sys
-from io import StringIO
-
-def _get_fitz():
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
-    sys.stdout = StringIO()
-    sys.stderr = StringIO()
-    try:
-        import fitz
-    finally:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
-    return fitz
+from extraction._fitz import _get_fitz
 
 def extract_native_text(path):
     fitz = _get_fitz()

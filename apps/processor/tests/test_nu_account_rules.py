@@ -1,5 +1,3 @@
-import os
-
 def test_nu_account_movement_section_boundaries():
     # Regression tests for Nu Account structural rules discovered in S3
     # These tests validate extraction rules without financial interpretation

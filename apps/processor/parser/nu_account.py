@@ -3,7 +3,7 @@
 import json
 import os
 import re
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import List, Dict
 
 from normalization.nu_normalizer import normalize_date, normalize_amount
