@@ -73,6 +73,13 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 			PageNumber          int    `json:"page_number"`
 			Sequence            int    `json:"sequence"`
 		} `json:"movements"`
+		ReviewRequired []struct {
+			DateOriginal        string `json:"date_original"`
+			DescriptionOriginal string `json:"description_original"`
+			AmountOriginal      string `json:"amount_original"`
+			PageNumber          int    `json:"page_number"`
+			Reason              string `json:"reason"`
+		} `json:"review_required"`
 		Validation struct {
 			Valid bool `json:"valid"`
 		} `json:"validation"`
@@ -191,6 +198,31 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 		}
 		if _, err := mvRepo.Create(ctx, mv); err != nil {
 			return fmt.Errorf("create movement: %w", err)
+		}
+	}
+
+	// Movements the parser parked for review: the raw becomes a source entry
+	// flagged REVIEW_REQUIRED (a human decides later), never a guessed amount.
+	// source_key is stable per document+page+raw so re-importing does not
+	// duplicate the queue.
+	for i, rv := range parsed.ReviewRequired {
+		se := domain.SourceEntry{
+			ID:                    fmt.Sprintf("%s_rev_%d", job.DocumentID, i+1),
+			DocumentID:            job.DocumentID,
+			SourceReference:       strPtr("review:" + rv.Reason),
+			RawDescription:        strPtr(rv.DescriptionOriginal),
+			RawDate:               strPtr(rv.DateOriginal),
+			NormalizedDescription: strPtr(rv.DescriptionOriginal),
+			PageNumber:            int64Ptr(int64(rv.PageNumber)),
+			ExtractionID:          strPtr(processingID),
+			ReviewStatus:          "REVIEW_REQUIRED",
+			SourceKey:             strPtr(fmt.Sprintf("%s:p%d:%s", job.DocumentID, rv.PageNumber, rv.AmountOriginal)),
+			MetadataJson:          strPtr(fmt.Sprintf(`{"reason":%q,"amount_original":%q}`, rv.Reason, rv.AmountOriginal)),
+			CreatedAt:             now,
+			UpdatedAt:             now,
+		}
+		if _, err := seRepo.Create(ctx, se); err != nil {
+			return fmt.Errorf("create review source entry: %w", err)
 		}
 	}
 

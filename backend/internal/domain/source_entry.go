@@ -14,6 +14,11 @@ type SourceEntry struct {
 	RowNumber             *int64
 	Section               *string
 	ExtractionID          *string
+	ReviewStatus          string
+	SourceKey             *string
+	CorrectedDescription  *string
+	CorrectedAmountMinor  *int64
+	CorrectedDate         *string
 	MetadataJson          *string
 	CreatedAt             string
 	UpdatedAt             string

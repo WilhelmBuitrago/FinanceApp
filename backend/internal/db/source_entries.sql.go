@@ -25,11 +25,13 @@ INSERT INTO source_entries (
     row_number,
     section,
     extraction_id,
+    review_status,
+    source_key,
     metadata_json,
     created_at,
     updated_at
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) RETURNING id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date
 `
 
@@ -47,6 +49,8 @@ type CreateSourceEntryParams struct {
 	RowNumber             sql.NullInt64  `json:"row_number"`
 	Section               sql.NullString `json:"section"`
 	ExtractionID          sql.NullString `json:"extraction_id"`
+	ReviewStatus          string         `json:"review_status"`
+	SourceKey             sql.NullString `json:"source_key"`
 	MetadataJson          sql.NullString `json:"metadata_json"`
 	CreatedAt             string         `json:"created_at"`
 	UpdatedAt             string         `json:"updated_at"`
@@ -67,6 +71,8 @@ func (q *Queries) CreateSourceEntry(ctx context.Context, arg CreateSourceEntryPa
 		arg.RowNumber,
 		arg.Section,
 		arg.ExtractionID,
+		arg.ReviewStatus,
+		arg.SourceKey,
 		arg.MetadataJson,
 		arg.CreatedAt,
 		arg.UpdatedAt,
