@@ -54,6 +54,10 @@ python -m pytest tests
 - Punto de entrada: `src/main.py` (lo invoca el backend como subprocess).
 - Dependencias fijas en `requirements-lock.txt` (el build de release falla si
   no existe). Instalación local: `pip install -r requirements-lock.txt`.
+  Solo `pymupdf` se usa hoy en el código; `pdfplumber` y `pydantic` están
+  reservadas para funciones planificadas y el backend verifica las tres
+  versiones al arrancar: quitarlas del lock sin quitar la verificación
+  rompería el arranque (detalle en el README de `apps/processor`).
 
 ## Esquema y sqlc (código generado)
 

@@ -36,6 +36,24 @@ durante el flujo de importación; no tiene servidor propio.
 - [`requirements-lock.txt`](./requirements-lock.txt) — dependencias fijadas;
   es la fuente de verdad de versiones.
 
+## Dependencias
+
+Fijadas en [`requirements-lock.txt`](./requirements-lock.txt) (fuente de verdad
+de versiones; el instalador las deja en el venv versionado):
+
+| Paquete | Versión | Uso actual |
+|---|---|---|
+| `pymupdf` (fitz) | 1.26.3 | **Sí** — extracción de texto nativo e inspección del PDF (`extraction/`) |
+| `pdfplumber` | 0.11.10 | **Reservado, sin uso actual** — ninguna función del processor lo importa |
+| `pydantic` | 2.11.7 | **Reservado, sin uso actual** — ninguna función del processor lo importa |
+
+Las dos reservadas se mantienen a propósito: son dependencias previstas para
+funciones planificadas del processor, no basura. El backend **verifica las tres
+versiones exactas al arrancar** (`internal/bootstrap/python_runtime.go`), así
+que un venv que las omita hace fallar el arranque del backend aunque hoy no se
+usen. Si algún día se decide prescindir de ellas, hay que quitarlas del lock
+**y** de esa verificación juntas.
+
 ## Estado
 
 - Versión: **0.1.0**; versión de contrato de artefactos: **1** (registrada en
