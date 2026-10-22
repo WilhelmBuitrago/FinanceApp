@@ -52,6 +52,10 @@ python -m pytest tests
 ```
 
 - Punto de entrada: `src/main.py` (lo invoca el backend como subprocess).
+- Intérprete de pruebas: el env de conda `agents`
+  (`C:\Users\wilhe\miniconda3\envs\agent\python.exe`, Python 3.15); el `python`
+  de PATH es el alias de Microsoft Store y falla. Los unitarios corren con
+  `<python.exe> tests/test_nu_account_rules.py`.
 - Dependencias fijas en `requirements-lock.txt` (el build de release falla si
   no existe). Instalación local: `pip install -r requirements-lock.txt`.
   Solo `pymupdf` se usa hoy en el código; `pdfplumber` y `pydantic` están

@@ -108,3 +108,20 @@ Rules:
   keeps its own format; this standard applies to every other folder.
 - Local user data (`data/`, `backend/data/`, `backend/logs/`, `backend/out/`)
   never enters the repository and gets no README.
+
+## 7. Toolchain (verified paths)
+
+- **Python**: the interpreter is the conda env `agents` at
+  `C:\Users\wilhe\miniconda3\envs\agent\python.exe` (Python 3.15, verified).
+  Do NOT call bare `python` / `python3`: on this machine those resolve to the
+  Microsoft Store alias and fail. Run processor tests with
+  `<python.exe> tests/test_nu_account_rules.py` (the suite runs standalone
+  via its `__main__` block: `pytest` is NOT installed in that env). Installing
+  packages there is a maintainer decision, not an agent action.
+- **Version caveat**: that env ships PyMuPDF 1.28.2 while
+  `apps/processor/requirements-lock.txt` pins 1.26.3 (the version the backend
+  verifies at startup). Parser/normalizer tests do not need fitz; extraction
+  tests would run against a different version than production.
+- **Go**: `go` is on PATH and the module builds with it (verified:
+  `go build ./...`, `go vet ./...`, `go test ./...` from `backend/`).
+- **Node**: `npm run build` from `apps/desktop/` (verified working).

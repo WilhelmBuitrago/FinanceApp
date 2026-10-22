@@ -64,11 +64,16 @@ usen. Si algún día se decide prescindir de ellas, hay que quitarlas del lock
 - Alcance actual: **solo extractos de cuenta Nu**. Otros emisores quedan fuera
   hasta que se consoliden (las tarjetas de crédito, por ejemplo, se integran
   más adelante).
-- Las pruebas existentes **no pudieron ejecutarse en la máquina de
-  mantenimiento** (2026-10-22): no hay intérprete de Python disponible en el
-  entorno (el alias de Microsoft Store no es un intérprete). El CI tampoco las
-  corre: `ci.yml` solo verifica estructura del repo y `sqlc diff`. Estado real
-  de los tests: **no verificado**.
-- Los unitarios de `test_nu_account_rules.py` no dependen de datos locales:
-  corren con `python tests/test_nu_account_rules.py` o con pytest. Quedan
-  pendientes de su primera ejecución real en una máquina con intérprete.
+- El intérprete de Python vive en el env de conda `agents`
+  (`C:\Users\wilhe\miniconda3\envs\agent\python.exe`, Python 3.15). El `python`
+  a secas en PATH es el alias de Microsoft Store y falla: usar siempre la ruta
+  completa.
+- Los unitarios de `tests/test_nu_account_rules.py` **corren y pasan** con ese
+  intérprete (`<python.exe> tests/test_nu_account_rules.py`; no hace falta
+  pytest porque el archivo tiene bloque `__main__`).
+- Los tests de parser (`test_nu_parser.py`) siguen **sin verificar**: requieren
+  un artefacto real en `data/artifacts/` que no existe en la máquina de
+  mantenimiento.
+- Nota de versiones: el env trae PyMuPDF 1.28.2 y el lock fija 1.26.3 (la que
+  verifica el backend al arrancar). Los tests de parseo/normalización no usan
+  fitz; los de extracción correrían contra una versión distinta a producción.
