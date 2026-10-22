@@ -1,5 +1,6 @@
 from extraction._fitz import _get_fitz
 
+
 def extract_native_text(path):
     fitz = _get_fitz()
     doc = fitz.open(path)

@@ -100,7 +100,11 @@ class NuAccountParser:
 
         # Titular heuristic: find first line after greeting that looks like a person name
         # Name: 2-4 words, only letters/accent, no digits, not containing keywords
-        name_keywords = ['hola', 'llegó', 'extracto', 'tarjeta', 'resumen', 'dinero', 'rendimientos', 'nu', 'financiera', 'calle', 'nit', 'si solo', 'disponible']
+        name_keywords = [
+            'hola', 'llegó', 'extracto', 'tarjeta', 'resumen', 'dinero',
+            'rendimientos', 'nu', 'financiera', 'calle', 'nit', 'si solo',
+            'disponible',
+        ]
         for i, line in enumerate(lines):
             if line.lower().startswith('hola'):
                 # search next few lines
@@ -178,7 +182,10 @@ class NuAccountParser:
                         # Stop if next date line or marker
                         if re.match(r'^(\d{1,2}\s*[A-Za-z]{3})$', next_line, re.I):
                             break
-                        if self.START_MARKER.lower() in next_line.lower() or self.END_MARKER.lower() in next_line.lower():
+                        if (
+                            self.START_MARKER.lower() in next_line.lower()
+                            or self.END_MARKER.lower() in next_line.lower()
+                        ):
                             break
                         # Amount pattern
                         if re.search(r'^[+-]\$\s*\d', next_line):

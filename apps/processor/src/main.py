@@ -21,6 +21,7 @@ from validation.validator import NuAccountValidator
 PROCESSOR_VERSION = "0.1.0"
 CONTRACT_VERSION = "1"
 
+
 def process_pdf(pdf_path):
     processing_id = str(uuid.uuid4())
     log.info(f"process_pdf start pdf={pdf_path} processing_id={processing_id}")

@@ -12,6 +12,14 @@ def discover_processing_ids(artifacts_path: str):
     return [d for d in os.listdir(artifacts_path) if os.path.isdir(os.path.join(artifacts_path, d))]
 
 
+def resolve_path(repo_root: str, value: str) -> str:
+    """Absolute paths stay as they are; relative ones resolve against the
+    repository root, so the CLI works from any working directory."""
+    if os.path.isabs(value):
+        return os.path.abspath(value)
+    return os.path.join(repo_root, value)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run Nu Account parser benchmark")
     parser.add_argument("--artifacts", default="data/artifacts", help="Path to artifacts directory")
@@ -21,9 +29,9 @@ def main():
 
     # Resolve paths relative to repo root
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-    artifacts_path = os.path.abspath(args.artifacts) if os.path.isabs(args.artifacts) else os.path.join(repo_root, args.artifacts)
-    ground_truth_path = os.path.abspath(args.ground_truth) if os.path.isabs(args.ground_truth) else os.path.join(repo_root, args.ground_truth)
-    output_path = os.path.abspath(args.output) if os.path.isabs(args.output) else os.path.join(repo_root, args.output)
+    artifacts_path = resolve_path(repo_root, args.artifacts)
+    ground_truth_path = resolve_path(repo_root, args.ground_truth)
+    output_path = resolve_path(repo_root, args.output)
 
     processing_ids = discover_processing_ids(artifacts_path)
     if not processing_ids:

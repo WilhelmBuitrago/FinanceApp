@@ -18,6 +18,7 @@ _MONTH_MAP = {
     'dic': '12', 'dec': '12',
 }
 
+
 def normalize_date(period_str: str, date_original: str) -> str:
     """
     Normalize movement date using period month/year.
@@ -55,6 +56,7 @@ def normalize_date(period_str: str, date_original: str) -> str:
 
     day_str = f"{day:02d}"
     return f"{year}-{month_num}-{day_str}"
+
 
 def normalize_amount(amount_original: str) -> int:
     """

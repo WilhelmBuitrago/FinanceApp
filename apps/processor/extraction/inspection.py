@@ -2,12 +2,14 @@ import hashlib
 import os
 from extraction._fitz import _get_fitz
 
+
 def sha256_file(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
     return h.hexdigest()
+
 
 def inspect_pdf(path):
     size_bytes = os.path.getsize(path)

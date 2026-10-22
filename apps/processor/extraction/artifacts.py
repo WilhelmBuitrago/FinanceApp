@@ -1,6 +1,7 @@
 import os
 import json
 
+
 def write_artifacts(base_dir, inspection, extraction):
     os.makedirs(base_dir, exist_ok=True)
     os.makedirs(os.path.join(base_dir, "extraction"), exist_ok=True)
