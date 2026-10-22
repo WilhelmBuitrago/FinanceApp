@@ -39,9 +39,15 @@ func TestMovement_Create_WithComponents_RoundTrip(t *testing.T) {
 		{ID: "comp-001", MovementID: "mv-001", ComponentType: "CAPITAL", AmountMinor: 10000, CreatedAt: now, UpdatedAt: now},
 		{ID: "comp-002", MovementID: "mv-001", ComponentType: "INTEREST", AmountMinor: 2345, CreatedAt: now, UpdatedAt: now},
 	}
-	created, err := p.MovementRepo.Create(ctx, mv, comps)
+	created, err := p.MovementRepo.Create(ctx, mv)
 	if err != nil {
 		t.Fatalf("movement create: %v", err)
+	}
+	for _, c := range comps {
+		c.MovementID = created.ID
+		if _, err := p.MovementRepo.CreateComponent(ctx, c); err != nil {
+			t.Fatalf("component %s rejected: %v", c.ComponentType, err)
+		}
 	}
 	if created.ID != mv.ID {
 		t.Fatalf("id mismatch")
@@ -82,7 +88,7 @@ func TestMovement_ForeignKeyViolation(t *testing.T) {
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
-	_, err := p.MovementRepo.Create(ctx, mv, nil)
+	_, err := p.MovementRepo.Create(ctx, mv)
 	if err == nil {
 		t.Fatal("expected foreign key error")
 	}
@@ -108,8 +114,8 @@ func TestMovement_DuplicateDocumentaryValues_Independence(t *testing.T) {
 
 	mv1 := domain.Movement{ID: "mv-dup-1", FinancialEventID: "fe-dup-1", AccountID: "acc-dup", MovementDate: "2026-09-01", AmountMinor: 5000, Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
 	mv2 := domain.Movement{ID: "mv-dup-2", FinancialEventID: "fe-dup-2", AccountID: "acc-dup", MovementDate: "2026-09-01", AmountMinor: 5000, Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
-	if _, err := p.MovementRepo.Create(ctx, mv1, nil); err != nil { t.Fatalf("%v", err) }
-	if _, err := p.MovementRepo.Create(ctx, mv2, nil); err != nil { t.Fatalf("%v", err) }
+	if _, err := p.MovementRepo.Create(ctx, mv1); err != nil { t.Fatalf("%v", err) }
+	if _, err := p.MovementRepo.Create(ctx, mv2); err != nil { t.Fatalf("%v", err) }
 
 	g1, _ := p.MovementRepo.GetByID(ctx, "mv-dup-1")
 	g2, _ := p.MovementRepo.GetByID(ctx, "mv-dup-2")
@@ -147,8 +153,15 @@ func TestMovement_ComponentTypes_NuCatalog(t *testing.T) {
 		{ID: "nu-c4", MovementID: "mv-nu-types", ComponentType: "INSURANCE", AmountMinor: 8000, CreatedAt: now, UpdatedAt: now},
 		{ID: "nu-c5", MovementID: "mv-nu-types", ComponentType: "LATE_FEE", AmountMinor: 2000, CreatedAt: now, UpdatedAt: now},
 	}
-	if _, err := p.MovementRepo.Create(ctx, mv, comps); err != nil {
+	created, err := p.MovementRepo.Create(ctx, mv)
+	if err != nil {
 		t.Fatalf("Nu component catalog rejected: %v", err)
+	}
+	for _, c := range comps {
+		c.MovementID = created.ID
+		if _, err := p.MovementRepo.CreateComponent(ctx, c); err != nil {
+			t.Fatalf("Nu component catalog rejected: %v", err)
+		}
 	}
 	got, err := p.MovementRepo.ListComponents(ctx, "mv-nu-types")
 	if err != nil {
@@ -163,7 +176,10 @@ func TestMovement_ComponentTypes_NuCatalog(t *testing.T) {
 	legacyComps := []domain.MovementComponent{
 		{ID: "legacy-c1", MovementID: "mv-legacy-type", ComponentType: "SEGURO", AmountMinor: 5000, CreatedAt: now, UpdatedAt: now},
 	}
-	if _, err := p.MovementRepo.Create(ctx, legacy, legacyComps); !errors.Is(err, repositories.ErrConstraint) {
+	if _, err := p.MovementRepo.Create(ctx, legacy); err != nil {
+		t.Fatalf("legacy movement setup: %v", err)
+	}
+	if _, err := p.MovementRepo.CreateComponent(ctx, legacyComps[0]); !errors.Is(err, repositories.ErrConstraint) {
 		t.Fatalf("expected legacy Spanish component type to be rejected with repositories.ErrConstraint, got %v", err)
 	}
 }

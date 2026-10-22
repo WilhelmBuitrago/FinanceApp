@@ -21,8 +21,8 @@ func TestRelation_MovementRelation_CreateList(t *testing.T) {
 
 	mv1 := domain.Movement{ID: "mv-r1", FinancialEventID: "fe-rel", AccountID: "acc-rel", MovementDate: "2026-01-01", AmountMinor: 1000, Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
 	mv2 := domain.Movement{ID: "mv-r2", FinancialEventID: "fe-rel", AccountID: "acc-rel", MovementDate: "2026-01-02", AmountMinor: 1000, Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
-	if _, err := p.MovementRepo.Create(ctx, mv1, nil); err != nil { t.Fatalf("%v", err) }
-	if _, err := p.MovementRepo.Create(ctx, mv2, nil); err != nil { t.Fatalf("%v", err) }
+	if _, err := p.MovementRepo.Create(ctx, mv1); err != nil { t.Fatalf("%v", err) }
+	if _, err := p.MovementRepo.Create(ctx, mv2); err != nil { t.Fatalf("%v", err) }
 
 	rel := domain.MovementRelation{
 		ID: "rel-mv-1", MovementIDA: "mv-r1", MovementIDB: "mv-r2", RelationType: "TRANSFER_COUNTERPART", Status: "CONFIRMED", CreatedAt: now, UpdatedAt: now,

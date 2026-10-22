@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,8 +11,13 @@ import (
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/log"
 	_ "modernc.org/sqlite"
-	"database/sql"
 )
+
+// movementWriter is satisfied by app.MovementService. The api package cannot
+// import app (app imports api), so the transaction owner arrives injected.
+type movementWriter interface {
+	CreateWithEvent(ctx context.Context, fe domain.FinancialEvent, mv domain.Movement, components []domain.MovementComponent) (domain.Movement, error)
+}
 
 func (rt *router) listMovements(w http.ResponseWriter, r *http.Request) {
 	movements, err := rt.movementRepo.List(r.Context())
@@ -87,11 +94,6 @@ func (rt *router) createMovement(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	if _, err := rt.eventRepo.Create(r.Context(), fe); err != nil {
-		log.Info(fmt.Sprintf("[MOVEMENT CREATE] financial event create failed: %v", err))
-		writeRepoError(w, err)
-		return
-	}
 	mvID := fmt.Sprintf("mv_manual_%d", time.Now().UnixNano())
 	mv := domain.Movement{
 		ID: mvID,
@@ -104,8 +106,8 @@ func (rt *router) createMovement(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	if _, err := rt.movementRepo.Create(r.Context(), mv, []domain.MovementComponent{}); err != nil {
-		log.Info(fmt.Sprintf("[MOVEMENT CREATE] movement create failed: %v", err))
+	if _, err := rt.movements.CreateWithEvent(r.Context(), fe, mv, []domain.MovementComponent{}); err != nil {
+		log.Info(fmt.Sprintf("[MOVEMENT CREATE] transactional create failed: %v", err))
 		writeRepoError(w, err)
 		return
 	}

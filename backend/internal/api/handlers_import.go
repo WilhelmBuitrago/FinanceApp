@@ -240,7 +240,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 					CreatedAt:        now,
 					UpdatedAt:        now,
 				}
-				if _, err := h.movementRepo.Create(r.Context(), mv, []domain.MovementComponent{}); err != nil {
+				if _, err := h.movementRepo.Create(r.Context(), mv); err != nil {
 				h.failJob(w, r, job, fmt.Sprintf("staging movement failed: %v", err))
 				return
 			}

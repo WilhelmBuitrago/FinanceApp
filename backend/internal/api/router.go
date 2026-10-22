@@ -22,12 +22,13 @@ type router struct {
 	eventRepo       *repositories.FinancialEventRepository
 	sourceEntryRepo *repositories.SourceEntryRepository
 	categoryRepo    *repositories.CategoryRepository
+	movements       movementWriter
 	confirmHandler  func(context.Context, string) error
 }
 
 // NewRouter wires every route to its handler. Health and upload stay here;
 // the rest live in the handlers_*.go files by domain.
-func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository, categoryRepo *repositories.CategoryRepository, confirmHandler func(context.Context, string) error) http.Handler {
+func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository, categoryRepo *repositories.CategoryRepository, movements movementWriter, confirmHandler func(context.Context, string) error) http.Handler {
 	rt := &router{
 		cfg:             cfg,
 		docRepo:         docRepo,
@@ -37,6 +38,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 		eventRepo:       eventRepo,
 		sourceEntryRepo: sourceEntryRepo,
 		categoryRepo:    categoryRepo,
+		movements:       movements,
 		confirmHandler:  confirmHandler,
 	}
 	mux := http.NewServeMux()

@@ -189,7 +189,7 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 			CreatedAt:        now,
 			UpdatedAt:        now,
 		}
-		if _, err := mvRepo.Create(ctx, mv, []domain.MovementComponent{}); err != nil {
+		if _, err := mvRepo.Create(ctx, mv); err != nil {
 			return fmt.Errorf("create movement: %w", err)
 		}
 	}

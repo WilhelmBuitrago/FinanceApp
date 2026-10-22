@@ -2,6 +2,7 @@ package tests
 
 import (
 	"financeapp/backend/internal/api"
+	"financeapp/backend/internal/app"
 	"database/sql"
 	"net/http"
 	"net/http/httptest"
@@ -34,6 +35,7 @@ func newTestRouter(t *testing.T) (http.Handler, *sql.DB) {
 		repositories.NewFinancialEventRepository(repoDB),
 		repositories.NewSourceEntryRepository(repoDB),
 		repositories.NewCategoryRepository(repoDB),
+		app.NewMovementService(sqlDB),
 		nil)
 	return router, sqlDB
 }

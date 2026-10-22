@@ -21,7 +21,7 @@ func TestPersistence_Smoke_FullChain(t *testing.T) {
 	if _, err := p.FinancialEventRepo.Create(ctx, fe); err != nil { t.Fatalf("event: %v", err) }
 
 	mv := domain.Movement{ID: "smoke-mv", FinancialEventID: "smoke-fe", AccountID: "smoke-acc", MovementDate: "2026-09-22", AmountMinor: 9999, Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
-	if _, err := p.MovementRepo.Create(ctx, mv, nil); err != nil { t.Fatalf("movement: %v", err) }
+	if _, err := p.MovementRepo.Create(ctx, mv); err != nil { t.Fatalf("movement: %v", err) }
 
 	plan := domain.InstallmentPlan{ID: "smoke-plan", AccountID: "smoke-acc", TotalInstallments: 2, PaidInstallments: 0, Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
 	installments := []domain.Installment{
@@ -33,7 +33,7 @@ func TestPersistence_Smoke_FullChain(t *testing.T) {
 	rel := domain.MovementRelation{ID: "smoke-rel", MovementIDA: "smoke-mv", MovementIDB: "smoke-mv", RelationType: "RELATED_TO", Status: "CANDIDATE", CreatedAt: now, UpdatedAt: now}
 	// Note: CHECK movement_id_a <> movement_id_b will fail, use different IDs
 	mv2 := domain.Movement{ID: "smoke-mv-2", FinancialEventID: "smoke-fe", AccountID: "smoke-acc", MovementDate: "2026-09-23", AmountMinor: 1111, Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
-	if _, err := p.MovementRepo.Create(ctx, mv2, nil); err != nil { t.Fatalf("mv2: %v", err) }
+	if _, err := p.MovementRepo.Create(ctx, mv2); err != nil { t.Fatalf("mv2: %v", err) }
 	rel.MovementIDB = "smoke-mv-2"
 	if _, err := p.RelationRepo.CreateMovementRelation(ctx, rel); err != nil { t.Fatalf("relation: %v", err) }
 

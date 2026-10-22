@@ -17,12 +17,14 @@ func NewMovementRepository(db *DB) *MovementRepository {
 	return &MovementRepository{db: db}
 }
 
-func (r *MovementRepository) Create(ctx context.Context, mv domain.Movement, components []domain.MovementComponent) (domain.Movement, error) {
+// Create inserts a movement. Referential integrity is enforced before the
+// insert (the SQLite schema declares no FKs on movements). Callers that need
+// movement + components atomically use app.MovementService, which orchestrates
+// this in a transaction.
+func (r *MovementRepository) Create(ctx context.Context, mv domain.Movement) (domain.Movement, error) {
 	if r.db.Querier == nil {
 		return domain.Movement{}, ErrUnavailable
 	}
-	// The SQLite schema does not declare foreign keys on movements, so the
-	// repository enforces referential integrity before inserting.
 	if _, err := r.db.Querier.GetAccount(ctx, mv.AccountID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return domain.Movement{}, ErrConstraint
@@ -35,7 +37,6 @@ func (r *MovementRepository) Create(ctx context.Context, mv domain.Movement, com
 		}
 		return domain.Movement{}, translateError(err)
 	}
-	// In real implementation, use transaction. Here we simulate with Querier.
 	params := db.CreateMovementParams{
 		ID:               mv.ID,
 		FinancialEventID: mv.FinancialEventID,
@@ -53,24 +54,29 @@ func (r *MovementRepository) Create(ctx context.Context, mv domain.Movement, com
 	if err != nil {
 		return domain.Movement{}, translateError(err)
 	}
-	// Create components
-	for _, comp := range components {
-		cparams := db.CreateMovementComponentParams{
-			ID:            comp.ID,
-			MovementID:    dbMv.ID,
-			ComponentType: comp.ComponentType,
-			AmountMinor:   comp.AmountMinor,
-			Description:   toNullString(comp.Description),
-			MetadataJson:  toNullString(comp.MetadataJson),
-			CreatedAt:     comp.CreatedAt,
-			UpdatedAt:     comp.UpdatedAt,
-		}
-		_, err := r.db.Querier.CreateMovementComponent(ctx, cparams)
-		if err != nil {
-			return domain.Movement{}, translateError(err)
-		}
-	}
 	return mapDBMovementToDomain(dbMv), nil
+}
+
+// CreateComponent inserts one component of a movement.
+func (r *MovementRepository) CreateComponent(ctx context.Context, comp domain.MovementComponent) (domain.MovementComponent, error) {
+	if r.db.Querier == nil {
+		return domain.MovementComponent{}, ErrUnavailable
+	}
+	cparams := db.CreateMovementComponentParams{
+		ID:            comp.ID,
+		MovementID:    comp.MovementID,
+		ComponentType: comp.ComponentType,
+		AmountMinor:   comp.AmountMinor,
+		Description:   toNullString(comp.Description),
+		MetadataJson:  toNullString(comp.MetadataJson),
+		CreatedAt:     comp.CreatedAt,
+		UpdatedAt:     comp.UpdatedAt,
+	}
+	dbComp, err := r.db.Querier.CreateMovementComponent(ctx, cparams)
+	if err != nil {
+		return domain.MovementComponent{}, translateError(err)
+	}
+	return mapDBMovementComponentToDomain(dbComp), nil
 }
 
 func (r *MovementRepository) GetByID(ctx context.Context, id string) (domain.Movement, error) {
