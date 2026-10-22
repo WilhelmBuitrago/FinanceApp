@@ -6,11 +6,11 @@
 [![Download](https://img.shields.io/badge/download-Windows%20MSI-0078D6?logo=windows&logoColor=white)](https://github.com/WilhelmBuitrago/FinanceApp/releases/latest)
 [![License](https://img.shields.io/badge/license-proprietary-critical)](LICENSE)
 
-![Tauri](https://img.shields.io/badge/Tauri-2-FFC131?logo=tauri&logoColor=black)
-![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
-![Go](https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![Tauri](https://img.shields.io/badge/Tauri-FFC131?logo=tauri&logoColor=black)
+![React](https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
+![Go](https://img.shields.io/badge/Go-00ADD8?logo=go&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20x64-0078D6?logo=windows)
 
@@ -62,8 +62,9 @@ FinanceApp/
 
 ## Desarrollo
 
-Cada componente corre por separado. Requisitos: Go (versión de
-`backend/go.mod`), Node 20 y Python 3.12.
+Cada componente corre por separado. Requisitos: Go, Node y Python; las
+versiones exactas quedan fijadas en `backend/go.mod` y
+`apps/processor/requirements-lock.txt`.
 
 ```bash
 # Backend — http://127.0.0.1:8081/health
