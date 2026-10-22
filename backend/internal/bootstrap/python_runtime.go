@@ -86,8 +86,14 @@ func EnsurePythonRuntime() error {
 		log.Error("venv_path must be absolute")
 		return fmt.Errorf("venv_path must be absolute")
 	}
-	absBase, _ := filepath.Abs(base)
-	absVenv, _ := filepath.Abs(venvPathRaw)
+	absBase, err := filepath.Abs(base)
+	if err != nil {
+		return fmt.Errorf("cannot resolve runtime base path %s: %w", base, err)
+	}
+	absVenv, err := filepath.Abs(venvPathRaw)
+	if err != nil {
+		return fmt.Errorf("cannot resolve venv path %s: %w", venvPathRaw, err)
+	}
 	expectedVenv := filepath.Join(absBase, "venvs", fields["identifier"])
 	if absVenv != expectedVenv {
 		log.Error(fmt.Sprintf("venv_path does not match expected %s", expectedVenv))

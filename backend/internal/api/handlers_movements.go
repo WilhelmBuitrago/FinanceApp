@@ -66,7 +66,12 @@ func (rt *router) createMovement(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Info(fmt.Sprintf("[MOVEMENT CREATE] account=%s amount=%d type=%s date=%s desc=%s", req.AccountID, req.AmountMinor, req.Type, req.Date, req.Description))
 	if !force {
-		existing, _ := rt.movementRepo.List(r.Context())
+		existing, err := rt.movementRepo.List(r.Context())
+		if err != nil {
+			log.Info(fmt.Sprintf("[MOVEMENT CREATE] duplicate check failed: %v", err))
+			http.Error(w, `{"error":"failed to check duplicates"}`, http.StatusInternalServerError)
+			return
+		}
 		for _, m := range existing {
 			if m.AccountID == req.AccountID && m.MovementDate == req.Date && m.AmountMinor == req.AmountMinor && (m.Description == nil || req.Description == "" || *m.Description == req.Description) {
 				log.Info(fmt.Sprintf("[MOVEMENT CREATE] Duplicate found %s", m.ID))
