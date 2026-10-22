@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { uploadDocument } from '../api/documents';
+import { getJob } from '../api/jobs';
 import { ApiError } from '../api/client';
 import {
   DrawerBody,
@@ -31,7 +32,44 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadResult, setUploadResult] = useState<{document_id:string; job_id:string; processing_id?:string}|null>(null);
+  const [jobState, setJobState] = useState<'RUNNING' | 'SUCCESS' | 'FAILED' | null>(null);
+  const [reviewCount, setReviewCount] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // After an upload, poll the job until it reaches a terminal state and then
+  // report what landed in the human-review queue for this document: the user
+  // learns here, not by browsing to Revisión.
+  useEffect(() => {
+    if (!uploadResult) return;
+    let cancelled = false;
+    let attempts = 0;
+    setJobState('RUNNING');
+    setReviewCount(null);
+    const tick = async () => {
+      try {
+        const job = await getJob(uploadResult.job_id);
+        if (cancelled) return;
+        if (job.Status === 'SUCCESS' || job.Status === 'FAILED') {
+          setJobState(job.Status);
+          const items = await fetch('http://localhost:8081/review/entries').then(r => r.json()).catch(() => []);
+          if (cancelled) return;
+          const mine = (items || []).filter((it: any) => {
+            try { return JSON.parse(it.PayloadJson || '{}').document_id === uploadResult.document_id; } catch { return false; }
+          });
+          setReviewCount(mine.length);
+          window.dispatchEvent(new Event('review-queue-changed'));
+          onImported();
+          return;
+        }
+      } catch { /* job still processing or transient error: retry */ }
+      if (cancelled) return;
+      attempts += 1;
+      if (attempts >= 20) { setJobState('FAILED'); return; }
+      setTimeout(tick, 1500);
+    };
+    tick();
+    return () => { cancelled = true; };
+  }, [uploadResult]);
 
   const submit = async () => {
     if (!accountId || !file) return;
@@ -225,6 +263,23 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
                       </>
                     )}
                   </dl>
+                  {/* Import outcome: what the pipeline parked for a human. */}
+                  {jobState === 'RUNNING' && (
+                    <p className="text-meta text-ink-3">Procesando el extracto…</p>
+                  )}
+                  {jobState === 'FAILED' && (
+                    <p className="text-body text-neg">El procesamiento falló.Revisá el documento en Documentos.</p>
+                  )}
+                  {jobState === 'SUCCESS' && reviewCount !== null && (
+                    reviewCount > 0 ? (
+                      <p className="text-body text-ink">
+                        {reviewCount} movimiento(s) requieren verificación.{' '}
+                        <a href="/review" className="text-accent-strong underline">Ir a Revisión</a>
+                      </p>
+                    ) : (
+                      <p className="text-body text-ink-2">Extracto importado sin ítems pendientes.</p>
+                    )
+                  )}
                 </div>
               )}
             </div>

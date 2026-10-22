@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   IconChart,
@@ -33,7 +33,25 @@ const toolsNav: NavItemDef[] = [
   { to: '/settings', label: 'Configuración', Icon: IconGear },
 ];
 
-function NavItem({ to, label, Icon, collapsed }: NavItemDef & { collapsed: boolean }) {
+// Pending review count: the honest "you have items waiting" signal. It reads
+// the real queue and refreshes when any page signals a change.
+function useReviewCount(): number {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    const load = () =>
+      fetch('http://localhost:8081/review/entries')
+        .then(r => r.json())
+        .then(d => setCount((d || []).length))
+        .catch(() => {});
+    load();
+    window.addEventListener('review-queue-changed', load);
+    return () => window.removeEventListener('review-queue-changed', load);
+  }, []);
+  return count;
+}
+
+function NavItem({ to, label, Icon, collapsed, badge }: NavItemDef & { collapsed: boolean; badge?: number }) {
+  const showBadge = !!badge && badge > 0;
   return (
     <NavLink
       to={to}
@@ -52,6 +70,14 @@ function NavItem({ to, label, Icon, collapsed }: NavItemDef & { collapsed: boole
           )}
           <Icon className={isActive ? 'shrink-0 text-accent' : 'shrink-0 text-ink-3'} />
           <span className={`truncate ${collapsed ? 'sr-only' : ''}`}>{label}</span>
+          {showBadge && (
+            <span
+              className={collapsed ? 'absolute top-1 right-1 h-2 w-2 rounded-full bg-accent-strong' : 'ml-auto min-w-5 rounded-full bg-accent-strong px-1.5 py-0.5 text-center text-meta font-mono text-white'}
+              aria-label={`${badge} ítems pendientes de revisión`}
+            >
+              {!collapsed && badge}
+            </span>
+          )}
         </>
       )}
     </NavLink>
@@ -68,6 +94,7 @@ function GroupLabel({ label, collapsed }: { label: string; collapsed: boolean })
 }
 
 export default function Sidebar({ collapsed }: SidebarProps) {
+  const reviewCount = useReviewCount();
   return (
     <aside
       className={`flex shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-[220ms] ease-out-tk ${
@@ -91,7 +118,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
         <GroupLabel label="Sistema" collapsed={collapsed} />
         <div className="flex flex-col gap-0.5">
           {systemNav.map((item) => (
-            <NavItem key={item.to} {...item} collapsed={collapsed} />
+            <NavItem key={item.to} {...item} collapsed={collapsed} badge={item.to === '/review' ? reviewCount : undefined} />
           ))}
         </div>
         <GroupLabel label="Herramientas" collapsed={collapsed} />

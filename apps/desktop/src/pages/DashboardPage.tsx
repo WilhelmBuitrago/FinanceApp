@@ -51,12 +51,7 @@ export default function DashboardPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [addMovementOpen, setAddMovementOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>(() => {
-    try {
-      const q = JSON.parse(localStorage.getItem('reviewQueue') || '[]');
-      return q.map((i:any)=> `Movimiento duplicado detectado el ${i.date}`);
-    } catch { return [] }
-  });
+  const [notifications, setNotifications] = useState<string[]>([]);
   const [form, setForm] = useState({cantidad:'', tipo:'Ingreso', cuenta:'', categoria:'', descripcion:'', fecha:''});
   const [categories, setCategories] = useState<any[]>([]);
   const accounts = useAccounts();
@@ -83,6 +78,21 @@ export default function DashboardPage() {
           category_type: (c.category_type ?? c.CategoryType ?? '').toUpperCase()
         }));
         setCategories(norm);
+      })
+      .catch(()=>{});
+    // Notifications come from the real review queue (three triggers), not
+    // from client-side storage.
+    fetch('http://localhost:8081/review/entries')
+      .then(r=>r.json())
+      .then(items => {
+        const texts = (items || []).map((it:any) => {
+          let p:any = {};
+          try { p = JSON.parse(it.PayloadJson || '{}'); } catch { /* payload libre */ }
+          if (it.Kind === 'CATEGORY') return `Movimiento sin categoría: revisá en Revisión`;
+          if (it.Kind === 'DUPLICATE') return `Movimiento duplicado: quedó en Revisión`;
+          return `Extracción requiere verificación (${p.reason || 'movimiento no normalizado'})`;
+        });
+        setNotifications(texts);
       })
       .catch(()=>{});
   }, []);
@@ -432,19 +442,18 @@ export default function DashboardPage() {
               const sign = form.tipo === 'Egreso' ? -1 : 1;
               const amountMinor = Math.round(amount * 100) * sign;
               const body = {
-                amountMinor,
+                amount_minor: amountMinor,
                 type: form.tipo === 'Ingreso' ? 'INCOME' : form.tipo === 'Egreso' ? 'EXPENSE' : 'TRANSFER',
-                accountId: form.cuenta,
+                account_id: form.cuenta,
                 description: form.descripcion,
                 date: form.fecha,
-                categoryId: form.categoria
+                category_id: form.categoria
               };
               const res = await fetch('http://localhost:8081/movements', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
               if (res.status === 409) {
-                const item = { amount, date: form.fecha, desc: form.descripcion || '', account: form.cuenta, type: form.tipo, created: Date.now() };
-                const q = JSON.parse(localStorage.getItem('reviewQueue') || '[]');
-                localStorage.setItem('reviewQueue', JSON.stringify([...q, item]));
-                setNotifications(n => [...n, `Movimiento duplicado detectado el ${form.fecha} por $${amount}`]);
+                // The backend parks the duplicate in the review queue; the UI
+                // only notifies (no client-side queue to lose).
+                setNotifications(n => [...n, `Movimiento duplicado detectado el ${form.fecha} por $${amount}. Quedó en Revisión.`]);
                 setAddMovementOpen(false);
                 return;
               }

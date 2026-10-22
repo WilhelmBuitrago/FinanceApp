@@ -60,34 +60,11 @@ export default function SettingsPage() {
   };
 
   const deleteCategory = async (id: string) => {
-    const cat = categories.find(c=> c.id === id);
     const res = await fetch(`http://localhost:8081/categories/${id}`, { method: 'DELETE' });
     if (res.ok) {
       setCategories(c => c.filter(x => x.id !== id));
-      // Notificar movimientos asociados para revisión
-      try {
-        const movRes = await fetch('http://localhost:8081/movements');
-        const movs = await movRes.json();
-        const affected = movs.filter((m:any) => m.categoryId === id);
-        if (affected.length > 0) {
-          const queue = JSON.parse(localStorage.getItem('reviewQueue') || '[]');
-          const newItems = affected.map((m:any)=> ({
-            id: `rev_${m.ID}_${Date.now()}`,
-            date: m.MovementDate,
-            description: m.Description ?? '',
-            categoryId: id,
-            categoryName: cat?.name || '',
-            categoryType: cat?.type || '',
-            movementId: m.ID,
-            amount: m.AmountMinor,
-            accountId: m.AccountID
-          }));
-          localStorage.setItem('reviewQueue', JSON.stringify([...queue, ...newItems]));
-          const notifs = JSON.parse(localStorage.getItem('notifications') || '[]');
-          notifs.push({ id: Date.now(), text: `Categoría "${cat?.name}" eliminada con ${affected.length} movimiento(s) asociados. Revisa en Revisión.` });
-          localStorage.setItem('notifications', JSON.stringify(notifs));
-        }
-      } catch {}
+      // The backend parks the affected movements in the unified review queue;
+      // the UI only refreshes the list.
     }
   };
 

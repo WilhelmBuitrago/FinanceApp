@@ -66,3 +66,16 @@ func (rt *router) resolveReviewEntry(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	encodeJSON(w, created)
 }
+
+// discardReviewEntry parks an item as discarded: the human decided it is not
+// real (nothing is written to the financial data).
+func (rt *router) discardReviewEntry(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if err := rt.reviews.Discard(r.Context(), id); err != nil {
+		log.Info(fmt.Sprintf("[REVIEW DISCARD] failed id=%s err=%v", id, err))
+		writeRepoError(w, err)
+		return
+	}
+	log.Info(fmt.Sprintf("[REVIEW DISCARD] entry=%s", id))
+	w.WriteHeader(http.StatusNoContent)
+}
