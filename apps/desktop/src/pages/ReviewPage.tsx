@@ -7,6 +7,9 @@ export default function ReviewPage() {
   const [items, setItems] = useState<any[]>(() => {
     try { return JSON.parse(localStorage.getItem('reviewQueue') || '[]'); } catch { return [] }
   });
+  const [entries, setEntries] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [corrections, setCorrections] = useState<Record<string, any>>({});
   const [categories, setCategories] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
   const [selectedCat, setSelectedCat] = useState<Record<string,string>>({});
@@ -18,6 +21,14 @@ export default function ReviewPage() {
     fetch('http://localhost:8081/movements')
       .then(r=>r.json())
       .then(d=> setMovements(d||[]));
+    // Real review queue: extractions the processor could not normalize.
+    fetch('http://localhost:8081/review/entries')
+      .then(r=>r.json())
+      .then(d=> setEntries(d||[]))
+      .catch(()=> setEntries([]));
+    fetch('http://localhost:8081/accounts')
+      .then(r=>r.json())
+      .then(d=> setAccounts(d||[]));
   }, []);
 
   useEffect(() => {
@@ -53,7 +64,37 @@ export default function ReviewPage() {
     }
   };
 
-  if (items.length === 0) {
+  const setCorrection = (id: string, patch: any) =>
+    setCorrections(s => ({ ...s, [id]: { ...(s[id] || {}), ...patch } }));
+
+  const resolveEntry = async (entry: any) => {
+    const c = corrections[entry.ID] || {};
+    const amount = Number(c.amount);
+    if (!c.date || !Number.isFinite(amount) || !c.account) {
+      alert('Completá fecha, monto y cuenta para confirmar la corrección');
+      return;
+    }
+    const body = {
+      description: c.description || entry.RawDescription || '',
+      amount_minor: Math.round(amount * 100) * (c.type === 'INCOME' ? 1 : -1),
+      date: c.date,
+      type: c.type || 'EXPENSE',
+      account_id: c.account,
+    };
+    const res = await fetch(`http://localhost:8081/review/entries/${entry.ID}/resolve`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      setEntries(es => es.filter(e => e.ID !== entry.ID));
+    } else if (res.status === 409) {
+      alert('Este ítem ya fue resuelto por otra acción');
+      setEntries(es => es.filter(e => e.ID !== entry.ID));
+    } else {
+      alert('Error al confirmar la corrección');
+    }
+  };
+
+  if (items.length === 0 && entries.length === 0) {
     return (
       <div className="space-y-6">
         <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">Revisión</h1>
@@ -68,6 +109,70 @@ export default function ReviewPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">Revisión</h1>
+      {entries.map((entry) => {
+        let amountOriginal = '—';
+        try { amountOriginal = JSON.parse(entry.MetadataJson || '{}').amount_original || '—'; } catch { /* raw libre */ }
+        const c = corrections[entry.ID] || {};
+        return (
+          <div key={entry.ID} className="rounded-[12px] border border-line bg-surface p-6">
+            <p className="text-body font-medium">Extracción requiere verificación</p>
+            <p className="mt-1 text-meta text-ink-3">{entry.Reason || 'Movimiento no normalizado'}</p>
+            <ul className="mt-3 space-y-1 text-body">
+              <li><b>Descripción original:</b> {entry.RawDescription || '—'}</li>
+              <li><b>Fecha original:</b> {entry.RawDate || '—'}</li>
+              <li><b>Monto original:</b> {amountOriginal}</li>
+            </ul>
+            <div className="mt-4 grid gap-3">
+              <input
+                value={c.description ?? entry.RawDescription ?? ''}
+                onChange={e=> setCorrection(entry.ID, { description: e.target.value })}
+                placeholder="Descripción corregida"
+                className="w-full border rounded px-2 py-1 bg-black text-white"
+              />
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={c.date || ''}
+                  onChange={e=> setCorrection(entry.ID, { date: e.target.value })}
+                  className="w-full border rounded px-2 py-1 bg-black text-white"
+                />
+                <input
+                  type="number"
+                  step="0.01"
+                  value={c.amount ?? ''}
+                  onChange={e=> setCorrection(entry.ID, { amount: e.target.value })}
+                  placeholder="Monto"
+                  className="w-full border rounded px-2 py-1 bg-black text-white"
+                />
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={c.type || 'EXPENSE'}
+                  onChange={e=> setCorrection(entry.ID, { type: e.target.value })}
+                  className="w-full border rounded px-2 py-1 bg-black text-white"
+                >
+                  <option value="INCOME">Ingreso</option>
+                  <option value="EXPENSE">Egreso</option>
+                </select>
+                <select
+                  value={c.account || ''}
+                  onChange={e=> setCorrection(entry.ID, { account: e.target.value })}
+                  className="w-full border rounded px-2 py-1 bg-black text-white"
+                >
+                  <option value="">Seleccionar cuenta…</option>
+                  {accounts.map((a:any)=> (
+                    <option key={a.ID || a.id} value={a.ID || a.id}>{a.Name || a.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={()=> resolveEntry(entry)} className="px-3 py-1 rounded bg-accent-strong text-white">Confirmar corrección</button>
+                <button onClick={()=> setEntries(es=> es.filter(e=> e.ID !== entry.ID))} className="px-3 py-1 rounded border">Descartar</button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
       {items.map((it, idx) => {
         const isCategory = !!it.categoryId;
         const mv = movements.find(m=> m.ID === it.movementId);
