@@ -37,6 +37,8 @@ la base de datos.
     - [`app.go`](./internal/app/app.go) — wiring de repositorios, router y ciclo de vida.
     - [`import_service.go`](./internal/app/import_service.go) — flujo de
       importación de extractos (transaccional).
+    - [`movement_service.go`](./internal/app/movement_service.go) — creación
+      transaccional de evento + movimiento + componentes.
   - **`bootstrap/`** — arranque del sistema.
     - [`paths.go`](./internal/bootstrap/paths.go) — rutas de datos por entorno.
     - [`python_runtime.go`](./internal/bootstrap/python_runtime.go) — validación
