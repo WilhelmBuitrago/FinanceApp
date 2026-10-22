@@ -30,9 +30,12 @@ durante el flujo de importación; no tiene servidor propio.
   - [`__init__.py`](./validation/__init__.py) — marcador de paquete.
   - [`validator.py`](./validation/validator.py) — validador de estados de cuenta Nu.
   - [`benchmark.py`](./validation/benchmark.py) — benchmark de validación.
-- **`tests/`** — pruebas con pytest.
-  - [`test_nu_parser.py`](./tests/test_nu_parser.py) — reglas del parser.
-  - [`test_nu_account_rules.py`](./tests/test_nu_account_rules.py) — reglas de negocio de Nu.
+- **`tests/`** — pruebas.
+  - [`test_nu_parser.py`](./tests/test_nu_parser.py) — integración del parser
+    contra un artefacto real (requiere datos locales).
+  - [`test_nu_account_rules.py`](./tests/test_nu_account_rules.py) — unitarios
+    del normalizador, marcadores del parser e independencia de movimientos;
+    no requieren datos locales.
 - [`requirements-lock.txt`](./requirements-lock.txt) — dependencias fijadas;
   es la fuente de verdad de versiones.
 
@@ -62,10 +65,10 @@ usen. Si algún día se decide prescindir de ellas, hay que quitarlas del lock
   hasta que se consoliden (las tarjetas de crédito, por ejemplo, se integran
   más adelante).
 - Las pruebas existentes **no pudieron ejecutarse en la máquina de
-  mantenimiento** (2026-10-21): no hay intérprete de Python disponible en el
-  entorno (`python` no resuelve en PATH). El CI tampoco las corre: `ci.yml`
-  solo verifica estructura del repo y `sqlc diff`. Estado real de los tests:
-  **no verificado**.
-- La carpeta quedó fuera del ciclo RED→GREEN de esta revisión por esa razón:
-  hay tests, pero sin intérprete no se puede observar nada. Pendiente: correr
-  `pytest` en una máquina con el entorno de `requirements-lock.txt`.
+  mantenimiento** (2026-10-22): no hay intérprete de Python disponible en el
+  entorno (el alias de Microsoft Store no es un intérprete). El CI tampoco las
+  corre: `ci.yml` solo verifica estructura del repo y `sqlc diff`. Estado real
+  de los tests: **no verificado**.
+- Los unitarios de `test_nu_account_rules.py` no dependen de datos locales:
+  corren con `python tests/test_nu_account_rules.py` o con pytest. Quedan
+  pendientes de su primera ejecución real en una máquina con intérprete.
