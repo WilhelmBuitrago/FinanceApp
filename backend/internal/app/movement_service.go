@@ -32,7 +32,7 @@ func (s *MovementService) CreateWithEvent(ctx context.Context, fe domain.Financi
 	// Named return: any failure below arms the rollback.
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 		}
 	}()
 

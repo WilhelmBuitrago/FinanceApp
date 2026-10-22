@@ -13,6 +13,7 @@ import (
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/log"
 	"financeapp/backend/internal/repositories"
+
 	"github.com/google/uuid"
 )
 
@@ -122,7 +123,7 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 	defer func() {
 		if err != nil {
 			log.Warn("Import: transaction rollback")
-			tx.Rollback()
+			_ = tx.Rollback()
 		}
 	}()
 

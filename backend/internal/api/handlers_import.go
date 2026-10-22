@@ -1,19 +1,19 @@
 package api
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"financeapp/backend/internal/config"
+	"financeapp/backend/internal/domain"
+	"financeapp/backend/internal/domain/entities"
+	"financeapp/backend/internal/log"
+	"financeapp/backend/internal/repositories"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
-	"crypto/sha256"
 	"time"
-	"financeapp/backend/internal/config"
-	"financeapp/backend/internal/domain"
-	"financeapp/backend/internal/domain/entities"
-	"financeapp/backend/internal/repositories"
-	"financeapp/backend/internal/log"
 )
 
 type UploadResponse struct {
@@ -23,7 +23,7 @@ type UploadResponse struct {
 }
 
 type UploadHandler struct {
-	cfg            config.Config
+	cfg             config.Config
 	docRepo         *repositories.DocumentRepository
 	jobRepo         *repositories.ImportJobRepo
 	accountRepo     *repositories.AccountRepository
@@ -79,7 +79,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "file missing", http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	docsBase := h.cfg.DocumentsPath
 	dstPath := filepath.Join(docsBase, "raw", hdr.Filename)
@@ -92,7 +92,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "cannot create file", http.StatusInternalServerError)
 		return
 	}
-	defer dst.Close()
+	defer func() { _ = dst.Close() }()
 
 	hasher := sha256.New()
 	mw := io.TeeReader(file, hasher)
@@ -148,7 +148,9 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		job.FinishedAt = &finished
 		e := err.Error()
 		job.Error = &e
-		h.jobRepo.Update(r.Context(), job)
+		if _, err := h.jobRepo.Update(r.Context(), job); err != nil {
+			log.Error(fmt.Sprintf("failed to mark job ERROR: %v", err))
+		}
 		w.Header().Set("Content-Type", "application/json")
 		http.Error(w, fmt.Sprintf(`{"error":"processor failed","detail":%q}`, e), http.StatusInternalServerError)
 		return
@@ -176,12 +178,12 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	if data, err := os.ReadFile(artifactPath); err == nil {
 		var parsed struct {
 			Movements []struct {
-				DateOriginal      string `json:"date_original"`
-				DateNormalized    string `json:"date_normalized"`
+				DateOriginal        string `json:"date_original"`
+				DateNormalized      string `json:"date_normalized"`
 				DescriptionOriginal string `json:"description_original"`
-				AmountNormalized  int    `json:"amount_normalized"`
-				PageNumber        int    `json:"page_number"`
-				Sequence          int    `json:"sequence"`
+				AmountNormalized    int    `json:"amount_normalized"`
+				PageNumber          int    `json:"page_number"`
+				Sequence            int    `json:"sequence"`
 			} `json:"movements"`
 		}
 		if json.Unmarshal(data, &parsed) == nil && h.sourceEntryRepo != nil {
@@ -202,9 +204,9 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 					UpdatedAt:             now,
 				}
 				if _, err := h.sourceEntryRepo.Create(r.Context(), se); err != nil {
-				h.failJob(w, r, job, fmt.Sprintf("staging source entry failed: %v", err))
-				return
-			}
+					h.failJob(w, r, job, fmt.Sprintf("staging source entry failed: %v", err))
+					return
+				}
 
 				// Auto-import: create financial event and movement
 				eventType := "INCOME"
@@ -214,18 +216,18 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 				feID := fmt.Sprintf("%s_fe_%d_%d", docID, m.PageNumber, m.Sequence)
 				fe := domain.FinancialEvent{
 					ID:                 feID,
-					EventType:         eventType,
-					EventDate:         sPtr(m.DateNormalized),
-					Status:            "ACTIVE",
+					EventType:          eventType,
+					EventDate:          sPtr(m.DateNormalized),
+					Status:             "ACTIVE",
 					VerificationStatus: "UNVERIFIED",
-					Description:       sPtr(m.DescriptionOriginal),
-					CreatedAt:         now,
-					UpdatedAt:         now,
+					Description:        sPtr(m.DescriptionOriginal),
+					CreatedAt:          now,
+					UpdatedAt:          now,
 				}
 				if _, err := h.eventRepo.Create(r.Context(), fe); err != nil {
-				h.failJob(w, r, job, fmt.Sprintf("staging financial event failed: %v", err))
-				return
-			}
+					h.failJob(w, r, job, fmt.Sprintf("staging financial event failed: %v", err))
+					return
+				}
 
 				mvID := fmt.Sprintf("%s_mv_%d_%d", docID, m.PageNumber, m.Sequence)
 				mv := domain.Movement{
@@ -241,9 +243,9 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 					UpdatedAt:        now,
 				}
 				if _, err := h.movementRepo.Create(r.Context(), mv); err != nil {
-				h.failJob(w, r, job, fmt.Sprintf("staging movement failed: %v", err))
-				return
-			}
+					h.failJob(w, r, job, fmt.Sprintf("staging movement failed: %v", err))
+					return
+				}
 			}
 		}
 	}
@@ -291,11 +293,11 @@ func GetJobHandler(w http.ResponseWriter, r *http.Request, repo *repositories.Im
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	encodeJSON(w,job)
+	encodeJSON(w, job)
 }
 
 func int64Ptr(v int64) *int64 { return &v }
-func sPtr(s string) *string { return &s }
+func sPtr(s string) *string   { return &s }
 
 // failJob marks the import job as FAILED and reports the failure to the
 // caller: a partially staged import must never look like a success.
@@ -309,5 +311,3 @@ func (h *UploadHandler) failJob(w http.ResponseWriter, r *http.Request, job enti
 	}
 	http.Error(w, fmt.Sprintf(`{"error":%q}`, reason), http.StatusInternalServerError)
 }
-
-

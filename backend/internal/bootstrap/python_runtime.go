@@ -76,7 +76,7 @@ func EnsurePythonRuntime() error {
 		log.Error(fmt.Sprintf("cannot read requirements-lock: %v", err))
 		return fmt.Errorf("cannot read requirements-lock: %w", err)
 	}
-	if strings.ToLower(hash) != strings.ToLower(fields["requirements_hash"]) {
+	if !strings.EqualFold(hash, fields["requirements_hash"]) {
 		log.Error("requirements hash mismatch")
 		return fmt.Errorf("requirements hash mismatch")
 	}
@@ -176,7 +176,7 @@ func fileSHA256(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
 		return "", err

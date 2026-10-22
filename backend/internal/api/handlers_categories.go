@@ -1,13 +1,14 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"database/sql"
 
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/log"
+
 	_ "modernc.org/sqlite"
 )
 
@@ -23,9 +24,9 @@ func (rt *router) listCategories(w http.ResponseWriter, r *http.Request) {
 
 func (rt *router) createCategory(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		ID           string `json:"id"`
-		Name         string `json:"name"`
-		CategoryType string `json:"category_type"`
+		ID           string  `json:"id"`
+		Name         string  `json:"name"`
+		CategoryType string  `json:"category_type"`
 		ParentID     *string `json:"parent_id,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -95,7 +96,7 @@ func (rt *router) deleteCategory(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"db open failed"}`, http.StatusInternalServerError)
 		return
 	}
-	defer dbConn.Close()
+	defer func() { _ = dbConn.Close() }()
 	_, err = dbConn.ExecContext(r.Context(), "DELETE FROM categories WHERE id = ?", id)
 	if err != nil {
 		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)

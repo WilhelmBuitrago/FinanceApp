@@ -33,7 +33,7 @@ func (rt *router) jobParsed(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 func (rt *router) jobManifest(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +55,7 @@ func (rt *router) jobManifest(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 // confirmJob runs the injected import service and reports the final job
@@ -70,7 +70,7 @@ func (rt *router) confirmJob(w http.ResponseWriter, r *http.Request) {
 	if job.Status == "SUCCESS" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"SUCCESS","id":"` + id + `"}`))
+		_, _ = w.Write([]byte(`{"status":"SUCCESS","id":"` + id + `"}`))
 		return
 	}
 	if job.Status == "REVIEW" {
@@ -93,5 +93,5 @@ func (rt *router) confirmJob(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"` + job.Status + `","id":"` + id + `"}`))
+	_, _ = w.Write([]byte(`{"status":"` + job.Status + `","id":"` + id + `"}`))
 }

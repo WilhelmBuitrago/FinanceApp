@@ -10,6 +10,7 @@ import (
 
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/log"
+
 	_ "modernc.org/sqlite"
 )
 
@@ -78,11 +79,11 @@ func (rt *router) createMovement(w http.ResponseWriter, r *http.Request) {
 				// Park the duplicate in the unified review queue so the human
 				// decides (persisted, no localStorage).
 				itemID, parkErr := rt.reviews.Submit(r.Context(), "DUPLICATE", map[string]any{
-					"account_id":   req.AccountID,
-					"amount_minor": req.AmountMinor,
-					"date":         req.Date,
-					"type":         req.Type,
-					"description":  req.Description,
+					"account_id":    req.AccountID,
+					"amount_minor":  req.AmountMinor,
+					"date":          req.Date,
+					"type":          req.Type,
+					"description":   req.Description,
 					"collides_with": m.ID,
 				}, nil)
 				if parkErr != nil {
@@ -106,27 +107,27 @@ func (rt *router) createMovement(w http.ResponseWriter, r *http.Request) {
 		catID = &req.CategoryID
 	}
 	fe := domain.FinancialEvent{
-		ID: feID,
-		EventType: req.Type,
-		EventDate: &req.Date,
-		Status: "ACTIVE",
+		ID:                 feID,
+		EventType:          req.Type,
+		EventDate:          &req.Date,
+		Status:             "ACTIVE",
 		VerificationStatus: "UNVERIFIED",
-		Description: &req.Description,
-		CategoryID: catID,
-		CreatedAt: now,
-		UpdatedAt: now,
+		Description:        &req.Description,
+		CategoryID:         catID,
+		CreatedAt:          now,
+		UpdatedAt:          now,
 	}
 	mvID := fmt.Sprintf("mv_manual_%d", time.Now().UnixNano())
 	mv := domain.Movement{
-		ID: mvID,
+		ID:               mvID,
 		FinancialEventID: feID,
-		AccountID: req.AccountID,
-		MovementDate: req.Date,
-		AmountMinor: req.AmountMinor,
-		Description: &req.Description,
-		Status: "ACTIVE",
-		CreatedAt: now,
-		UpdatedAt: now,
+		AccountID:        req.AccountID,
+		MovementDate:     req.Date,
+		AmountMinor:      req.AmountMinor,
+		Description:      &req.Description,
+		Status:           "ACTIVE",
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	}
 	if _, err := rt.movements.CreateWithEvent(r.Context(), fe, mv, []domain.MovementComponent{}); err != nil {
 		log.Info(fmt.Sprintf("[MOVEMENT CREATE] transactional create failed: %v", err))
@@ -144,7 +145,9 @@ func (rt *router) createMovement(w http.ResponseWriter, r *http.Request) {
 // movement).
 func (rt *router) setMovementCategory(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	var body struct{ CategoryID *string `json:"categoryId"` }
+	var body struct {
+		CategoryID *string `json:"categoryId"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
 		return
@@ -163,7 +166,7 @@ func (rt *router) setMovementCategory(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"db open"}`, http.StatusInternalServerError)
 		return
 	}
-	defer dbConn.Close()
+	defer func() { _ = dbConn.Close() }()
 	_, err = dbConn.ExecContext(r.Context(), "UPDATE financial_events SET category_id = ?, updated_at = ? WHERE id = ?", body.CategoryID, timeNowUTC(), mv.FinancialEventID)
 	if err != nil {
 		http.Error(w, `{"error":"update failed"}`, http.StatusInternalServerError)
@@ -179,7 +182,7 @@ func (rt *router) deleteMovement(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"db"}`, http.StatusInternalServerError)
 		return
 	}
-	defer dbConn.Close()
+	defer func() { _ = dbConn.Close() }()
 	if _, err := dbConn.ExecContext(r.Context(), "DELETE FROM movements WHERE id = ?", id); err != nil {
 		log.Info(fmt.Sprintf("[MOVEMENT DELETE] failed id=%s err=%v", id, err))
 		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)

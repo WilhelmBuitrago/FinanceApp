@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"financeapp/backend/internal/db"
+
 	_ "modernc.org/sqlite"
 )
 
@@ -23,7 +24,7 @@ func openMigrationDB(t *testing.T) *sql.DB {
 
 func TestApplyMigrations(t *testing.T) {
 	sqlDB := openMigrationDB(t)
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 	if err := db.Apply(sqlDB); err != nil {
 		t.Fatalf("apply: %v", err)
 	}
@@ -46,7 +47,7 @@ func TestApplyMigrations(t *testing.T) {
 // lands without changing anything.
 func TestApplyMigrations_Effects(t *testing.T) {
 	sqlDB := openMigrationDB(t)
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 	if err := db.Apply(sqlDB); err != nil {
 		t.Fatalf("apply: %v", err)
 	}
@@ -79,7 +80,7 @@ func TestApplyMigrations_Effects(t *testing.T) {
 		}
 		cols[name] = true
 	}
-	rows.Close()
+	_ = rows.Close()
 	for _, col := range []string{"review_status", "source_key", "corrected_amount_minor"} {
 		if !cols[col] {
 			t.Fatalf("source_entries.%s missing after Apply (migration 0003)", col)

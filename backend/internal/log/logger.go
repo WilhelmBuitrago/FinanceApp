@@ -23,7 +23,7 @@ func logWrite(msg string) {
 		return
 	}
 	ts := time.Now().Format("15:04:05")
-	fmt.Fprintf(file, "[%s] %s\n", ts, msg)
+	_, _ = fmt.Fprintf(file, "[%s] %s\n", ts, msg)
 }
 
 func InitRun(logDir string) (*os.File, error) {
@@ -42,7 +42,7 @@ func InitRun(logDir string) (*os.File, error) {
 	runID++
 	ts := time.Now().Format("15:04:05")
 	header := fmt.Sprintf("\n=== RUN %d %s %s ===\n", runID, date, ts)
-	f.WriteString(header)
+	_, _ = f.WriteString(header)
 	return f, nil
 }
 

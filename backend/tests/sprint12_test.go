@@ -1,9 +1,10 @@
 package tests
 
 import (
+	"financeapp/backend/internal/domain"
 	"testing"
 	"time"
-	"financeapp/backend/internal/domain"
+
 	"github.com/google/uuid"
 )
 
@@ -27,18 +28,6 @@ func TestSprint12_AccountCreationNu(t *testing.T) {
 	if acc.AccountType != "BANK_ACCOUNT" && acc.AccountType != "CREDIT_CARD" {
 		t.Fatalf("unsupported account type")
 	}
-}
-
-
-func TestSprint12_DocumentRequiresAccount(t *testing.T) {
-	doc := domain.Document{
-		ID:        uuid.NewString(),
-		AccountID: nil,
-	}
-	if doc.AccountID == nil {
-		// Expected failure case
-	}
-	// In real flow, this should be rejected
 }
 
 func TestSprint12_UploadedAtIndependent(t *testing.T) {

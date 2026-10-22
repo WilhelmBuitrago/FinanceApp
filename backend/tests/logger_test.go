@@ -19,7 +19,7 @@ func TestLogger_ConcurrentWrites(t *testing.T) {
 	if err != nil {
 		t.Fatalf("InitRun: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	const workers, msgs = 20, 25
 	var wg sync.WaitGroup

@@ -44,7 +44,7 @@ func main() {
 		fmt.Printf("log init failed: %v\n", err)
 		os.Exit(1)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	log.Info("Backend starting")
 	log.Info(fmt.Sprintf("DB path: %s", cfg.DatabasePath))
 
@@ -68,7 +68,7 @@ func main() {
 
 	if err := db.Apply(sqlDB); err != nil {
 		log.Error(fmt.Sprintf("migrations failed: %v", err))
-		sqlDB.Close()
+		_ = sqlDB.Close()
 		os.Exit(1)
 	}
 	log.Info("Migrations applied")

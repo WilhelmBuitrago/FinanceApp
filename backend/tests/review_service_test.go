@@ -14,6 +14,7 @@ import (
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/domain/entities"
 	"financeapp/backend/internal/repositories"
+
 	_ "modernc.org/sqlite"
 )
 
@@ -66,7 +67,7 @@ func TestReviewService_ExtractionResolve_CreatesMovementAndResolves(t *testing.T
 	t.Setenv("ARTIFACTS_PATH", artifacts)
 
 	sqlDB, persistence, now := newReviewTestDB(t)
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 	ctx := context.Background()
 
 	if _, err := persistence.DocumentRepo.Create(ctx, domain.Document{
@@ -132,7 +133,7 @@ func TestReviewService_ExtractionResolve_CreatesMovementAndResolves(t *testing.T
 
 func TestReviewService_ExtractionDoubleResolveIsRejected(t *testing.T) {
 	sqlDB, _, _ := newReviewTestDB(t)
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 	ctx := context.Background()
 
 	service := app.NewReviewService(sqlDB)
@@ -148,7 +149,7 @@ func TestReviewService_ExtractionDoubleResolveIsRejected(t *testing.T) {
 		t.Fatal("second resolve must fail: the item is no longer pending")
 	}
 	var movements int
-	sqlDB.QueryRow("SELECT COUNT(*) FROM movements").Scan(&movements)
+	_ = sqlDB.QueryRow("SELECT COUNT(*) FROM movements").Scan(&movements)
 	if movements != 1 {
 		t.Fatalf("double submission leaked data: %d movements", movements)
 	}
@@ -156,7 +157,7 @@ func TestReviewService_ExtractionDoubleResolveIsRejected(t *testing.T) {
 
 func TestReviewService_DuplicateResolve_CreatesTheMovement(t *testing.T) {
 	sqlDB, _, _ := newReviewTestDB(t)
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 	ctx := context.Background()
 
 	service := app.NewReviewService(sqlDB)
@@ -180,7 +181,7 @@ func TestReviewService_DuplicateResolve_CreatesTheMovement(t *testing.T) {
 
 func TestReviewService_CategoryResolve_ReassignsTheMovement(t *testing.T) {
 	sqlDB, persistence, _ := newReviewTestDB(t)
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 	ctx := context.Background()
 
 	// A movement under the category that "disappeared".

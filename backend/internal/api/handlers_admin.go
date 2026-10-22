@@ -21,8 +21,8 @@ func (rt *router) adminPurge(w http.ResponseWriter, r *http.Request) {
 	logErr := func(msg string) {
 		logFile := filepath.Join(logDir, time.Now().Format("02-01-2006.log"))
 		if f, _ := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644); f != nil {
-			fmt.Fprintf(f, "[%s] PURGE %s: %s\n", time.Now().Format("15:04:05"), msg, dbPath)
-			f.Close()
+			_, _ = fmt.Fprintf(f, "[%s] PURGE %s: %s\n", time.Now().Format("15:04:05"), msg, dbPath)
+			_ = f.Close()
 		}
 	}
 	sqlDB, err := sql.Open("sqlite", dbPath)
@@ -31,7 +31,7 @@ func (rt *router) adminPurge(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf(`{"error":"purge failed","detail":"%v"}`, err), http.StatusInternalServerError)
 		return
 	}
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 	if _, err := sqlDB.Exec("PRAGMA foreign_keys=OFF"); err != nil {
 		logErr("pragma failed " + err.Error())
 		http.Error(w, fmt.Sprintf(`{"error":"purge failed","detail":"%v"}`, err), http.StatusInternalServerError)
@@ -51,8 +51,8 @@ func (rt *router) adminPurge(w http.ResponseWriter, r *http.Request) {
 			// Log error to file
 			logFile := filepath.Join(logDir, time.Now().Format("02-01-2006.log"))
 			if f, _ := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644); f != nil {
-				fmt.Fprintf(f, "[%s] PURGE error table %s: %v\n", time.Now().Format("15:04:05"), t, err)
-				f.Close()
+				_, _ = fmt.Fprintf(f, "[%s] PURGE error table %s: %v\n", time.Now().Format("15:04:05"), t, err)
+				_ = f.Close()
 			}
 			http.Error(w, fmt.Sprintf(`{"error":"purge failed","detail":"table %s: %v"}`, t, err), http.StatusInternalServerError)
 			return

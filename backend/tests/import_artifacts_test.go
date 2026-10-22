@@ -1,9 +1,9 @@
 package tests
 
 import (
-	"financeapp/backend/internal/app"
 	"context"
 	"database/sql"
+	"financeapp/backend/internal/app"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,6 +14,7 @@ import (
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/domain/entities"
 	"financeapp/backend/internal/repositories"
+
 	_ "modernc.org/sqlite"
 )
 
@@ -28,7 +29,7 @@ func TestImportService_ReadsConfiguredArtifactsPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 	if err := db.Apply(sqlDB); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
@@ -96,7 +97,7 @@ func TestImportService_ParksProblematicMovementsForReview(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 	if err := db.Apply(sqlDB); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}

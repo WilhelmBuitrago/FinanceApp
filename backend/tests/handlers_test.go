@@ -48,7 +48,7 @@ func newTestRouter(t *testing.T) (http.Handler, *sql.DB) {
 func TestPostMovement_PersistenceFailure_ReturnsError(t *testing.T) {
 	router, sqlDB := newTestRouter(t)
 	// Break persistence underneath the repositories.
-	sqlDB.Close()
+	_ = sqlDB.Close()
 
 	body := `{"account_id":"acc-x","amount_minor":-1000,"type":"EXPENSE","date":"2026-10-21","description":"ghost"}`
 	req := httptest.NewRequest(http.MethodPost, "/movements?force=true", strings.NewReader(body))
@@ -65,7 +65,7 @@ func TestPostMovement_PersistenceFailure_ReturnsError(t *testing.T) {
 // the first POST is a phantom 201 (the write failed and nobody looked).
 func TestPostMovement_Duplicate_StaysConflict(t *testing.T) {
 	router, sqlDB := newTestRouter(t)
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 
 	acc := `{"id":"acc-dup","user_id":"u","name":"Nu","account_type":"BANK_ACCOUNT","currency":"COP","status":"ACTIVE","institution":"NU"}`
 	req := httptest.NewRequest(http.MethodPost, "/accounts", strings.NewReader(acc))

@@ -21,16 +21,6 @@ const (
 	reviewKindExtraction = "EXTRACTION"
 )
 
-// duplicatePayload is what a DUPLICATE item carries: the movement that
-// collided, as it arrived.
-type duplicatePayload struct {
-	AccountID   string `json:"account_id"`
-	AmountMinor int64  `json:"amount_minor"`
-	Date        string `json:"date"`
-	Type        string `json:"type"`
-	Description string `json:"description"`
-}
-
 // categoryPayload is what a CATEGORY item carries: a movement whose category
 // disappeared and the category that was there.
 type categoryPayload struct {
@@ -93,7 +83,7 @@ func (s *ReviewService) Resolve(ctx context.Context, itemID string, description 
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 		}
 	}()
 
