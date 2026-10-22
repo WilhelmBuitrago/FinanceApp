@@ -28,12 +28,12 @@ try {
     if (-not $installDir) { $installDir = Join-Path $env:ProgramFiles 'FinanceApp' }
 
     $resourceDir = Join-Path $installDir 'resources'
-    $pythonZip = Join-Path $resourceDir 'python-runtime\python-3.12.10-amd64.zip'
+    $pythonZip = Join-Path $resourceDir 'python-runtime\python-3.13.17-amd64.zip'
     $wheelsDir = Join-Path $resourceDir 'python-wheels'
     $processorReq = Join-Path $resourceDir 'processor\requirements-lock.txt'
 
     $targetBase = Join-Path $env:ProgramData 'FinanceApp'
-    $runtimeDir = Join-Path $targetBase 'python-runtime\3.12.10'
+    $runtimeDir = Join-Path $targetBase 'python-runtime\3.13.17'
     $venvsRoot = Join-Path $targetBase 'venvs'
     $logDir = Join-Path $targetBase 'logs'
     New-Item -ItemType Directory -Force -Path $logDir | Out-Null
@@ -52,7 +52,7 @@ try {
     if (-not (Test-Path $wheelsDir)) { Write-Log "ERROR: Wheels dir missing $wheelsDir"; exit 1 }
     if (-not (Test-Path $processorReq)) { Write-Log "ERROR: requirements-lock missing $processorReq"; exit 1 }
 
-    $expectedSha = '8649692de846c56a7189d6dae5c322ab20deb1b5908b6f39426b62a36f39415d'
+    $expectedSha = 'b26ca4b4ee51e157836049934d2b8eabd55939be296f3130254251b6df96ec2f'
     $actualSha = (Get-FileHash -Path $pythonZip -Algorithm SHA256).Hash.ToLower()
     if ($actualSha -ne $expectedSha) {
         Write-Log "ERROR: SHA256 mismatch for python zip"; exit 1
@@ -62,7 +62,7 @@ try {
     $reqHash = (Get-FileHash -Path $processorReq -Algorithm SHA256).Hash.ToLower()
     Write-Log "Requirements lock hash $reqHash"
 
-    $identifier = "3.12.10-$reqHash"
+    $identifier = "3.13.17-$reqHash"
     $venvDir = Join-Path $venvsRoot $identifier
     $marker = Join-Path $targetBase '.python-ready'
 
@@ -71,7 +71,7 @@ try {
         $existingVersion = ($markerContent | Select-String -Pattern 'version=(.*)' -AllMatches).Matches[0].Groups[1].Value
         $existingHash = ($markerContent | Select-String -Pattern 'requirements_hash=(.*)' -AllMatches).Matches[0].Groups[1].Value
         $existingId = ($markerContent | Select-String -Pattern 'identifier=(.*)' -AllMatches).Matches[0].Groups[1].Value
-        if ($existingVersion -eq '3.12.10' -and $existingHash -eq $reqHash -and $existingId -eq $identifier) {
+        if ($existingVersion -eq '3.13.17' -and $existingHash -eq $reqHash -and $existingId -eq $identifier) {
             $venvPython = Join-Path $venvDir 'Scripts\python.exe'
             if (Test-Path $venvPython) {
                 Write-Log "Existing environment matches, validating integrity..."
@@ -118,7 +118,7 @@ try {
 
     $markerTmp = Join-Path $targetBase '.python-ready.tmp'
     $markerContent = @"
-version=3.12.10
+version=3.13.17
 requirements_hash=$reqHash
 identifier=$identifier
 venv_path=$venvDir

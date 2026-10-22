@@ -72,8 +72,8 @@ jobs:
           }
 
           # Download bundled Python runtime for offline first run
-          $pythonUrl = "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.zip"
-          $pythonZip = Join-Path $pythonDir "python-3.12.10-amd64.zip"
+          $pythonUrl = "https://www.python.org/ftp/python/3.13.17/python-3.13.17-amd64.zip"
+          $pythonZip = Join-Path $pythonDir "python-3.13.17-amd64.zip"
           if (-not (Test-Path $pythonZip)) {
             Invoke-WebRequest -Uri $pythonUrl -OutFile $pythonZip -UseBasicParsing
           }
@@ -81,7 +81,7 @@ jobs:
       - name: Setup Python for wheels
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Download Python wheels offline
         shell: pwsh

@@ -62,7 +62,7 @@ fn main() {
 
             let python_bundle = resources_dir
                 .join("python-runtime")
-                .join("python-3.12.10-amd64.zip");
+                .join("python-3.13.17-amd64.zip");
 
             let wheels_path = resources_dir.join("python-wheels");
 

@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Go | la declarada en `backend/go.mod` | módulo único `financeapp/backend`, vive en `backend/` |
 | Node + npm | 20 | frontend de escritorio |
-| Python | 3.12 | el runtime productivo es el embebible 3.12.10 x64 |
+| Python | 3.13 | el runtime productivo es el embebible 3.13.17 x64 |
 
 ## Backend (Go)
 

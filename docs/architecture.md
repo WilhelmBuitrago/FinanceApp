@@ -42,7 +42,7 @@ Go lee `manifest.json` y `parsed.json`. La ruta base se configura con
 
 ## Runtime de Python
 
-- Versión fijada: **3.12.10 x64 embebible**, verificada por SHA256.
+- Versión fijada: **3.13.17 x64 embebible**, verificada por SHA256.
 - Dependencias fijas en `apps/processor/requirements-lock.txt`.
 - Ruedas pre-descargadas (`resources/python-wheels`) para instalación offline.
 - La preparación es del **instalador**: `prepare-python.ps1` crea el venv

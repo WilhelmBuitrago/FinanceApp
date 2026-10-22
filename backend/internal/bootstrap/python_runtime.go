@@ -17,7 +17,7 @@ import (
 
 // PythonVersion is the runtime version prepared by the installer (via
 // resources/prepare-python.ps1) and recorded in the runtime marker.
-const PythonVersion = "3.12.10"
+const PythonVersion = "3.13.17"
 
 // EnsurePythonRuntime validates the Python runtime marker left by the
 // installer. It never downloads or installs anything: preparing the runtime
