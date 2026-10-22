@@ -45,7 +45,9 @@ type Querier interface {
 	ListMovementsByAccount(ctx context.Context, accountID string) ([]Movement, error)
 	ListRelationsByEvent(ctx context.Context, arg ListRelationsByEventParams) ([]EventRelation, error)
 	ListRelationsByMovement(ctx context.Context, arg ListRelationsByMovementParams) ([]MovementRelation, error)
+	ListReviewEntries(ctx context.Context) ([]ListReviewEntriesRow, error)
 	ListSourceEntriesByDocument(ctx context.Context, documentID string) ([]SourceEntry, error)
+	ResolveSourceEntry(ctx context.Context, arg ResolveSourceEntryParams) (int64, error)
 	UpdateDocument(ctx context.Context, arg UpdateDocumentParams) (Document, error)
 	UpdateImportJob(ctx context.Context, arg UpdateImportJobParams) (ImportJob, error)
 }

@@ -23,12 +23,13 @@ type router struct {
 	sourceEntryRepo *repositories.SourceEntryRepository
 	categoryRepo    *repositories.CategoryRepository
 	movements       movementWriter
+	reviews         reviewResolver
 	confirmHandler  func(context.Context, string) error
 }
 
 // NewRouter wires every route to its handler. Health and upload stay here;
 // the rest live in the handlers_*.go files by domain.
-func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository, categoryRepo *repositories.CategoryRepository, movements movementWriter, confirmHandler func(context.Context, string) error) http.Handler {
+func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository, categoryRepo *repositories.CategoryRepository, movements movementWriter, reviews reviewResolver, confirmHandler func(context.Context, string) error) http.Handler {
 	rt := &router{
 		cfg:             cfg,
 		docRepo:         docRepo,
@@ -39,6 +40,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 		sourceEntryRepo: sourceEntryRepo,
 		categoryRepo:    categoryRepo,
 		movements:       movements,
+		reviews:         reviews,
 		confirmHandler:  confirmHandler,
 	}
 	mux := http.NewServeMux()
@@ -69,6 +71,8 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 	mux.HandleFunc("PUT /categories/{id}", rt.updateCategory)
 	mux.HandleFunc("DELETE /categories/{id}", rt.deleteCategory)
 	mux.HandleFunc("DELETE /admin/purge", rt.adminPurge)
+	mux.HandleFunc("GET /review/entries", rt.listReviewEntries)
+	mux.HandleFunc("POST /review/entries/{id}/resolve", rt.resolveReviewEntry)
 	mux.HandleFunc("POST /jobs", CreateJobHandler)
 	mux.HandleFunc("GET /jobs/", rt.getJobByPath)
 	mux.HandleFunc("GET /jobs/{id}/parsed", rt.jobParsed)

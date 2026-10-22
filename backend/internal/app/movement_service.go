@@ -7,7 +7,6 @@ import (
 
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/domain"
-	"financeapp/backend/internal/repositories"
 )
 
 // MovementService orchestrates movement writes that must be atomic: financial
@@ -37,22 +36,9 @@ func (s *MovementService) CreateWithEvent(ctx context.Context, fe domain.Financi
 		}
 	}()
 
-	repoDB := &repositories.DB{Querier: db.New(tx)}
-	eventRepo := repositories.NewFinancialEventRepository(repoDB)
-	movementRepo := repositories.NewMovementRepository(repoDB)
-
-	if _, err := eventRepo.Create(ctx, fe); err != nil {
-		return domain.Movement{}, fmt.Errorf("create financial event: %w", err)
-	}
-	created, err = movementRepo.Create(ctx, mv)
+	created, err = writeEventAndMovement(ctx, db.New(tx), fe, mv, components)
 	if err != nil {
-		return domain.Movement{}, fmt.Errorf("create movement: %w", err)
-	}
-	for _, comp := range components {
-		comp.MovementID = created.ID
-		if _, err := movementRepo.CreateComponent(ctx, comp); err != nil {
-			return domain.Movement{}, fmt.Errorf("create movement component: %w", err)
-		}
+		return domain.Movement{}, err
 	}
 	if err = tx.Commit(); err != nil {
 		return domain.Movement{}, fmt.Errorf("commit: %w", err)

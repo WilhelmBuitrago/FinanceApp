@@ -20,6 +20,7 @@ type Application struct {
 	DocRepo      *repositories.DocumentRepository
 	ImportService *ImportService
 	Movements    *MovementService
+	Reviews      *ReviewService
 	Server       *http.Server
 }
 
@@ -30,6 +31,7 @@ func New(cfg config.Config, db *sql.DB, persistence *repositories.Persistence) *
 		Persistence:   persistence,
 		ImportJobRepo: persistence.ImportJobRepo,
 		Movements:     NewMovementService(db),
+		Reviews:       NewReviewService(db),
 		DocRepo:       persistence.DocumentRepo,
 		ImportService: NewImportService(cfg, persistence, persistence.ImportJobRepo),
 	}
@@ -42,7 +44,7 @@ func (a *Application) Start(ctx context.Context) error {
 		return fmt.Errorf("health check failed: %w", err)
 	}
 	log.Info("Health check ok")
-	router := api.NewRouter(a.Cfg, a.DocRepo, a.ImportJobRepo, a.Persistence.AccountRepo, a.Persistence.MovementRepo, a.Persistence.FinancialEventRepo, a.Persistence.SourceEntryRepo, a.Persistence.CategoryRepo, a.Movements, func(ctx context.Context, id string) error {
+	router := api.NewRouter(a.Cfg, a.DocRepo, a.ImportJobRepo, a.Persistence.AccountRepo, a.Persistence.MovementRepo, a.Persistence.FinancialEventRepo, a.Persistence.SourceEntryRepo, a.Persistence.CategoryRepo, a.Movements, a.Reviews, func(ctx context.Context, id string) error {
 		return a.ImportService.Import(ctx, id)
 	})
 	port := a.Cfg.Port
