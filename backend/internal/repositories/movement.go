@@ -138,6 +138,23 @@ func (r *MovementRepository) List(ctx context.Context) ([]domain.Movement, error
 	return out, nil
 }
 
+// ListByCategory returns movements whose financial event carries the given
+// category: used when a category is removed to park them for human review.
+func (r *MovementRepository) ListByCategory(ctx context.Context, categoryID string) ([]domain.Movement, error) {
+	if r.db.Querier == nil {
+		return nil, ErrUnavailable
+	}
+	dbMvs, err := r.db.Querier.ListMovementsByCategory(ctx, sql.NullString{String: categoryID, Valid: true})
+	if err != nil {
+		return nil, translateError(err)
+	}
+	out := make([]domain.Movement, 0, len(dbMvs))
+	for _, m := range dbMvs {
+		out = append(out, mapDBMovementToDomain(m))
+	}
+	return out, nil
+}
+
 func (r *MovementRepository) Delete(ctx context.Context, id string) error {
 	if r.db.Querier == nil {
 		return ErrUnavailable

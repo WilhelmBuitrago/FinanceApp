@@ -17,13 +17,8 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// setupReviewScenario leaves an account, a document, a job and one parked
-// review entry produced by the import, ready to be resolved.
-func setupReviewScenario(t *testing.T) (*sql.DB, string) {
+func newReviewTestDB(t *testing.T) (*sql.DB, *repositories.Persistence, string) {
 	t.Helper()
-	artifacts := t.TempDir()
-	t.Setenv("ARTIFACTS_PATH", artifacts)
-
 	sqlDB, err := sql.Open("sqlite", "file::memory:?cache=shared")
 	if err != nil {
 		t.Fatal(err)
@@ -31,34 +26,63 @@ func setupReviewScenario(t *testing.T) (*sql.DB, string) {
 	if err := db.Apply(sqlDB); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
-
 	persistence := repositories.NewPersistence(sqlDB)
 	now := time.Now().UTC().Format(time.RFC3339)
 	ctx := context.Background()
 
 	if _, err := persistence.AccountRepo.Create(ctx, domain.Account{
-		ID: "acc-rev", UserID: "u", Name: "Nu", AccountType: "BANK_ACCOUNT",
-		Currency: "COP", Status: "ACTIVE", Institution: strPtr("NU"),
-		CreatedAt: now, UpdatedAt: now,
+		ID: "acc-rv", UserID: "u", Name: "Nu", AccountType: "BANK_ACCOUNT",
+		Currency: "COP", Status: "ACTIVE", CreatedAt: now, UpdatedAt: now,
 	}); err != nil {
 		t.Fatalf("account: %v", err)
 	}
+	if _, err := persistence.CategoryRepo.Create(ctx, domain.Category{
+		ID: "cat-rv", Name: "Mercado", CategoryType: strPtr("EXPENSE"),
+		Status: "ACTIVE", CreatedAt: now, UpdatedAt: now,
+	}); err != nil {
+		t.Fatalf("category: %v", err)
+	}
+	return sqlDB, persistence, now
+}
+
+// pendingItemID returns the id of the only pending item of the given kind.
+func pendingItemID(t *testing.T, service *app.ReviewService, kind string) string {
+	t.Helper()
+	items, err := service.ListPending(context.Background())
+	if err != nil {
+		t.Fatalf("list pending: %v", err)
+	}
+	for _, it := range items {
+		if it.Kind == kind {
+			return it.ID
+		}
+	}
+	t.Fatalf("no pending %s item in queue (%d items)", kind, len(items))
+	return ""
+}
+
+func TestReviewService_ExtractionResolve_CreatesMovementAndResolves(t *testing.T) {
+	artifacts := t.TempDir()
+	t.Setenv("ARTIFACTS_PATH", artifacts)
+
+	sqlDB, persistence, now := newReviewTestDB(t)
+	defer sqlDB.Close()
+	ctx := context.Background()
+
 	if _, err := persistence.DocumentRepo.Create(ctx, domain.Document{
-		ID: "doc-rev", AccountID: strPtr("acc-rev"), DocumentType: "STATEMENT",
+		ID: "doc-x", AccountID: strPtr("acc-rv"), DocumentType: "STATEMENT",
 		Status: "UPLOADED", CreatedAt: now, UpdatedAt: now,
 	}); err != nil {
 		t.Fatalf("document: %v", err)
 	}
-
 	jobRepo := repositories.NewImportJobRepo(&repositories.DB{Querier: db.New(sqlDB)})
-	procID := "proc-rev"
+	procID := "proc-x"
 	if _, err := jobRepo.Create(ctx, entities.ImportJob{
-		ID: "job-rev", DocumentID: "doc-rev", Status: "PROCESSING",
+		ID: "job-x", DocumentID: "doc-x", Status: "PROCESSING",
 		CreatedAt: now, ProcessingID: strPtr(procID),
 	}); err != nil {
 		t.Fatalf("job: %v", err)
 	}
-
 	if err := os.MkdirAll(filepath.Join(artifacts, procID), 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -76,20 +100,15 @@ func setupReviewScenario(t *testing.T) (*sql.DB, string) {
 		t.Fatal(err)
 	}
 
-	service := app.NewImportService(config.Load(), persistence, jobRepo)
-	if err := service.Import(ctx, "job-rev"); err != nil {
-		t.Fatalf("import with a parked movement failed: %v", err)
+	importService := app.NewImportService(config.Load(), persistence, jobRepo)
+	if err := importService.Import(ctx, "job-x"); err != nil {
+		t.Fatalf("import: %v", err)
 	}
-	return sqlDB, "doc-rev_rev_1"
-}
-
-func TestReviewService_Resolve_CreatesMovementAndMarksEntry(t *testing.T) {
-	sqlDB, entryID := setupReviewScenario(t)
-	defer sqlDB.Close()
-	ctx := context.Background()
 
 	service := app.NewReviewService(sqlDB)
-	created, err := service.Resolve(ctx, entryID, "Almacén Éxito verificado", -55000, "2026-10-12", "EXPENSE", "acc-rev", nil)
+	itemID := pendingItemID(t, service, "EXTRACTION")
+
+	created, err := service.Resolve(ctx, itemID, "Almacén Éxito verificado", -55000, "2026-10-12", "EXPENSE", "acc-rv", nil)
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
 	}
@@ -97,56 +116,108 @@ func TestReviewService_Resolve_CreatesMovementAndMarksEntry(t *testing.T) {
 		t.Fatalf("wrong amount: %d", created.AmountMinor)
 	}
 
-	// The entry is resolved with the correction recorded.
-	var reviewStatus, correctedDesc string
-	var correctedAmount int64
-	if err := sqlDB.QueryRow(
-		"SELECT review_status, corrected_description, corrected_amount_minor FROM source_entries WHERE id=?",
-		entryID,
-	).Scan(&reviewStatus, &correctedDesc, &correctedAmount); err != nil {
+	// No pending items left and the source entry is resolved too.
+	items, _ := service.ListPending(ctx)
+	if len(items) != 0 {
+		t.Fatalf("queue should be empty, got %d", len(items))
+	}
+	var reviewStatus string
+	if err := sqlDB.QueryRow("SELECT review_status FROM source_entries WHERE review_status != 'VALID'").Scan(&reviewStatus); err != nil {
 		t.Fatal(err)
 	}
 	if reviewStatus != "RESOLVED" {
-		t.Fatalf("entry not resolved: %q", reviewStatus)
-	}
-	if correctedDesc != "Almacén Éxito verificado" || correctedAmount != -55000 {
-		t.Fatalf("correction not recorded: %q / %d", correctedDesc, correctedAmount)
-	}
-
-	// The queue is empty and the verified movement exists.
-	entries, err := service.ListEntries(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(entries) != 0 {
-		t.Fatalf("expected empty queue, got %d", len(entries))
-	}
-	var movements int
-	if err := sqlDB.QueryRow("SELECT COUNT(*) FROM movements").Scan(&movements); err != nil {
-		t.Fatal(err)
-	}
-	if movements != 1 {
-		t.Fatalf("expected 1 movement after resolve, got %d", movements)
+		t.Fatalf("source entry not resolved: %q", reviewStatus)
 	}
 }
 
-func TestReviewService_Resolve_TwiceIsRejected(t *testing.T) {
-	sqlDB, entryID := setupReviewScenario(t)
+func TestReviewService_ExtractionDoubleResolveIsRejected(t *testing.T) {
+	sqlDB, _, _ := newReviewTestDB(t)
 	defer sqlDB.Close()
+	ctx := context.Background()
 
 	service := app.NewReviewService(sqlDB)
-	if _, err := service.Resolve(context.Background(), entryID, "primera", -1000, "2026-10-12", "EXPENSE", "acc-rev", nil); err != nil {
+	if _, err := service.Submit(ctx, "EXTRACTION", map[string]any{"reason": "test"}, nil); err != nil {
+		t.Fatalf("submit: %v", err)
+	}
+	itemID := pendingItemID(t, service, "EXTRACTION")
+
+	if _, err := service.Resolve(ctx, itemID, "uno", -1000, "2026-10-01", "EXPENSE", "acc-rv", nil); err != nil {
 		t.Fatalf("first resolve: %v", err)
 	}
-	if _, err := service.Resolve(context.Background(), entryID, "segunda", -2000, "2026-10-12", "EXPENSE", "acc-rev", nil); err == nil {
-		t.Fatal("expected the second resolve to fail: the entry is no longer pending")
+	if _, err := service.Resolve(ctx, itemID, "dos", -2000, "2026-10-01", "EXPENSE", "acc-rv", nil); err == nil {
+		t.Fatal("second resolve must fail: the item is no longer pending")
+	}
+	var movements int
+	sqlDB.QueryRow("SELECT COUNT(*) FROM movements").Scan(&movements)
+	if movements != 1 {
+		t.Fatalf("double submission leaked data: %d movements", movements)
+	}
+}
+
+func TestReviewService_DuplicateResolve_CreatesTheMovement(t *testing.T) {
+	sqlDB, _, _ := newReviewTestDB(t)
+	defer sqlDB.Close()
+	ctx := context.Background()
+
+	service := app.NewReviewService(sqlDB)
+	_, err := service.Submit(ctx, "DUPLICATE", map[string]any{
+		"account_id": "acc-rv", "amount_minor": -4200, "date": "2026-10-05",
+		"type": "EXPENSE", "description": "compra duplicada",
+	}, nil)
+	if err != nil {
+		t.Fatalf("submit duplicate: %v", err)
+	}
+	itemID := pendingItemID(t, service, "DUPLICATE")
+
+	created, err := service.Resolve(ctx, itemID, "compra duplicada", -4200, "2026-10-05", "EXPENSE", "acc-rv", nil)
+	if err != nil {
+		t.Fatalf("resolve duplicate: %v", err)
+	}
+	if created.AmountMinor != -4200 {
+		t.Fatalf("wrong amount: %d", created.AmountMinor)
+	}
+}
+
+func TestReviewService_CategoryResolve_ReassignsTheMovement(t *testing.T) {
+	sqlDB, persistence, _ := newReviewTestDB(t)
+	defer sqlDB.Close()
+	ctx := context.Background()
+
+	// A movement under the category that "disappeared".
+	fe := domain.FinancialEvent{
+		ID: "fe-cat", EventType: "EXPENSE", Status: "ACTIVE",
+		VerificationStatus: "VERIFIED", CategoryID: strPtr("cat-rv"),
+		Description: strPtr("mercado"), CreatedAt: "2026-10-01T00:00:00Z", UpdatedAt: "2026-10-01T00:00:00Z",
+	}
+	if _, err := persistence.FinancialEventRepo.Create(ctx, fe); err != nil {
+		t.Fatalf("event: %v", err)
+	}
+	if _, err := persistence.MovementRepo.Create(ctx, domain.Movement{
+		ID: "mv-cat", FinancialEventID: "fe-cat", AccountID: "acc-rv",
+		MovementDate: "2026-10-01", AmountMinor: -9900, Description: strPtr("mercado"),
+		Status: "ACTIVE", CreatedAt: "2026-10-01T00:00:00Z", UpdatedAt: "2026-10-01T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("movement: %v", err)
 	}
 
-	// Only the first correction exists.
-	var movements, resolved int
-	sqlDB.QueryRow("SELECT COUNT(*) FROM movements").Scan(&movements)
-	sqlDB.QueryRow("SELECT COUNT(*) FROM source_entries WHERE review_status='RESOLVED'").Scan(&resolved)
-	if movements != 1 || resolved != 1 {
-		t.Fatalf("double submission leaked data: movements=%d resolved=%d", movements, resolved)
+	service := app.NewReviewService(sqlDB)
+	if _, err := service.Submit(ctx, "CATEGORY", map[string]any{
+		"movement_id": "mv-cat", "category_id": "cat-rv", "category_name": "Mercado",
+	}, nil); err != nil {
+		t.Fatalf("submit category: %v", err)
+	}
+	itemID := pendingItemID(t, service, "CATEGORY")
+
+	// The human decides: leave it uncategorized.
+	if _, err := service.Resolve(ctx, itemID, "", 0, "", "", "", nil); err != nil {
+		t.Fatalf("resolve category: %v", err)
+	}
+
+	got, err := persistence.FinancialEventRepo.GetByID(ctx, "fe-cat")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.CategoryID != nil {
+		t.Fatalf("category should be cleared, got %v", *got.CategoryID)
 	}
 }

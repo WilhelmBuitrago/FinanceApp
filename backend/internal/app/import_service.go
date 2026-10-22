@@ -131,6 +131,7 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 	seRepo := repositories.NewSourceEntryRepository(repoDB)
 	feRepo := repositories.NewFinancialEventRepository(repoDB)
 	mvRepo := repositories.NewMovementRepository(repoDB)
+	reviewItemsRepo := repositories.NewReviewItemsRepository(repoDB)
 
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -223,6 +224,25 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 		}
 		if _, err := seRepo.Create(ctx, se); err != nil {
 			return fmt.Errorf("create review source entry: %w", err)
+		}
+		// The same parked movement also lands in the unified human-review
+		// queue (kind EXTRACTION) pointing at the source entry: one place for
+		// the UI, all three triggers.
+		payload, err := json.Marshal(map[string]any{
+			"reason":               rv.Reason,
+			"amount_original":      rv.AmountOriginal,
+			"date_original":        rv.DateOriginal,
+			"description_original": rv.DescriptionOriginal,
+			"page_number":          rv.PageNumber,
+			"document_id":          job.DocumentID,
+			"account_id":           accountID,
+		})
+		if err != nil {
+			return fmt.Errorf("marshal review payload: %w", err)
+		}
+		seID := se.ID
+		if err := reviewItemsRepo.Create(ctx, uuid.NewString(), "EXTRACTION", strPtr(string(payload)), &seID, now); err != nil {
+			return fmt.Errorf("park review item: %w", err)
 		}
 	}
 

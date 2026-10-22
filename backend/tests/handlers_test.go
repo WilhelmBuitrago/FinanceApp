@@ -1,15 +1,16 @@
 package tests
 
 import (
-	"financeapp/backend/internal/api"
-	"financeapp/backend/internal/app"
 	"database/sql"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"financeapp/backend/internal/api"
+	"financeapp/backend/internal/app"
 	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/repositories"
@@ -87,5 +88,24 @@ func TestPostMovement_Duplicate_StaysConflict(t *testing.T) {
 	router.ServeHTTP(rr, req)
 	if rr.Code != http.StatusConflict {
 		t.Fatalf("expected %d on duplicate, got %d: %s", http.StatusConflict, rr.Code, rr.Body.String())
+	}
+	// The duplicate is parked in the unified review queue (not localStorage).
+	var reviewID string
+	if err := json.Unmarshal(rr.Body.Bytes(), &struct {
+		ReviewItemID *string `json:"review_item_id"`
+	}{&reviewID}); err != nil {
+		t.Fatalf("decode 409 body: %v", err)
+	}
+	if reviewID == "" {
+		t.Fatal("409 must return review_item_id so the UI can track the item")
+	}
+	qReq := httptest.NewRequest(http.MethodGet, "/review/entries", nil)
+	qRR := httptest.NewRecorder()
+	router.ServeHTTP(qRR, qReq)
+	if qRR.Code != http.StatusOK {
+		t.Fatalf("review queue: %d", qRR.Code)
+	}
+	if !strings.Contains(qRR.Body.String(), reviewID) {
+		t.Fatal("parked duplicate not visible in the review queue")
 	}
 }

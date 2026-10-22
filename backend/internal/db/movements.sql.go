@@ -182,3 +182,46 @@ func (q *Queries) ListMovementsByAccount(ctx context.Context, accountID string) 
 	}
 	return items, nil
 }
+
+const listMovementsByCategory = `-- name: ListMovementsByCategory :many
+SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at
+FROM movements m
+JOIN financial_events fe ON fe.id = m.financial_event_id
+WHERE fe.category_id = ?
+ORDER BY m.created_at DESC
+`
+
+func (q *Queries) ListMovementsByCategory(ctx context.Context, categoryID sql.NullString) ([]Movement, error) {
+	rows, err := q.db.QueryContext(ctx, listMovementsByCategory, categoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Movement
+	for rows.Next() {
+		var i Movement
+		if err := rows.Scan(
+			&i.ID,
+			&i.FinancialEventID,
+			&i.AccountID,
+			&i.SourceEntryID,
+			&i.MovementDate,
+			&i.AmountMinor,
+			&i.Description,
+			&i.Status,
+			&i.MetadataJson,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

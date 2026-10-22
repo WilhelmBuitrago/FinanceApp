@@ -77,6 +77,18 @@ func (rt *router) updateCategory(w http.ResponseWriter, r *http.Request) {
 
 func (rt *router) deleteCategory(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	// Capture the category and its movements first: the review payload needs
+	// the name and the movements it leaves behind.
+	category, catErr := rt.categoryRepo.GetByID(r.Context(), id)
+	if catErr != nil {
+		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+		return
+	}
+	affected, listErr := rt.movementRepo.ListByCategory(r.Context(), id)
+	if listErr != nil {
+		http.Error(w, `{"error":"failed to list affected movements"}`, http.StatusInternalServerError)
+		return
+	}
 	// Soft delete for safety, but we can physically delete for now
 	dbConn, err := sql.Open("sqlite", rt.cfg.DatabasePath)
 	if err != nil {
@@ -90,5 +102,19 @@ func (rt *router) deleteCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Info(fmt.Sprintf("[CATEGORY DELETE] %s", id))
+	// Park the movements left without a category in the unified review queue:
+	// persisted and owned by the backend, no client-side bookkeeping.
+	for _, m := range affected {
+		if _, err := rt.reviews.Submit(r.Context(), "CATEGORY", map[string]any{
+			"movement_id":   m.ID,
+			"category_id":   id,
+			"category_name": category.Name,
+			"account_id":    m.AccountID,
+			"amount_minor":  m.AmountMinor,
+			"movement_date": m.MovementDate,
+		}, nil); err != nil {
+			log.Info(fmt.Sprintf("[CATEGORY DELETE] failed to park movement %s: %v", m.ID, err))
+		}
+	}
 	w.WriteHeader(http.StatusNoContent)
 }

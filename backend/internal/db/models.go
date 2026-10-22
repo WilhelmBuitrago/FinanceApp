@@ -156,6 +156,16 @@ type MovementRelation struct {
 	UpdatedAt    string          `json:"updated_at"`
 }
 
+type ReviewItem struct {
+	ID            string         `json:"id"`
+	Kind          string         `json:"kind"`
+	PayloadJson   string         `json:"payload_json"`
+	SourceEntryID sql.NullString `json:"source_entry_id"`
+	Status        string         `json:"status"`
+	CreatedAt     string         `json:"created_at"`
+	ResolvedAt    sql.NullString `json:"resolved_at"`
+}
+
 type SourceEntry struct {
 	ID                    string         `json:"id"`
 	DocumentID            string         `json:"document_id"`

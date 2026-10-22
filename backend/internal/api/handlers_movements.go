@@ -75,9 +75,26 @@ func (rt *router) createMovement(w http.ResponseWriter, r *http.Request) {
 		for _, m := range existing {
 			if m.AccountID == req.AccountID && m.MovementDate == req.Date && m.AmountMinor == req.AmountMinor && (m.Description == nil || req.Description == "" || *m.Description == req.Description) {
 				log.Info(fmt.Sprintf("[MOVEMENT CREATE] Duplicate found %s", m.ID))
+				// Park the duplicate in the unified review queue so the human
+				// decides (persisted, no localStorage).
+				itemID, parkErr := rt.reviews.Submit(r.Context(), "DUPLICATE", map[string]any{
+					"account_id":   req.AccountID,
+					"amount_minor": req.AmountMinor,
+					"date":         req.Date,
+					"type":         req.Type,
+					"description":  req.Description,
+					"collides_with": m.ID,
+				}, nil)
+				if parkErr != nil {
+					log.Info(fmt.Sprintf("[MOVEMENT CREATE] failed to park duplicate: %v", parkErr))
+				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusConflict)
-				encodeJSON(w, map[string]string{"error": "duplicate", "redirect": "/review"})
+				encodeJSON(w, map[string]string{
+					"error":          "duplicate",
+					"redirect":       "/review",
+					"review_item_id": itemID,
+				})
 				return
 			}
 		}

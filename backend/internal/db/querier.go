@@ -21,8 +21,10 @@ type Querier interface {
 	CreateMovement(ctx context.Context, arg CreateMovementParams) (Movement, error)
 	CreateMovementComponent(ctx context.Context, arg CreateMovementComponentParams) (MovementComponent, error)
 	CreateMovementRelation(ctx context.Context, arg CreateMovementRelationParams) (MovementRelation, error)
+	CreateReviewItem(ctx context.Context, arg CreateReviewItemParams) error
 	CreateSourceEntry(ctx context.Context, arg CreateSourceEntryParams) (SourceEntry, error)
 	DeleteMovement(ctx context.Context, id string) error
+	DiscardReviewItem(ctx context.Context, arg DiscardReviewItemParams) (int64, error)
 	GetAccount(ctx context.Context, id string) (Account, error)
 	GetCategory(ctx context.Context, id string) (Category, error)
 	GetDocument(ctx context.Context, id string) (Document, error)
@@ -31,6 +33,7 @@ type Querier interface {
 	GetInstallment(ctx context.Context, id string) (Installment, error)
 	GetInstallmentPlan(ctx context.Context, id string) (InstallmentPlan, error)
 	GetMovement(ctx context.Context, id string) (Movement, error)
+	GetReviewItem(ctx context.Context, id string) (ReviewItem, error)
 	GetSourceEntry(ctx context.Context, id string) (SourceEntry, error)
 	ListAccounts(ctx context.Context, userID string) ([]Account, error)
 	ListAccountsAll(ctx context.Context) ([]Account, error)
@@ -43,12 +46,16 @@ type Querier interface {
 	ListInstallmentsByPlan(ctx context.Context, installmentPlanID string) ([]Installment, error)
 	ListMovementsAll(ctx context.Context) ([]Movement, error)
 	ListMovementsByAccount(ctx context.Context, accountID string) ([]Movement, error)
+	ListMovementsByCategory(ctx context.Context, categoryID sql.NullString) ([]Movement, error)
+	ListPendingReviewItems(ctx context.Context) ([]ReviewItem, error)
 	ListRelationsByEvent(ctx context.Context, arg ListRelationsByEventParams) ([]EventRelation, error)
 	ListRelationsByMovement(ctx context.Context, arg ListRelationsByMovementParams) ([]MovementRelation, error)
 	ListReviewEntries(ctx context.Context) ([]ListReviewEntriesRow, error)
 	ListSourceEntriesByDocument(ctx context.Context, documentID string) ([]SourceEntry, error)
+	ResolveReviewItem(ctx context.Context, arg ResolveReviewItemParams) (int64, error)
 	ResolveSourceEntry(ctx context.Context, arg ResolveSourceEntryParams) (int64, error)
 	UpdateDocument(ctx context.Context, arg UpdateDocumentParams) (Document, error)
+	UpdateFinancialEventCategory(ctx context.Context, arg UpdateFinancialEventCategoryParams) (int64, error)
 	UpdateImportJob(ctx context.Context, arg UpdateImportJobParams) (ImportJob, error)
 }
 

@@ -134,3 +134,21 @@ func (q *Queries) ListFinancialEventsByType(ctx context.Context, eventType strin
 	}
 	return items, nil
 }
+
+const updateFinancialEventCategory = `-- name: UpdateFinancialEventCategory :execrows
+UPDATE financial_events SET category_id = ?, updated_at = ? WHERE id = ?
+`
+
+type UpdateFinancialEventCategoryParams struct {
+	CategoryID sql.NullString `json:"category_id"`
+	UpdatedAt  string         `json:"updated_at"`
+	ID         string         `json:"id"`
+}
+
+func (q *Queries) UpdateFinancialEventCategory(ctx context.Context, arg UpdateFinancialEventCategoryParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, updateFinancialEventCategory, arg.CategoryID, arg.UpdatedAt, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
