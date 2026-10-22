@@ -9,7 +9,7 @@
 ![Tauri](https://img.shields.io/badge/Tauri-2.12.3-FFC131?logo=tauri&logoColor=black)
 ![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=black)
 ![Vite](https://img.shields.io/badge/Vite-8.3.4-646CFF?logo=vite&logoColor=white)
-![Go](https://img.shields.io/badge/Go-1.27.0-00ADD8?logo=go&logoColor=white)
+![Go](https://img.shields.io/badge/Go-1.27.3-00ADD8?logo=go&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.12.10-3776AB?logo=python&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20x64-0078D6?logo=windows)
@@ -40,10 +40,10 @@ saldos y reportes con trazabilidad completa — sin depender de la nube.
 | --- | --- | --- |
 | Desktop | Tauri / Rust | 2.12.3 (CLI) · updater 2.14.0 |
 | Frontend | React / Vite | React 18.3.1 · Vite 8.3.4 |
-| Backend | Go | 1.27.0 |
+| Backend | Go | 1.27.3 |
 | Persistencia | SQLite | driver modernc.org/sqlite 1.59.0 (pure Go) |
 | Procesamiento documental | Python | 3.12.10 (embebible x64) |
-| Toolchain de build | Node / npm | 20.20.2 (último build de release; CI fija major 20) |
+| Toolchain de build | Node / npm | 24 LTS (CI fija major 24) |
 
 ## Estructura del proyecto
 
