@@ -25,6 +25,18 @@ class ParsedNuAccountDocument:
     metadata: Dict
     summary: Dict
     movements: List[ParsedMovement]
+    review_required: List['ReviewItem'] = None
+
+
+@dataclass
+class ReviewItem:
+    """A movement the pipeline could not normalize: the raw is preserved so a
+    human can verify it against the PDF instead of trusting the parser."""
+    date_original: str
+    description_original: str
+    amount_original: str
+    page_number: int
+    reason: str
 
 
 class NuAccountParser:
@@ -123,9 +135,9 @@ class NuAccountParser:
         metadata = self._parse_metadata(first_page_text)
 
         movements: List[ParsedMovement] = []
+        review_required: List[ReviewItem] = []
         inside_movements = False
         sequence = 0
-        skipped = 0
 
         for page_number, text in pages:
             lines = text.splitlines()
@@ -187,12 +199,16 @@ class NuAccountParser:
                             date_normalized = ''
                         try:
                             amount_normalized = normalize_amount(amount_original)
-                        except Exception:
-                            # An unparseable amount is not importable: skipping
-                            # the movement keeps the other 59 readable; inventing
-                            # a number would corrupt the statement. The count
-                            # travels in the summary so the manifest shows it.
-                            skipped += 1
+                        except Exception as exc:
+                            # Not importable and not droppable: keep the raw
+                            # for human review with the exact reason.
+                            review_required.append(ReviewItem(
+                                date_original=date_original,
+                                description_original=' '.join(description_parts).strip(),
+                                amount_original=amount_original,
+                                page_number=page_number,
+                                reason=f"unparseable amount: {exc}",
+                            ))
                             continue
                         sequence += 1
                         movements.append(ParsedMovement(
@@ -211,11 +227,12 @@ class NuAccountParser:
             'processing_id': self.processing_id,
             'page_count': len(pages),
             'movements_count': len(movements),
-            'movements_skipped_unparseable_amount': skipped,
+            'movements_need_review': len(review_required),
         }
 
         return ParsedNuAccountDocument(
             metadata=metadata,
             summary=summary,
-            movements=movements
+            movements=movements,
+            review_required=review_required,
         )

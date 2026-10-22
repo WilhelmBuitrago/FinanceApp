@@ -92,7 +92,8 @@ def process_pdf(pdf_path):
         json.dump({
             "metadata": parsed_doc.metadata,
             "summary": parsed_doc.summary,
-            "movements": [m.__dict__ for m in parsed_doc.movements]
+            "movements": [m.__dict__ for m in parsed_doc.movements],
+            "review_required": [r.__dict__ for r in parsed_doc.review_required]
         }, f, ensure_ascii=False, indent=2)
     log.info(f"parsed.json written movements={len(parsed_doc.movements)}")
     log.info(f"process_pdf complete")

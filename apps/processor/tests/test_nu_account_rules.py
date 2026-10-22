@@ -11,7 +11,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from normalization.nu_normalizer import normalize_date, normalize_amount
-from parser.nu_account import NuAccountParser, ParsedMovement
+from parser.nu_account import NuAccountParser, ParsedMovement, ReviewItem
 
 
 def test_parser_markers_match_nu_statement_layout():
@@ -95,6 +95,24 @@ def test_processing_id_is_not_financial_identity():
     assert isinstance(processing_id, str)
 
 
+def test_review_item_preserves_the_raw_for_humans():
+    # A movement the parser cannot normalize must survive with its raw values
+    # and the exact reason: the human reviews against the PDF, not against a
+    # repaired (guessed) number.
+    item = ReviewItem(
+        date_original='12 mar',
+        description_original='Compra en almacén Éxito',
+        amount_original='+$--',
+        page_number=3,
+        reason='unparseable amount: invalid literal',
+    )
+    assert item.amount_original == '+$--'
+    assert item.reason.startswith('unparseable amount')
+    assert item.page_number == 3
+    # The raw never becomes a movement: no amount_normalized exists here.
+    assert not hasattr(item, 'amount_normalized')
+
+
 if __name__ == "__main__":
     test_parser_markers_match_nu_statement_layout()
     test_normalize_date_spanish_and_english_months()
@@ -105,4 +123,5 @@ if __name__ == "__main__":
     test_normalize_amount_whitespace_is_a_known_gap()
     test_identical_occurrences_stay_independent()
     test_processing_id_is_not_financial_identity()
+    test_review_item_preserves_the_raw_for_humans()
     print("Regression tests passed")

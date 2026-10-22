@@ -42,8 +42,13 @@ class NuAccountValidator:
         errors = []
         errors.extend(self.validate_metadata(doc))
         errors.extend(self.validate_movements(doc))
+        # Movements parked for human review do not invalidate the document:
+        # they are a warning, not a defect. The import keeps working and the
+        # review queue (backend) receives them as source entries.
+        review_required = getattr(doc, 'review_required', None) or []
         return {
             'valid': len(errors) == 0,
             'errors': errors,
             'movements_count': len(doc.movements),
+            'needs_review_count': len(review_required),
         }
