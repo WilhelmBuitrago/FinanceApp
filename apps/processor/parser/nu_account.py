@@ -125,6 +125,7 @@ class NuAccountParser:
         movements: List[ParsedMovement] = []
         inside_movements = False
         sequence = 0
+        skipped = 0
 
         for page_number, text in pages:
             lines = text.splitlines()
@@ -184,7 +185,15 @@ class NuAccountParser:
                             date_normalized = normalize_date(metadata.get('periodo') or '', date_original)
                         except Exception:
                             date_normalized = ''
-                        amount_normalized = normalize_amount(amount_original)
+                        try:
+                            amount_normalized = normalize_amount(amount_original)
+                        except Exception:
+                            # An unparseable amount is not importable: skipping
+                            # the movement keeps the other 59 readable; inventing
+                            # a number would corrupt the statement. The count
+                            # travels in the summary so the manifest shows it.
+                            skipped += 1
+                            continue
                         sequence += 1
                         movements.append(ParsedMovement(
                             date_original=date_original,
@@ -202,6 +211,7 @@ class NuAccountParser:
             'processing_id': self.processing_id,
             'page_count': len(pages),
             'movements_count': len(movements),
+            'movements_skipped_unparseable_amount': skipped,
         }
 
         return ParsedNuAccountDocument(
