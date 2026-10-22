@@ -17,6 +17,14 @@ go run ./cmd/financeapp
 
 - Expone HTTP en `127.0.0.1:8081`. Health check: `GET /health`.
 - Pruebas: `go test ./...` desde `backend/`.
+- Formato y lint (verificados 2026-10-22, Go 1.27): `gofmt -l .` y
+  `goimports -l .` deben no listar ningún archivo. `golangci-lint run ./...`
+  (v2.x instalada con
+  `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest`)
+  debe terminar en 0 findings; los errores de cierre se ignoran de forma
+  explícita (`_ = x.Close()`), y `go build ./...` / `go vet ./...` limpios.
+  Nota: golangci-lint en su rama v1 NO corre con Go 1.27 (falla al leer el
+  export data del toolchain); usar siempre la v2.
 
 ## Desktop (Tauri + React)
 

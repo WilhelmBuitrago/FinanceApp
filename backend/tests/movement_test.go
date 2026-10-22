@@ -1,9 +1,9 @@
 package tests
 
 import (
-	"financeapp/backend/internal/repositories"
 	"context"
 	"errors"
+	"financeapp/backend/internal/repositories"
 	"testing"
 	"time"
 
@@ -109,13 +109,21 @@ func TestMovement_DuplicateDocumentaryValues_Independence(t *testing.T) {
 	}
 	fe1 := domain.FinancialEvent{ID: "fe-dup-1", EventType: "EXPENSE", Status: "ACTIVE", VerificationStatus: "VERIFIED", CreatedAt: now, UpdatedAt: now}
 	fe2 := domain.FinancialEvent{ID: "fe-dup-2", EventType: "EXPENSE", Status: "ACTIVE", VerificationStatus: "VERIFIED", CreatedAt: now, UpdatedAt: now}
-	if _, err := p.FinancialEventRepo.Create(ctx, fe1); err != nil { t.Fatalf("%v", err) }
-	if _, err := p.FinancialEventRepo.Create(ctx, fe2); err != nil { t.Fatalf("%v", err) }
+	if _, err := p.FinancialEventRepo.Create(ctx, fe1); err != nil {
+		t.Fatalf("%v", err)
+	}
+	if _, err := p.FinancialEventRepo.Create(ctx, fe2); err != nil {
+		t.Fatalf("%v", err)
+	}
 
 	mv1 := domain.Movement{ID: "mv-dup-1", FinancialEventID: "fe-dup-1", AccountID: "acc-dup", MovementDate: "2026-09-01", AmountMinor: 5000, Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
 	mv2 := domain.Movement{ID: "mv-dup-2", FinancialEventID: "fe-dup-2", AccountID: "acc-dup", MovementDate: "2026-09-01", AmountMinor: 5000, Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}
-	if _, err := p.MovementRepo.Create(ctx, mv1); err != nil { t.Fatalf("%v", err) }
-	if _, err := p.MovementRepo.Create(ctx, mv2); err != nil { t.Fatalf("%v", err) }
+	if _, err := p.MovementRepo.Create(ctx, mv1); err != nil {
+		t.Fatalf("%v", err)
+	}
+	if _, err := p.MovementRepo.Create(ctx, mv2); err != nil {
+		t.Fatalf("%v", err)
+	}
 
 	g1, _ := p.MovementRepo.GetByID(ctx, "mv-dup-1")
 	g2, _ := p.MovementRepo.GetByID(ctx, "mv-dup-2")

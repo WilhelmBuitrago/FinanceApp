@@ -2,11 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"financeapp/backend/internal/log"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
-	"financeapp/backend/internal/log"
 )
 
 type ProcessorResult struct {

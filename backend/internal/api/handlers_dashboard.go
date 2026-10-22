@@ -66,10 +66,10 @@ func (rt *router) cashFlow(w http.ResponseWriter, r *http.Request) {
 		agg[date] = cur
 	}
 	type point struct {
-		Date   string `json:"date"`
-		Inflow int64  `json:"inflow"`
-		Outflow int64 `json:"outflow"`
-		Net    int64  `json:"net"`
+		Date    string `json:"date"`
+		Inflow  int64  `json:"inflow"`
+		Outflow int64  `json:"outflow"`
+		Net     int64  `json:"net"`
 	}
 	var out []point
 	for d, v := range agg {

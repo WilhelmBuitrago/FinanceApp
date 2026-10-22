@@ -33,4 +33,3 @@ func writeRepoError(w http.ResponseWriter, err error) {
 		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
 	}
 }
-

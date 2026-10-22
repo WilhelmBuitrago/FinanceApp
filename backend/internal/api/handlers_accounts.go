@@ -12,8 +12,8 @@ import (
 func (rt *router) institutions(w http.ResponseWriter, r *http.Request) {
 	inst := []map[string]interface{}{
 		{
-			"code": "NU",
-			"name": "Nu",
+			"code":                    "NU",
+			"name":                    "Nu",
 			"supported_account_types": []string{"BANK_ACCOUNT", "CREDIT_CARD"},
 		},
 	}
@@ -63,16 +63,16 @@ func (rt *router) createAccount(w http.ResponseWriter, r *http.Request) {
 		meta = fmt.Sprintf(`{"validation_data":"%s"}`, req.ValidationData)
 	}
 	acc := domain.Account{
-		ID:          req.ID,
-		UserID:      req.UserID,
-		Name:        req.Name,
-		AccountType: req.AccountType,
-		Currency:    req.Currency,
-		Status:      req.Status,
-		Institution: &req.Institution,
+		ID:           req.ID,
+		UserID:       req.UserID,
+		Name:         req.Name,
+		AccountType:  req.AccountType,
+		Currency:     req.Currency,
+		Status:       req.Status,
+		Institution:  &req.Institution,
 		MetadataJson: &meta,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 	created, err := rt.accountRepo.Create(r.Context(), acc)
 	if err != nil {

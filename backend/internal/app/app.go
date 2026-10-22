@@ -13,15 +13,15 @@ import (
 )
 
 type Application struct {
-	Cfg          config.Config
-	DB           *sql.DB
-	Persistence  *repositories.Persistence
+	Cfg           config.Config
+	DB            *sql.DB
+	Persistence   *repositories.Persistence
 	ImportJobRepo *repositories.ImportJobRepo
-	DocRepo      *repositories.DocumentRepository
+	DocRepo       *repositories.DocumentRepository
 	ImportService *ImportService
-	Movements    *MovementService
-	Reviews      *ReviewService
-	Server       *http.Server
+	Movements     *MovementService
+	Reviews       *ReviewService
+	Server        *http.Server
 }
 
 func New(cfg config.Config, db *sql.DB, persistence *repositories.Persistence) *Application {

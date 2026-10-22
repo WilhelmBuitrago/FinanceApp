@@ -51,4 +51,3 @@ func TestEventMovementConsistency(t *testing.T) {
 		t.Errorf("income event should have positive amount")
 	}
 }
-

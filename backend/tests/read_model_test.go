@@ -1,8 +1,8 @@
 package tests
 
 import (
-	"financeapp/backend/internal/repositories"
 	"context"
+	"financeapp/backend/internal/repositories"
 	"testing"
 )
 

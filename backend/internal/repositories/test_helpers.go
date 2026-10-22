@@ -3,12 +3,13 @@ package repositories
 import (
 	"database/sql"
 	"fmt"
-	_ "modernc.org/sqlite"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+
+	_ "modernc.org/sqlite"
 )
 
 func setupTestDB(t *testing.T) *sql.DB {
