@@ -89,7 +89,7 @@ la base de datos.
 ## Estado
 
 - **Verde, verificado el 2026-10-21**: `go build ./...` ✅, `go vet ./...` ✅,
-  `go test ./...` ✅ (32 pruebas en `tests/`), `sqlc diff` = 0.
+  `go test ./...` ✅ (34 pruebas en `tests/`), `sqlc diff` = 0.
 - Migraciones **0001–0006** aplicadas en ese orden; catálogo de componentes de
   movimiento en inglés: `CAPITAL`, `INTEREST`, `FEE`, `INSURANCE`, `LATE_FEE`.
 - Persistencia: SQLite local en `%APPDATA%\FinanceApp`; nada sale de la máquina.

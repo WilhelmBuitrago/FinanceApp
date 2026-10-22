@@ -13,7 +13,7 @@
 
 ## Pruebas
 
-- Backend: `go test ./...` (en `backend/`).
+- Backend: `go test ./...` (en `backend/`, pruebas en `backend/tests/`).
 - Procesador: `python -m pytest` (en `apps/processor`).
 - Desktop: suite de UI a definir en v0.1.1.
 
