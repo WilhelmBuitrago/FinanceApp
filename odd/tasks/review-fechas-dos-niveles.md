@@ -44,6 +44,22 @@ from apps/processor.
   new table + copy + swap), per the repo migration rules; sqlc diff stays
   clean.
 
+## Resolution contract (approved by the maintainer)
+
+- The DOCUMENT_PERIOD item is resolved with a **month + year** picker
+  (e.g. ABR 2026), not raw text. The backend auto-computes the full period
+  from the month/year (01 - last day of ABR 2026, leap years included).
+- The item payload may carry suggested month/year derived from the parked
+  movement raws as a convenience ("comprobación mas no verdad"): the human
+  confirms or changes it.
+- Resolving: update documents.period_start/period_end, then batch-derive
+  the parked REVIEW_REQUIRED movements of that document against the chosen
+  month/year: day from the raw, month must match the chosen month, day must
+  be valid for it; the ones that fit import (writeEventAndMovement), the
+  ones that do not stay parked. Imported movements are never rewritten.
+- Endpoint: POST /review/entries/{id}/resolve-period with body
+  {"month": <1-12>, "year": <YYYY>}; separate from the movement resolve.
+
 ## Tasks
 
 | ID | Specs | Route | Status |
@@ -51,11 +67,11 @@ from apps/processor.
 | T1 | S1,S2,S4 | feature doc + memory mirror (this document) | done |
 | T2 | S1,S4 | parser: period check before the loop; per-movement date park (RED tests) | done (307a1eb) |
 | T3 | S1,S2 | processor contract: document_review in parsed/manifest; validator accepts derived dates | done (307a1eb) |
-| T4 | L0 | silent retry: re-extract once before parking the document | in progress |
-| T5 | S1,S3,S5 | backend: migration 0008, kind DOCUMENT_PERIOD, resolve re-derives dates | pending |
-| T6 | L1,L2 | backend: batch derivation of parked movements on resolve (Go, tests) | pending |
+| T4 | L0 | silent retry: re-extract once before parking the document | done (15052b1) |
+| T5 | L1,B1 | migration 0008 (kind DOCUMENT_PERIOD) + ImportService parks document_review | in progress |
+| T6 | L2,B2 | resolve-period endpoint + batch derivation in Go (tests) | pending |
 | T7 | all | GREEN + full verification | pending |
-| T8 | S1,S3 | frontend document-review UI | DEFERRED (frontend pass comes later) |
+| T8 | S1,S3 | frontend month/year picker | DEFERRED (frontend pass comes later) |
 
 ## Decisions (resolved with the maintainer)
 

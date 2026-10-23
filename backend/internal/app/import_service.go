@@ -81,6 +81,10 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 			PageNumber          int    `json:"page_number"`
 			Reason              string `json:"reason"`
 		} `json:"review_required"`
+		DocumentReview []struct {
+			RawPeriod string `json:"raw_period"`
+			Reason    string `json:"reason"`
+		} `json:"document_review"`
 		Validation struct {
 			Valid bool `json:"valid"`
 		} `json:"validation"`
@@ -244,6 +248,25 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 		seID := se.ID
 		if err := reviewItemsRepo.Create(ctx, uuid.NewString(), "EXTRACTION", strPtr(string(payload)), &seID, now); err != nil {
 			return fmt.Errorf("park review item: %w", err)
+		}
+	}
+
+	// Document-level review: the statement period could not be read (the
+	// silent retry already failed). One item, no movement attached: the
+	// human supplies month+year and the parked movement dates are derived
+	// against it on resolve.
+	for _, dr := range parsed.DocumentReview {
+		payload, err := json.Marshal(map[string]any{
+			"raw_period":  dr.RawPeriod,
+			"reason":      dr.Reason,
+			"document_id": job.DocumentID,
+			"account_id":  accountID,
+		})
+		if err != nil {
+			return fmt.Errorf("marshal document review payload: %w", err)
+		}
+		if err := reviewItemsRepo.Create(ctx, uuid.NewString(), reviewKindDocumentPeriod, strPtr(string(payload)), nil, now); err != nil {
+			return fmt.Errorf("park document review item: %w", err)
 		}
 	}
 

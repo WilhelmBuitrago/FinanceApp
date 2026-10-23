@@ -16,9 +16,10 @@ import (
 
 // Review kinds parked in the unified queue.
 const (
-	reviewKindDuplicate  = "DUPLICATE"
-	reviewKindCategory   = "CATEGORY"
-	reviewKindExtraction = "EXTRACTION"
+	reviewKindDuplicate      = "DUPLICATE"
+	reviewKindCategory       = "CATEGORY"
+	reviewKindExtraction     = "EXTRACTION"
+	reviewKindDocumentPeriod = "DOCUMENT_PERIOD"
 )
 
 // categoryPayload is what a CATEGORY item carries: a movement whose category
