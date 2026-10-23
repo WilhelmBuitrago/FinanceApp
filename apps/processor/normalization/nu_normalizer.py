@@ -21,21 +21,29 @@ _MONTH_MAP = {
 
 def normalize_date(period_str: str, date_original: str) -> str:
     """
-    Normalize movement date using period month/year.
-    period_str example: '01 - 31 MAR 2026'
-    date_original example: '01 mar'
-    Returns ISO date 'YYYY-MM-DD'.
-    """
-    # Extract year and month from period
-    m = re.search(r'([A-Za-z]{3})\s+(\d{4})', period_str)
-    if not m:
-        raise ValueError(f"Unable to parse period: {period_str}")
-    period_month_abbr = m.group(1).lower()
-    year = m.group(2)
+    Normalize movement date to ISO 'YYYY-MM-DD'.
 
-    period_month_num = _MONTH_MAP.get(period_month_abbr[:3])
-    if not period_month_num:
-        raise ValueError(f"Unknown month in period: {period_month_abbr}")
+    The year comes from the movement's own date when it carries one
+    ('14 abr 2026'); otherwise from the period ('01 - 30 ABR 2026').
+    The period is the fallback, not the only source: a movement that
+    states its own year normalizes even when the period is unreadable.
+    period_str example: '01 - 30 ABR 2026'
+    date_original example: '01 mar'
+    """
+    # Year: movement date first, period as fallback.
+    own_year = re.search(r'\b(?:19|20)\d{2}\b', date_original)
+    if own_year:
+        year = own_year.group(0)
+    else:
+        m = re.search(r'([A-Za-z]{3})\s+(\d{4})', period_str or '')
+        if not m:
+            raise ValueError(f"Unable to parse period: {period_str}")
+        year = m.group(2)
+
+    # Period month is only a fallback for movements whose date carries no
+    # recognizable month; extract it when the period has one.
+    pm = re.search(r'([A-Za-z]{3})\s+(\d{4})', period_str or '')
+    period_month_num = _MONTH_MAP.get(pm.group(1).lower()[:3]) if pm else None
 
     # Parse day and month from date_original
     dm = re.search(r'(\d{1,2})\s*([A-Za-z]{3})', date_original.lower())
@@ -53,6 +61,8 @@ def normalize_date(period_str: str, date_original: str) -> str:
 
     # Use month from date_original if known, otherwise period month
     month_num = date_month_num or period_month_num
+    if month_num is None:
+        raise ValueError(f"Unable to determine month for: {date_original}")
 
     day_str = f"{day:02d}"
     return f"{year}-{month_num}-{day_str}"

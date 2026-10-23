@@ -17,9 +17,12 @@ sys.path.insert(0, str(PROCESSOR_ROOT))
 from parser.nu_account import NuAccountParser
 
 # Real Nu statement format, as provided by the maintainer: dd-mes dates,
-# one-line descriptions, amounts with the sign glued to the dollar sign.
+# one-line descriptions, amounts with the sign glued to the dollar sign,
+# and the statement period on the header.
 REAL_NU_EXTRACT = """Hola
 Wilhelm David Buitrago Garcia
+Periodo
+01 - 30 ABR 2026
 Movimientos
 10 abr
 Enviaste a Wilhelm David Buitrago Garcia
@@ -82,7 +85,9 @@ def test_real_format_parses_unchanged():
 def test_amount_variant_line_is_parked():
     # Variant amount (space after the sign) must not be swallowed as
     # description and must not take the next movement's amount.
-    extract = """Movimientos
+    extract = """Periodo
+01 - 30 MAR 2026
+Movimientos
 01 mar
 Compra en almacen
 +$700.000,00
@@ -110,7 +115,9 @@ Rendimiento total de tu cuenta
 def test_absorbed_structured_lines_parked():
     # The description of the parsed movement must never contain an
     # amount-like or date-like line: that means it ate the next movement.
-    extract = """Movimientos
+    extract = """Periodo
+01 - 30 MAR 2026
+Movimientos
 01 mar
 Compra en tienda
 + $50.000,00

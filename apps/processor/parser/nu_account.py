@@ -26,6 +26,7 @@ class ParsedNuAccountDocument:
     summary: Dict
     movements: List[ParsedMovement]
     review_required: List['ReviewItem'] = None
+    document_review: List['DocumentReviewItem'] = None
 
 
 @dataclass
@@ -36,6 +37,14 @@ class ReviewItem:
     description_original: str
     amount_original: str
     page_number: int
+    reason: str
+
+
+@dataclass
+class DocumentReviewItem:
+    """The document-level review parking: the statement period could not be
+    read from the extraction. The raw is preserved for the human."""
+    raw_period: str
     reason: str
 
 
@@ -128,8 +137,12 @@ class NuAccountParser:
                     candidate = lines[i+1].strip()
                     if not re.search(r'(Placa|CC|Número|Período)', candidate, re.I):
                         metadata['placa'] = candidate
-            if re.search(r'Período', line, re.I):
-                if i + 1 < len(lines):
+            if re.search(r'per[ií]odo', line, re.I):
+                # Value on the same line after the label, else next line.
+                inline = re.search(r'per[ií]odo\s*[:\-]?\s*(.+)', line, re.I)
+                if inline and inline.group(1).strip():
+                    metadata['periodo'] = inline.group(1).strip()
+                elif i + 1 < len(lines):
                     metadata['periodo'] = lines[i+1].strip()
 
         # Titular heuristic: find first line after greeting that looks like a person name
@@ -162,6 +175,13 @@ class NuAccountParser:
 
         return metadata
 
+    @classmethod
+    def _period_looks_valid(cls, period_str):
+        """True when the period carries month+year in any layout."""
+        if not period_str:
+            return False
+        return bool(re.search(r'([A-Za-z]{3})\s+(\d{4})', period_str))
+
     def parse(self) -> ParsedNuAccountDocument:
         manifest = self._load_json('manifest.json')
         inspection = self._load_json('inspection.json')
@@ -174,6 +194,18 @@ class NuAccountParser:
 
         movements: List[ParsedMovement] = []
         review_required: List[ReviewItem] = []
+        document_review: List[DocumentReviewItem] = []
+
+        # Level 1 (document): the period is the year fallback for every
+        # movement. If it cannot be read, park it once at document level:
+        # the human fixes the header, movements keep parsing on their own.
+        raw_period = metadata.get('periodo') or ''
+        if not self._period_looks_valid(raw_period):
+            document_review.append(DocumentReviewItem(
+                raw_period=raw_period,
+                reason='statement period not parseable from the extraction',
+            ))
+
         inside_movements = False
         sequence = 0
 
@@ -264,8 +296,19 @@ class NuAccountParser:
                     # Normalize
                     try:
                         date_normalized = normalize_date(metadata.get('periodo') or '', date_original)
-                    except Exception:
-                        date_normalized = ''
+                    except Exception as exc:
+                        # Level 2 (movement): no year from the period and
+                        # none in the movement's own date: park the raw for
+                        # human review. An empty normalized date would let
+                        # corrupt data reach the ledger.
+                        review_required.append(ReviewItem(
+                            date_original=date_original,
+                            description_original=description_original,
+                            amount_original=amount_original,
+                            page_number=page_number,
+                            reason=f"unparseable date: {exc}",
+                        ))
+                        continue
                     try:
                         amount_normalized = normalize_amount(amount_original)
                     except Exception as exc:
@@ -304,4 +347,5 @@ class NuAccountParser:
             summary=summary,
             movements=movements,
             review_required=review_required,
+            document_review=document_review,
         )
