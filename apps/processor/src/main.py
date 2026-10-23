@@ -22,6 +22,36 @@ PROCESSOR_VERSION = "0.1.0"
 CONTRACT_VERSION = "1"
 
 
+def parse_with_retry(pdf_path, artifacts_base, processing_id, inspection, extract_text=None):
+    """Parse the extraction, silently retrying once when the statement
+    period is unreadable.
+
+    A partial write or a failed read can leave the text incomplete:
+    re-extracting the PDF and parsing again usually fixes it. The retry is
+    internal: the user is never told it happened. Only a retry that also
+    fails surfaces, as the document review the parser already emits.
+    """
+    extractor = extract_text or extract_native_text
+    parser = NuAccountParser(processing_id, base_path=artifacts_base)
+    doc = parser.parse()
+    if not doc.document_review:
+        return doc
+
+    log.warning(f"period unreadable on first pass; re-extracting once pdf={pdf_path}")
+    extraction_dir = os.path.join(artifacts_base, processing_id, 'extraction')
+    if os.path.isdir(extraction_dir):
+        for stale in os.listdir(extraction_dir):
+            if stale.endswith('.txt'):
+                os.remove(os.path.join(extraction_dir, stale))
+    extraction = extractor(pdf_path)
+    write_artifacts(os.path.join(artifacts_base, processing_id), inspection, extraction)
+
+    doc = parser.parse()
+    if doc.document_review:
+        log.warning("period still unreadable after retry; parking document review")
+    return doc
+
+
 def process_pdf(pdf_path):
     processing_id = str(uuid.uuid4())
     log.info(f"process_pdf start pdf={pdf_path} processing_id={processing_id}")
@@ -47,10 +77,10 @@ def process_pdf(pdf_path):
         _json.dump(minimal_manifest, f)
     log.info(f"minimal manifest written")
 
-    # Parsing & validation for Nu account statements
+    # Parsing & validation for Nu account statements. The silent retry
+    # (Layer 0) lives inside: the user only sees the outcome.
     log.info(f"parser start")
-    parser = NuAccountParser(processing_id, base_path=artifacts_base)
-    parsed_doc = parser.parse()
+    parsed_doc = parse_with_retry(dstPath, artifacts_base, processing_id, inspection)
     log.info(f"parser done movements={len(parsed_doc.movements)}")
     log.info(f"validation start")
     validator = NuAccountValidator()

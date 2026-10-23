@@ -49,12 +49,13 @@ from apps/processor.
 | ID | Specs | Route | Status |
 | --- | --- | --- | --- |
 | T1 | S1,S2,S4 | feature doc + memory mirror (this document) | done |
-| T2 | S1,S4 | parser: period check before the loop; per-movement date park (RED tests) | pending |
-| T3 | S1,S2 | processor contract: document_review in parsed/manifest; validator accepts derived dates | pending |
-| T4 | S1,S3,S5 | backend: migration 0008, kind DOCUMENT_PERIOD, resolve re-derives dates | pending |
-| T5 | S1,S5 | integration: ImportService parks document review item | pending |
-| T6 | all | GREEN + full verification | pending |
-| T7 | S1,S3 | frontend document-review UI | DEFERRED (frontend pass comes later) |
+| T2 | S1,S4 | parser: period check before the loop; per-movement date park (RED tests) | done (307a1eb) |
+| T3 | S1,S2 | processor contract: document_review in parsed/manifest; validator accepts derived dates | done (307a1eb) |
+| T4 | L0 | silent retry: re-extract once before parking the document | in progress |
+| T5 | S1,S3,S5 | backend: migration 0008, kind DOCUMENT_PERIOD, resolve re-derives dates | pending |
+| T6 | L1,L2 | backend: batch derivation of parked movements on resolve (Go, tests) | pending |
+| T7 | all | GREEN + full verification | pending |
+| T8 | S1,S3 | frontend document-review UI | DEFERRED (frontend pass comes later) |
 
 ## Decisions (resolved with the maintainer)
 
@@ -84,6 +85,22 @@ from apps/processor.
    date"), the rest of the document imports.
 4. Backend: resolve of DOCUMENT_PERIOD updates the document period fields
    and marks the item RESOLVED; no movement rewrite.
+
+## Three-layer flow (approved by the maintainer)
+
+- LAYER 0 (silent retry): when the period is unreadable on the first
+  pass, the processor re-extracts the PDF and parses again ONCE, silently
+  (internal log only): a partial write or a failed read can leave the text
+  incomplete. If the retry reads the period, the import continues as
+  normal and the user never learns it happened. If the retry also fails:
+- LAYER 1 (document review): one DOCUMENT_PERIOD item is parked with the
+  raw period (already implemented in the processor, commit 307a1eb).
+- LAYER 2 (batch derivation on resolve): resolving the item with the
+  corrected period derives the dates of the parked movements of THAT
+  document against the period's month/range, in Go, and imports the ones
+  that fit; the ones that do not fit stay parked for human review.
+  Already-imported movements are never rewritten.
+  Implementation lives in Go with tests (maintainer decision).
 
 ## Known risks
 
