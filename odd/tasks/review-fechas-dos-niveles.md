@@ -71,7 +71,7 @@ from apps/processor.
 | T5 | L1,B1 | migration 0008 (kind DOCUMENT_PERIOD) + ImportService parks document_review | in progress |
 | T6 | L2,B2 | resolve-period endpoint + batch derivation in Go (tests) | pending |
 | T7 | all | GREEN + full verification | pending |
-| T8 | S1,S3 | frontend month/year picker | DEFERRED (frontend pass comes later) |
+| T8 | S1,S3 | frontend month/year picker | done (ReviewPage DOCUMENT_PERIOD block) |
 
 ## Decisions (resolved with the maintainer)
 

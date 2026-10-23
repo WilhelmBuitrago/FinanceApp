@@ -11,7 +11,7 @@ import { formatSignedMoney } from '../lib/formatMoney';
 
 type ReviewItem = {
   ID: string;
-  Kind: 'DUPLICATE' | 'CATEGORY' | 'EXTRACTION';
+  Kind: 'DUPLICATE' | 'CATEGORY' | 'EXTRACTION' | 'DOCUMENT_PERIOD';
   PayloadJson?: string;
   SourceEntryID?: string;
   Status: string;
@@ -19,6 +19,13 @@ type ReviewItem = {
 };
 
 const API = 'http://localhost:8081';
+
+const MONTHS = [
+  { n: 1, label: 'Enero' }, { n: 2, label: 'Febrero' }, { n: 3, label: 'Marzo' },
+  { n: 4, label: 'Abril' }, { n: 5, label: 'Mayo' }, { n: 6, label: 'Junio' },
+  { n: 7, label: 'Julio' }, { n: 8, label: 'Agosto' }, { n: 9, label: 'Septiembre' },
+  { n: 10, label: 'Octubre' }, { n: 11, label: 'Noviembre' }, { n: 12, label: 'Diciembre' },
+];
 
 function payloadOf(item: ReviewItem): any {
   try { return JSON.parse(item.PayloadJson || '{}'); } catch { return {}; }
@@ -88,8 +95,32 @@ export default function ReviewPage() {
     }
   };
 
-  const resolveCategory = async (item: ReviewItem, categoryId: string | null) => {
-    const res = await fetch(`${API}/review/entries/${item.ID}/resolve`, {
+  // Document-level resolution: the human supplies the statement month and
+  // year (ABR 2026); the backend computes the full period and derives the
+  // parked movement dates of that document against it.
+  const resolvePeriod = async (item: ReviewItem) => {
+    const f = form[item.ID] || {};
+    const month = Number(f.month);
+    const year = Number(f.year);
+    if (!month || !year) {
+      alert('Elegí el mes y el año del estado de cuenta');
+      return;
+    }
+    const res = await fetch(`${API}/review/entries/${item.ID}/resolve-period`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ month, year }),
+    });
+    if (res.ok) {
+      dropItem(item.ID);
+    } else if (res.status === 409) {
+      alert('Este ítem ya fue resuelto');
+      dropItem(item.ID);
+    } else {
+      alert('Error al confirmar el período');
+    }
+  };
+
+  const resolveCategory = async (item: ReviewItem, categoryId: string | null) => {    const res = await fetch(`${API}/review/entries/${item.ID}/resolve`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ category_id: categoryId }),
     });
@@ -150,6 +181,50 @@ export default function ReviewPage() {
                 <button onClick={() => resolveCategory(item, selectedCat[item.ID] || null)}
                   className="px-3 py-1 rounded bg-accent-strong text-white">
                   {selectedCat[item.ID] ? 'Asignar categoría' : 'Guardar sin categoría'}
+                </button>
+                <button onClick={() => discard(item)} className="px-3 py-1 rounded border text-neg">Descartar</button>
+              </div>
+            </div>
+          );
+        }
+
+        if (item.Kind === 'DOCUMENT_PERIOD') {
+          const fPeriod = form[item.ID] || {};
+          return (
+            <div key={item.ID} className="rounded-[12px] border border-line bg-surface p-6">
+              <p className="text-body font-medium">Período del documento no reconocido</p>
+              <p className="mt-1 text-meta text-ink-3">
+                El extracto no traía un período legible
+                {p.raw_period ? ` (“${p.raw_period}”)` : ''}. Elegí el mes y el año del
+                estado de cuenta: con eso se calcula el período completo y se derivan las
+                fechas de los movimientos estacionados de este documento contra él.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <select
+                  value={fPeriod.month ?? ''}
+                  onChange={e => setField(item.ID, { month: e.target.value })}
+                  className="border rounded px-2 py-1 bg-black text-white"
+                >
+                  <option value="">Mes…</option>
+                  {MONTHS.map(m => (
+                    <option key={m.n} value={m.n}>{m.label}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min={2000}
+                  max={2100}
+                  value={fPeriod.year ?? ''}
+                  onChange={e => setField(item.ID, { year: e.target.value })}
+                  placeholder="Año"
+                  className="w-28 border rounded px-2 py-1 bg-black text-white"
+                />
+                <button
+                  onClick={() => resolvePeriod(item)}
+                  disabled={!fPeriod.month || !fPeriod.year}
+                  className="px-3 py-1 rounded bg-accent-strong text-white disabled:opacity-40"
+                >
+                  Confirmar período
                 </button>
                 <button onClick={() => discard(item)} className="px-3 py-1 rounded border text-neg">Descartar</button>
               </div>
