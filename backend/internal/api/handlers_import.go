@@ -2,7 +2,6 @@ package api
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/domain/entities"
@@ -23,17 +22,16 @@ type UploadResponse struct {
 }
 
 type UploadHandler struct {
-	cfg             config.Config
-	docRepo         *repositories.DocumentRepository
-	jobRepo         *repositories.ImportJobRepo
-	accountRepo     *repositories.AccountRepository
-	movementRepo    *repositories.MovementRepository
-	eventRepo       *repositories.FinancialEventRepository
-	sourceEntryRepo *repositories.SourceEntryRepository
+	cfg         config.Config
+	docRepo     *repositories.DocumentRepository
+	jobRepo     *repositories.ImportJobRepo
+	accountRepo *repositories.AccountRepository
+	run         ProcessorRunnerFunc
+	imports     ImportRunner
 }
 
-func NewUploadHandler(cfg config.Config, docRepo *repositories.DocumentRepository, jobRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository) *UploadHandler {
-	return &UploadHandler{cfg: cfg, docRepo: docRepo, jobRepo: jobRepo, accountRepo: accountRepo, movementRepo: movementRepo, eventRepo: eventRepo, sourceEntryRepo: sourceEntryRepo}
+func NewUploadHandler(cfg config.Config, docRepo *repositories.DocumentRepository, jobRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, run ProcessorRunnerFunc, imports ImportRunner) *UploadHandler {
+	return &UploadHandler{cfg: cfg, docRepo: docRepo, jobRepo: jobRepo, accountRepo: accountRepo, run: run, imports: imports}
 }
 
 func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
@@ -116,6 +114,14 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
+	// The same PDF twice is a conflict, not a crash: docID is derived from
+	// the file hash, so re-uploading an imported file must not 500.
+	if _, err := h.docRepo.GetByID(r.Context(), docID); err == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		encodeJSON(w, map[string]string{"error": "document already imported", "document_id": docID})
+		return
+	}
 	if _, err := h.docRepo.Create(r.Context(), document); err != nil {
 		http.Error(w, fmt.Sprintf("document persist failed: %v", err), http.StatusInternalServerError)
 		return
@@ -141,7 +147,11 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := RunProcessor(dstPath, accountID)
+	run := h.run
+	if run == nil {
+		run = RunProcessor
+	}
+	res, err := run(dstPath, accountID)
 	if err != nil {
 		finished := time.Now().UTC().Format(time.RFC3339)
 		job.Status = "ERROR"
@@ -172,90 +182,22 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Stage source entries from parsed artifact
-	artifactsBase := h.cfg.ArtifactsPath
-	artifactPath := filepath.Join(artifactsBase, res.ProcessingID, "parsed.json")
-	if data, err := os.ReadFile(artifactPath); err == nil {
-		var parsed struct {
-			Movements []struct {
-				DateOriginal        string `json:"date_original"`
-				DateNormalized      string `json:"date_normalized"`
-				DescriptionOriginal string `json:"description_original"`
-				AmountNormalized    int    `json:"amount_normalized"`
-				PageNumber          int    `json:"page_number"`
-				Sequence            int    `json:"sequence"`
-			} `json:"movements"`
-		}
-		if json.Unmarshal(data, &parsed) == nil && h.sourceEntryRepo != nil {
-			now := time.Now().UTC().Format(time.RFC3339)
-			for _, m := range parsed.Movements {
-				seID := fmt.Sprintf("%s_se_%d_%d", docID, m.PageNumber, m.Sequence)
-				se := domain.SourceEntry{
-					ID:                    seID,
-					DocumentID:            docID,
-					RawDescription:        &m.DescriptionOriginal,
-					RawDate:               &m.DateOriginal,
-					NormalizedDescription: &m.DescriptionOriginal,
-					NormalizedDate:        &m.DateNormalized,
-					PageNumber:            int64Ptr(int64(m.PageNumber)),
-					RowNumber:             int64Ptr(int64(m.Sequence)),
-					ExtractionID:          &res.ProcessingID,
-					CreatedAt:             now,
-					UpdatedAt:             now,
-				}
-				if _, err := h.sourceEntryRepo.Create(r.Context(), se); err != nil {
-					h.failJob(w, r, job, fmt.Sprintf("staging source entry failed: %v", err))
-					return
-				}
-
-				// Auto-import: create financial event and movement
-				eventType := "INCOME"
-				if m.AmountNormalized < 0 {
-					eventType = "EXPENSE"
-				}
-				feID := fmt.Sprintf("%s_fe_%d_%d", docID, m.PageNumber, m.Sequence)
-				fe := domain.FinancialEvent{
-					ID:                 feID,
-					EventType:          eventType,
-					EventDate:          sPtr(m.DateNormalized),
-					Status:             "ACTIVE",
-					VerificationStatus: "UNVERIFIED",
-					Description:        sPtr(m.DescriptionOriginal),
-					CreatedAt:          now,
-					UpdatedAt:          now,
-				}
-				if _, err := h.eventRepo.Create(r.Context(), fe); err != nil {
-					h.failJob(w, r, job, fmt.Sprintf("staging financial event failed: %v", err))
-					return
-				}
-
-				mvID := fmt.Sprintf("%s_mv_%d_%d", docID, m.PageNumber, m.Sequence)
-				mv := domain.Movement{
-					ID:               mvID,
-					FinancialEventID: feID,
-					AccountID:        accountID,
-					SourceEntryID:    &seID,
-					MovementDate:     m.DateNormalized,
-					AmountMinor:      int64(m.AmountNormalized),
-					Description:      sPtr(m.DescriptionOriginal),
-					Status:           "ACTIVE",
-					CreatedAt:        now,
-					UpdatedAt:        now,
-				}
-				if _, err := h.movementRepo.Create(r.Context(), mv); err != nil {
-					h.failJob(w, r, job, fmt.Sprintf("staging movement failed: %v", err))
-					return
-				}
-			}
-		}
+	// Staging is owned by the import service: one transaction, review items
+	// included. This handler only validates, persists and reports.
+	if h.imports == nil {
+		http.Error(w, "import service not configured", http.StatusInternalServerError)
+		return
 	}
-
-	// Job moves to SUCCESS automatically
-	job.Status = "SUCCESS"
-	finished := time.Now().UTC().Format(time.RFC3339)
-	job.FinishedAt = &finished
-	if _, err := h.jobRepo.Update(r.Context(), job); err != nil {
-		http.Error(w, "job update failed", http.StatusInternalServerError)
+	if err := h.imports.Import(r.Context(), jobID); err != nil {
+		finished := time.Now().UTC().Format(time.RFC3339)
+		job.Status = "FAILED"
+		job.FinishedAt = &finished
+		e := err.Error()
+		job.Error = &e
+		if _, updErr := h.jobRepo.Update(r.Context(), job); updErr != nil {
+			log.Error(fmt.Sprintf("failed to record job failure: %v", updErr))
+		}
+		http.Error(w, fmt.Sprintf(`{"error":"import failed","detail":%q}`, e), http.StatusInternalServerError)
 		return
 	}
 
@@ -279,13 +221,6 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	encodeJSON(w, resp)
 }
 
-func CreateJobHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusCreated)
-	if _, err := w.Write([]byte(`{"message":"job creation scaffold"}`)); err != nil {
-		log.Error(fmt.Sprintf("job scaffold response write failed: %v", err))
-	}
-}
-
 func GetJobHandler(w http.ResponseWriter, r *http.Request, repo *repositories.ImportJobRepo, id string) {
 	job, err := repo.GetByID(r.Context(), id)
 	if err != nil {
@@ -294,20 +229,4 @@ func GetJobHandler(w http.ResponseWriter, r *http.Request, repo *repositories.Im
 	}
 	w.Header().Set("Content-Type", "application/json")
 	encodeJSON(w, job)
-}
-
-func int64Ptr(v int64) *int64 { return &v }
-func sPtr(s string) *string   { return &s }
-
-// failJob marks the import job as FAILED and reports the failure to the
-// caller: a partially staged import must never look like a success.
-func (h *UploadHandler) failJob(w http.ResponseWriter, r *http.Request, job entities.ImportJob, reason string) {
-	job.Status = "FAILED"
-	job.Error = &reason
-	finished := time.Now().UTC().Format(time.RFC3339)
-	job.FinishedAt = &finished
-	if _, err := h.jobRepo.Update(r.Context(), job); err != nil {
-		log.Error(fmt.Sprintf("failed to record job failure: %v", err))
-	}
-	http.Error(w, fmt.Sprintf(`{"error":%q}`, reason), http.StatusInternalServerError)
 }

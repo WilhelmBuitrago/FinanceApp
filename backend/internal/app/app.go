@@ -44,9 +44,7 @@ func (a *Application) Start(ctx context.Context) error {
 		return fmt.Errorf("health check failed: %w", err)
 	}
 	log.Info("Health check ok")
-	router := api.NewRouter(a.Cfg, a.DocRepo, a.ImportJobRepo, a.Persistence.AccountRepo, a.Persistence.MovementRepo, a.Persistence.FinancialEventRepo, a.Persistence.SourceEntryRepo, a.Persistence.CategoryRepo, a.Movements, a.Reviews, func(ctx context.Context, id string) error {
-		return a.ImportService.Import(ctx, id)
-	})
+	router := api.NewRouter(a.Cfg, a.DocRepo, a.ImportJobRepo, a.Persistence.AccountRepo, a.Persistence.MovementRepo, a.Persistence.FinancialEventRepo, a.Persistence.SourceEntryRepo, a.Persistence.CategoryRepo, a.Movements, a.Reviews, a.ImportService, api.RunProcessor)
 	port := a.Cfg.Port
 	addr := ":" + port
 	a.Server = &http.Server{

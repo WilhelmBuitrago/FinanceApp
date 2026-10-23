@@ -24,12 +24,21 @@ type router struct {
 	categoryRepo    *repositories.CategoryRepository
 	movements       movementWriter
 	reviews         reviewResolver
-	confirmHandler  func(context.Context, string) error
 }
+
+// ImportRunner owns the transactional staging of a processed document.
+// Same rule as movementWriter: api cannot import app, so the transaction
+// owner is injected.
+type ImportRunner interface {
+	Import(ctx context.Context, jobID string) error
+}
+
+// ProcessorRunnerFunc runs the Python processor over a saved PDF.
+type ProcessorRunnerFunc func(pdfPath, accountID string) (*ProcessorResult, error)
 
 // NewRouter wires every route to its handler. Health and upload stay here;
 // the rest live in the handlers_*.go files by domain.
-func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository, categoryRepo *repositories.CategoryRepository, movements movementWriter, reviews reviewResolver, confirmHandler func(context.Context, string) error) http.Handler {
+func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository, categoryRepo *repositories.CategoryRepository, movements movementWriter, reviews reviewResolver, imports ImportRunner, run ProcessorRunnerFunc) http.Handler {
 	rt := &router{
 		cfg:             cfg,
 		docRepo:         docRepo,
@@ -41,11 +50,10 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 		categoryRepo:    categoryRepo,
 		movements:       movements,
 		reviews:         reviews,
-		confirmHandler:  confirmHandler,
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", rt.health)
-	mux.HandleFunc("POST /documents/upload", NewUploadHandler(cfg, docRepo, importRepo, accountRepo, movementRepo, eventRepo, sourceEntryRepo).Handle)
+	mux.HandleFunc("POST /documents/upload", NewUploadHandler(cfg, docRepo, importRepo, accountRepo, run, imports).Handle)
 	mux.HandleFunc("GET /institutions", rt.institutions)
 	mux.HandleFunc("POST /accounts", rt.createAccount)
 	mux.HandleFunc("GET /accounts", rt.listAccounts)
@@ -74,11 +82,9 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 	mux.HandleFunc("GET /review/entries", rt.listReviewEntries)
 	mux.HandleFunc("POST /review/entries/{id}/resolve", rt.resolveReviewEntry)
 	mux.HandleFunc("POST /review/entries/{id}/discard", rt.discardReviewEntry)
-	mux.HandleFunc("POST /jobs", CreateJobHandler)
 	mux.HandleFunc("GET /jobs/", rt.getJobByPath)
 	mux.HandleFunc("GET /jobs/{id}/parsed", rt.jobParsed)
 	mux.HandleFunc("GET /jobs/{id}/manifest", rt.jobManifest)
-	mux.HandleFunc("POST /jobs/{id}/confirm", rt.confirmJob)
 
 	// Logging middleware
 	loggedMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
