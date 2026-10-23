@@ -11,11 +11,11 @@ def sha256_file(path):
     return h.hexdigest()
 
 
-def inspect_pdf(path):
+def inspect_document(doc, path):
+    """Inspection over an already-open document: the caller owns the
+    handle (one pass shared with the extraction)."""
     size_bytes = os.path.getsize(path)
     sha256 = sha256_file(path)
-    fitz = _get_fitz()
-    doc = fitz.open(path)
     version = doc.metadata.get("format", "")
     page_count = doc.page_count
     pages = []
@@ -50,3 +50,12 @@ def inspect_pdf(path):
         },
         "warnings": warnings
     }
+
+
+def inspect_pdf(path):
+    fitz = _get_fitz()
+    doc = fitz.open(path)
+    try:
+        return inspect_document(doc, path)
+    finally:
+        doc.close()

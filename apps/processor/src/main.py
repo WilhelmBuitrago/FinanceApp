@@ -12,7 +12,7 @@ log = logging.getLogger('processor')
 # Normalize path and add processor root to sys.path
 processor_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(processor_root))
-from extraction.inspection import inspect_pdf
+from extraction.capture import inspect_and_extract
 from extraction.extractor import extract_native_text
 from extraction.artifacts import write_artifacts
 from parser.nu_account import NuAccountParser
@@ -55,12 +55,9 @@ def parse_with_retry(pdf_path, artifacts_base, processing_id, inspection, extrac
 def process_pdf(pdf_path):
     processing_id = str(uuid.uuid4())
     log.info(f"process_pdf start pdf={pdf_path} processing_id={processing_id}")
-    log.info(f"inspection start")
-    inspection = inspect_pdf(pdf_path)
+    log.info(f"inspection+extraction start (single pass)")
+    inspection, extraction = inspect_and_extract(pdf_path)
     log.info(f"inspection done sha256={inspection['file']['sha256']}")
-    log.info(f"extraction start")
-    extraction = extract_native_text(pdf_path)
-    log.info(f"extraction done")
     artifacts_base = os.environ.get('ARTIFACTS_PATH')
     if not artifacts_base:
         base = Path(__file__).resolve().parent.parent.parent
