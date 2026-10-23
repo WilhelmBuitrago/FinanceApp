@@ -66,6 +66,21 @@ func (rt *router) createMovement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Info(fmt.Sprintf("[MOVEMENT CREATE] account=%s amount=%d type=%s date=%s desc=%s", req.AccountID, req.AmountMinor, req.Type, req.Date, req.Description))
+	// A zero amount is neither income nor expense: same criterion as the
+	// parser, the manual path cannot fabricate financial identity either.
+	if req.AmountMinor == 0 {
+		http.Error(w, `{"error":"amount_minor must not be zero"}`, http.StatusBadRequest)
+		return
+	}
+	// Validate the event type here so the caller gets a clear message: the
+	// column has no CHECK, so anything else would be stored as-is and fail
+	// much later, far from the cause.
+	switch req.Type {
+	case "INCOME", "EXPENSE", "TRANSFER":
+	default:
+		http.Error(w, `{"error":"type must be INCOME, EXPENSE or TRANSFER"}`, http.StatusBadRequest)
+		return
+	}
 	if !force {
 		existing, err := rt.movementRepo.List(r.Context())
 		if err != nil {
