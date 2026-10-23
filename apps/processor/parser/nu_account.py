@@ -110,7 +110,13 @@ class NuAccountParser:
         files = sorted([f for f in os.listdir(extraction_dir) if f.endswith('.txt')])
         pages = []
         for fname in files:
-            page_num = int(re.search(r'(\d+)', fname).group(1))
+            page_match = re.search(r'(\d+)', fname)
+            if not page_match:
+                raise ValueError(
+                    f"extraction page without a page number: {fname}. "
+                    "Extraction pages are named like 001.txt"
+                )
+            page_num = int(page_match.group(1))
             path = os.path.join(extraction_dir, fname)
             with open(path, 'r', encoding='utf-8') as f:
                 text = f.read()
@@ -317,6 +323,18 @@ class NuAccountParser:
                             amount_original=amount_original,
                             page_number=page_number,
                             reason=f"unparseable amount: {exc}",
+                        ))
+                        continue
+                    if amount_normalized == 0:
+                        # Neither income nor expense: a zero amount has no
+                        # financial identity, and classifying it (the old
+                        # EXPENSE fallback) fabricated data. Park it.
+                        review_required.append(ReviewItem(
+                            date_original=date_original,
+                            description_original=description_original,
+                            amount_original=amount_original,
+                            page_number=page_number,
+                            reason='zero amount: neither income nor expense',
                         ))
                         continue
                     # Normalize

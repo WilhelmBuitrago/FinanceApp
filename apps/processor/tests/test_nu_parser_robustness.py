@@ -167,6 +167,44 @@ def test_manifest_absent_is_tolerated():
         shutil.rmtree(base, ignore_errors=True)
 
 
+def test_zero_amount_is_parked_not_classified():
+    # A zero amount is neither income nor expense: the old fallback
+    # classified it as EXPENSE (fabricated identity). It parks now.
+    extract = """Periodo
+01 - 30 MAR 2026
+Movimientos
+01 mar
+Ajuste contable
++$0,00
+Rendimiento total de tu cuenta
+"""
+    doc = run_parser(extract)
+    assert len(doc.movements) == 0, "a zero-amount movement must not be emitted"
+    assert len(doc.review_required) == 1, doc.review_required
+    assert "zero" in doc.review_required[0].reason.lower(), doc.review_required[0].reason
+
+
+def test_extraction_page_without_number_fails_clearly():
+    # An extraction page whose name carries no page number is a broken
+    # artifact: the error must name the file, not be an AttributeError.
+    import tempfile
+    from parser.nu_account import NuAccountParser
+    base = Path(tempfile.mkdtemp(prefix="nu-badpage-"))
+    try:
+        artifact_dir = base / "t"
+        (artifact_dir / "extraction").mkdir(parents=True)
+        (artifact_dir / "inspection.json").write_text(json.dumps({}), encoding="utf-8")
+        (artifact_dir / "extraction" / "notas.txt").write_text("basura\n", encoding="utf-8")
+        parser = NuAccountParser("t", base_path=str(base))
+        try:
+            parser.parse()
+            assert False, "expected a clear error"
+        except ValueError as exc:
+            assert "notas.txt" in str(exc), str(exc)
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+
+
 if __name__ == "__main__":
     tests = [
         test_real_format_parses_unchanged,
@@ -174,6 +212,8 @@ if __name__ == "__main__":
         test_absorbed_structured_lines_parked,
         test_date_with_year_is_tolerated,
         test_manifest_absent_is_tolerated,
+        test_zero_amount_is_parked_not_classified,
+        test_extraction_page_without_number_fails_clearly,
     ]
     for t in tests:
         t()
