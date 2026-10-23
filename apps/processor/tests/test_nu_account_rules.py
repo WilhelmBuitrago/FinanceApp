@@ -109,8 +109,11 @@ def test_review_item_preserves_the_raw_for_humans():
     assert item.amount_original == '+$--'
     assert item.reason.startswith('unparseable amount')
     assert item.page_number == 3
-    # The raw never becomes a movement: no amount_normalized exists here.
-    assert not hasattr(item, 'amount_normalized')
+    # A movement parked for its AMOUNT carries no normalized amount (there
+    # is none to carry). A movement parked for its DATE does carry its
+    # amount, so the document-period resolution can import it once the
+    # year is confirmed.
+    assert item.amount_normalized == 0
 
 
 if __name__ == "__main__":

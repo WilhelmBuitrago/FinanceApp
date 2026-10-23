@@ -38,6 +38,10 @@ class ReviewItem:
     amount_original: str
     page_number: int
     reason: str
+    # Present when the amount normalized fine: a movement parked for its
+    # date travels with its amount so the document-period resolution can
+    # import it as soon as the year is confirmed.
+    amount_normalized: int = 0
 
 
 @dataclass
@@ -293,6 +297,23 @@ class NuAccountParser:
                             ),
                         ))
                         continue
+                    # Normalize the amount first: a movement parked for its
+                    # date still carries its normalized amount, so the
+                    # document-period resolution can import it once the year
+                    # is confirmed.
+                    try:
+                        amount_normalized = normalize_amount(amount_original)
+                    except Exception as exc:
+                        # Not importable and not droppable: keep the raw
+                        # for human review with the exact reason.
+                        review_required.append(ReviewItem(
+                            date_original=date_original,
+                            description_original=' '.join(description_parts).strip(),
+                            amount_original=amount_original,
+                            page_number=page_number,
+                            reason=f"unparseable amount: {exc}",
+                        ))
+                        continue
                     # Normalize
                     try:
                         date_normalized = normalize_date(metadata.get('periodo') or '', date_original)
@@ -305,21 +326,9 @@ class NuAccountParser:
                             date_original=date_original,
                             description_original=description_original,
                             amount_original=amount_original,
+                            amount_normalized=amount_normalized,
                             page_number=page_number,
                             reason=f"unparseable date: {exc}",
-                        ))
-                        continue
-                    try:
-                        amount_normalized = normalize_amount(amount_original)
-                    except Exception as exc:
-                        # Not importable and not droppable: keep the raw
-                        # for human review with the exact reason.
-                        review_required.append(ReviewItem(
-                            date_original=date_original,
-                            description_original=' '.join(description_parts).strip(),
-                            amount_original=amount_original,
-                            page_number=page_number,
-                            reason=f"unparseable amount: {exc}",
                         ))
                         continue
                     sequence += 1
