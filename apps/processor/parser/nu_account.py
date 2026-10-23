@@ -194,33 +194,17 @@ class NuAccountParser:
             return False
         return bool(re.search(r'([A-Za-z]{3})\s+(\d{4})', period_str))
 
-    def parse(self) -> ParsedNuAccountDocument:
-        # The manifest is not used by the parser: it is loaded optionally so
-        # the pipeline writes it exactly once (the real one, after parsing)
-        # instead of a provisional copy just to satisfy this loader.
-        manifest = self._load_json('manifest.json', optional=True)
-        inspection = self._load_json('inspection.json')
-        pages = self._load_extraction_pages()
-        if not pages:
-            raise ValueError("No extraction pages found")
+    def _scan_movements(self, pages, metadata):
+        """Scan the pages between the movement markers and build the
+        movements, parking every line the parser cannot trust.
 
-        first_page_text = pages[0][1]
-        metadata = self._parse_metadata(first_page_text)
-
+        The whole state machine lives here: markers, look-ahead, the four
+        park gates (no amount, absorbed lines, unparseable amount, zero
+        amount, unparseable date) and normalization. Loading lives in the
+        _load_* helpers and orchestration in parse.
+        """
         movements: List[ParsedMovement] = []
         review_required: List[ReviewItem] = []
-        document_review: List[DocumentReviewItem] = []
-
-        # Level 1 (document): the period is the year fallback for every
-        # movement. If it cannot be read, park it once at document level:
-        # the human fixes the header, movements keep parsing on their own.
-        raw_period = metadata.get('periodo') or ''
-        if not self._period_looks_valid(raw_period):
-            document_review.append(DocumentReviewItem(
-                raw_period=raw_period,
-                reason='statement period not parseable from the extraction',
-            ))
-
         inside_movements = False
         sequence = 0
 
@@ -366,6 +350,33 @@ class NuAccountParser:
                     ))
                 # Continue loop, don't process description lines again
                 continue
+
+        return movements, review_required
+
+    def parse(self) -> ParsedNuAccountDocument:
+        # The manifest is not used by the parser: it is loaded optionally so
+        # the pipeline writes it exactly once (the real one, after parsing)
+        # instead of a provisional copy just to satisfy this loader.
+        manifest = self._load_json('manifest.json', optional=True)
+        inspection = self._load_json('inspection.json')
+        pages = self._load_extraction_pages()
+        if not pages:
+            raise ValueError("No extraction pages found")
+
+        metadata = self._parse_metadata(pages[0][1])
+
+        # Level 1 (document): the period is the year fallback for every
+        # movement. If it cannot be read, park it once at document level:
+        # the human fixes the header, movements keep parsing on their own.
+        raw_period = metadata.get('periodo') or ''
+        document_review: List[DocumentReviewItem] = []
+        if not self._period_looks_valid(raw_period):
+            document_review.append(DocumentReviewItem(
+                raw_period=raw_period,
+                reason='statement period not parseable from the extraction',
+            ))
+
+        movements, review_required = self._scan_movements(pages, metadata)
 
         summary = {
             'processing_id': self.processing_id,
