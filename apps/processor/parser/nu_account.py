@@ -44,6 +44,40 @@ class NuAccountParser:
     END_MARKER = "Rendimiento total de tu cuenta"
     FOOTER_MARKER = "Los rendimientos que genera tu cuenta los pagamos a diario"
 
+    # Months accepted on a date line: a bare "12 cuotas" is a description,
+    # not a date, so a valid month is required.
+    _MONTH_NAMES = (
+        'ene|feb|mar|abr|may|jun|jul|ago|sep|set|oct|nov|dic'
+        '|jan|apr|aug|dec'
+    )
+    # Tolerant date: the strict shape plus any trailing decoration (a year,
+    # a dot). The group keeps only the dd-months part.
+    _DATE_LINE_RE = re.compile(
+        r'^(\d{1,2}\s*(?:' + _MONTH_NAMES + r'))\b', re.I
+    )
+    # Amount patterns: the strict one is the production format (sign glued
+    # to the currency symbol). The tolerant one only EXISTS to detect
+    # baseline lines the parser did not recognize, so absorption of the
+    # next movement is caught instead of silently corrupting the data.
+    _AMOUNT_LINE_RE = re.compile(r'^[+-]\$\s*\d')
+    _AMOUNT_LIKE_RE = re.compile(r'^[+-]\s*\$\s*\d')
+
+    @classmethod
+    def _clean_date_line(cls, raw_line):
+        """Return the dd-mes core of a decorated date line ('03 mar 2026'
+        -> '03 mar'), or None when the line does not start with a date."""
+        match = cls._DATE_LINE_RE.match(raw_line.strip())
+        return match.group(1) if match else None
+
+    @classmethod
+    def _has_structured_lines(cls, parts):
+        """True when description lines contain structured content (a date
+        or an amount): the movement is absorbing the next one."""
+        return any(
+            cls._clean_date_line(p) or cls._AMOUNT_LIKE_RE.match(p)
+            for p in parts
+        )
+
     def __init__(self, processing_id: str, base_path: str = None):
         if base_path is None:
             base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'data', 'artifacts'))
@@ -167,9 +201,9 @@ class NuAccountParser:
                 if not inside_movements:
                     continue
 
-                # Movement parsing: date line pattern dd mmm
-                date_match = re.match(r'^(\d{1,2}\s*[A-Za-z]{3})$', line, re.I)
-                if date_match:
+                # Movement parsing: date line pattern dd mmm, tolerant of
+                # trailing decorations such as the year.
+                if self._clean_date_line(line):
                     date_original = line
                     # Next lines: description and amount
                     description_parts = []
@@ -180,7 +214,7 @@ class NuAccountParser:
                     while look_ahead_idx < len(lines):
                         next_line = lines[look_ahead_idx].strip()
                         # Stop if next date line or marker
-                        if re.match(r'^(\d{1,2}\s*[A-Za-z]{3})$', next_line, re.I):
+                        if self._clean_date_line(next_line):
                             break
                         if (
                             self.START_MARKER.lower() in next_line.lower()
@@ -188,7 +222,7 @@ class NuAccountParser:
                         ):
                             break
                         # Amount pattern
-                        if re.search(r'^[+-]\$\s*\d', next_line):
+                        if self._AMOUNT_LINE_RE.match(next_line):
                             amount_original = next_line
                             look_ahead_idx += 1
                             break
@@ -197,38 +231,66 @@ class NuAccountParser:
                             description_parts.append(next_line)
                         look_ahead_idx += 1
 
-                    if amount_original:
-                        description_original = ' '.join(description_parts).strip()
-                        # Normalize
-                        try:
-                            date_normalized = normalize_date(metadata.get('periodo') or '', date_original)
-                        except Exception:
-                            date_normalized = ''
-                        try:
-                            amount_normalized = normalize_amount(amount_original)
-                        except Exception as exc:
-                            # Not importable and not droppable: keep the raw
-                            # for human review with the exact reason.
-                            review_required.append(ReviewItem(
-                                date_original=date_original,
-                                description_original=' '.join(description_parts).strip(),
-                                amount_original=amount_original,
-                                page_number=page_number,
-                                reason=f"unparseable amount: {exc}",
-                            ))
-                            continue
-                        sequence += 1
-                        movements.append(ParsedMovement(
+                    description_original = ' '.join(description_parts).strip()
+                    if not amount_original:
+                        # A date with no recognizable amount line: park the
+                        # raw for human review. Dropping it silently would
+                        # lose a real movement from the statement.
+                        review_required.append(ReviewItem(
                             date_original=date_original,
-                            date_normalized=date_normalized,
+                            description_original=description_original,
+                            amount_original='',
+                            page_number=page_number,
+                            reason='amount line not found after the date line',
+                        ))
+                        continue
+                    if self._has_structured_lines(description_parts):
+                        # The description carries date-like or amount-like
+                        # lines: this movement is absorbing the next one.
+                        # Park the raw instead of emitting a movement with
+                        # the neighbor's amount and a corrupted description.
+                        review_required.append(ReviewItem(
+                            date_original=date_original,
                             description_original=description_original,
                             amount_original=amount_original,
-                            amount_normalized=amount_normalized,
                             page_number=page_number,
-                            sequence=sequence
+                            reason=(
+                                'absorbed structured lines: the description '
+                                'contains date-like or amount-like content '
+                                '(this movement likely ate the next one)'
+                            ),
                         ))
-                    # Continue loop, don't process description lines again
-                    continue
+                        continue
+                    # Normalize
+                    try:
+                        date_normalized = normalize_date(metadata.get('periodo') or '', date_original)
+                    except Exception:
+                        date_normalized = ''
+                    try:
+                        amount_normalized = normalize_amount(amount_original)
+                    except Exception as exc:
+                        # Not importable and not droppable: keep the raw
+                        # for human review with the exact reason.
+                        review_required.append(ReviewItem(
+                            date_original=date_original,
+                            description_original=' '.join(description_parts).strip(),
+                            amount_original=amount_original,
+                            page_number=page_number,
+                            reason=f"unparseable amount: {exc}",
+                        ))
+                        continue
+                    sequence += 1
+                    movements.append(ParsedMovement(
+                        date_original=date_original,
+                        date_normalized=date_normalized,
+                        description_original=description_original,
+                        amount_original=amount_original,
+                        amount_normalized=amount_normalized,
+                        page_number=page_number,
+                        sequence=sequence
+                    ))
+                # Continue loop, don't process description lines again
+                continue
 
         summary = {
             'processing_id': self.processing_id,
