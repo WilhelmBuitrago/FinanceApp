@@ -70,13 +70,6 @@ def process_pdf(pdf_path):
     log.info(f"writing artifacts to {artifact_dir}")
     write_artifacts(artifact_dir, inspection, extraction)
 
-    # Create minimal manifest so parser can load it
-    import json as _json
-    minimal_manifest = {"processing_id": processing_id, "input": {"sha256": inspection["file"]["sha256"]}}
-    with open(os.path.join(artifact_dir, "manifest.json"), "w", encoding="utf-8") as f:
-        _json.dump(minimal_manifest, f)
-    log.info(f"minimal manifest written")
-
     # Parsing & validation for Nu account statements. The silent retry
     # (Layer 0) lives inside: the user only sees the outcome.
     log.info(f"parser start")

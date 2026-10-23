@@ -98,8 +98,10 @@ class NuAccountParser:
         self.base_path = base_path
         self.artifact_dir = os.path.join(base_path, processing_id)
 
-    def _load_json(self, filename: str) -> dict:
+    def _load_json(self, filename: str, optional: bool = False) -> dict:
         path = os.path.join(self.artifact_dir, filename)
+        if optional and not os.path.exists(path):
+            return {}
         with open(path, 'r', encoding='utf-8') as f:
             return json.load(f)
 
@@ -187,7 +189,10 @@ class NuAccountParser:
         return bool(re.search(r'([A-Za-z]{3})\s+(\d{4})', period_str))
 
     def parse(self) -> ParsedNuAccountDocument:
-        manifest = self._load_json('manifest.json')
+        # The manifest is not used by the parser: it is loaded optionally so
+        # the pipeline writes it exactly once (the real one, after parsing)
+        # instead of a provisional copy just to satisfy this loader.
+        manifest = self._load_json('manifest.json', optional=True)
         inspection = self._load_json('inspection.json')
         pages = self._load_extraction_pages()
         if not pages:

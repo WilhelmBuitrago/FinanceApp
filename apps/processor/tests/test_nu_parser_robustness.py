@@ -146,12 +146,34 @@ Rendimiento total de tu cuenta
     assert doc.movements[0].amount_normalized == 16500
 
 
+def test_manifest_absent_is_tolerated():
+    # The parser does not use the manifest: the pipeline must be able to
+    # write it exactly once (after parsing). Parsing without it works.
+    import tempfile
+    from parser.nu_account import NuAccountParser
+    base = Path(tempfile.mkdtemp(prefix="nu-nomanifest-"))
+    try:
+        artifact_dir = base / "t"
+        (artifact_dir / "extraction").mkdir(parents=True)
+        (artifact_dir / "inspection.json").write_text(json.dumps({}), encoding="utf-8")
+        (artifact_dir / "extraction" / "001.txt").write_text(
+            "Periodo\n01 - 30 ABR 2026\nMovimientos\n14 abr\nRecibiste\n+$1.000,00\nRendimiento total de tu cuenta\n",
+            encoding="utf-8",
+        )
+        doc = NuAccountParser("t", base_path=str(base)).parse()
+        assert len(doc.movements) == 1, f"expected 1 movement, got {len(doc.movements)}"
+        assert doc.movements[0].amount_normalized == 1000
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+
+
 if __name__ == "__main__":
     tests = [
         test_real_format_parses_unchanged,
         test_amount_variant_line_is_parked,
         test_absorbed_structured_lines_parked,
         test_date_with_year_is_tolerated,
+        test_manifest_absent_is_tolerated,
     ]
     for t in tests:
         t()
