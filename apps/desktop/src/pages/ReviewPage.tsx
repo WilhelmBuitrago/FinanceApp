@@ -190,6 +190,8 @@ export default function ReviewPage() {
 
         if (item.Kind === 'DOCUMENT_PERIOD') {
           const fPeriod = form[item.ID] || {};
+          const suggestedMonth = fPeriod.month ?? (p.suggested_month ? String(p.suggested_month) : '');
+          const suggestedYear = fPeriod.year ?? (p.suggested_year ? String(p.suggested_year) : '');
           return (
             <div key={item.ID} className="rounded-[12px] border border-line bg-surface p-6">
               <p className="text-body font-medium">Período del documento no reconocido</p>
@@ -201,7 +203,7 @@ export default function ReviewPage() {
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <select
-                  value={fPeriod.month ?? ''}
+                  value={suggestedMonth}
                   onChange={e => setField(item.ID, { month: e.target.value })}
                   className="border rounded px-2 py-1 bg-black text-white"
                 >
@@ -214,20 +216,27 @@ export default function ReviewPage() {
                   type="number"
                   min={2000}
                   max={2100}
-                  value={fPeriod.year ?? ''}
+                  value={suggestedYear}
                   onChange={e => setField(item.ID, { year: e.target.value })}
                   placeholder="Año"
                   className="w-28 border rounded px-2 py-1 bg-black text-white"
                 />
                 <button
                   onClick={() => resolvePeriod(item)}
-                  disabled={!fPeriod.month || !fPeriod.year}
+                  disabled={!suggestedMonth || !suggestedYear}
                   className="px-3 py-1 rounded bg-accent-strong text-white disabled:opacity-40"
                 >
                   Confirmar período
                 </button>
                 <button onClick={() => discard(item)} className="px-3 py-1 rounded border text-neg">Descartar</button>
               </div>
+              {(p.suggested_month || p.suggested_year) && (
+                <p className="mt-2 text-meta text-ink-3">
+                  Mes y año precargados a partir de las fechas de los movimientos estacionados
+                  de este documento: es una sugerencia, no un dato confirmado. Verificalos
+                  contra el PDF antes de confirmar.
+                </p>
+              )}
             </div>
           );
         }

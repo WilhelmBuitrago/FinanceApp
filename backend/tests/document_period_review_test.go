@@ -91,7 +91,10 @@ func TestImport_ParksDocumentPeriodReview(t *testing.T) {
       "movements": [
         {"date_original": "14 abr 2026", "date_normalized": "2026-04-14", "description_original": "recibido", "amount_original": "+$16.500,00", "amount_normalized": 16500, "page_number": 1, "sequence": 1}
       ],
-      "review_required": [],
+      "review_required": [
+        {"date_original": "14 abr", "description_original": "encaja", "amount_original": "+$16.500,00", "amount_normalized": 16500, "page_number": 1, "reason": "unparseable date"},
+        {"date_original": "10 abr 2026", "description_original": "otro", "amount_original": "-$9.900,00", "amount_normalized": -9900, "page_number": 1, "reason": "unparseable date"}
+      ],
       "document_review": [
         {"raw_period": "no se pudo determinar", "reason": "statement period not parseable from the extraction"}
       ]
@@ -121,6 +124,12 @@ func TestImport_ParksDocumentPeriodReview(t *testing.T) {
 	for _, want := range []string{docID, "acc-dp", "no se pudo determinar"} {
 		if !contains(payload, want) {
 			t.Fatalf("payload %s must carry %s", payload, want)
+		}
+	}
+	// The parked raws suggest month/year to pre-fill the human's picker.
+	for _, want := range []string{`"suggested_month":4`, `"suggested_year":2026`} {
+		if !contains(payload, want) {
+			t.Fatalf("payload %s must carry the suggestion %s", payload, want)
 		}
 	}
 

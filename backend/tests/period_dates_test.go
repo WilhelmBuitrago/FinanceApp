@@ -48,3 +48,25 @@ func TestDeriveMovementDate(t *testing.T) {
 		}
 	}
 }
+
+func TestSuggestMonthYear(t *testing.T) {
+	cases := []struct {
+		name     string
+		raws     []string
+		wantMon  int
+		wantYear int
+	}{
+		{"majority wins with the year of the dated raw", []string{"14 abr", "10 abr 2026", "03 abr"}, 4, 2026},
+		{"no year anywhere suggests month only", []string{"14 abr", "03 abr"}, 4, 0},
+		{"tie resolves to the first seen", []string{"15 may", "02 mar"}, 5, 0},
+		{"garbage suggests nothing", []string{"basura", "???"}, 0, 0},
+		{"empty suggests nothing", nil, 0, 0},
+		{"leap date year is suggested", []string{"29 feb 2024", "01 feb"}, 2, 2024},
+	}
+	for _, c := range cases {
+		month, year := app.SuggestMonthYear(c.raws)
+		if month != c.wantMon || year != c.wantYear {
+			t.Fatalf("%s: want month/year %d/%d, got %d/%d", c.name, c.wantMon, c.wantYear, month, year)
+		}
+	}
+}

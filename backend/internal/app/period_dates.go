@@ -77,3 +77,56 @@ func DeriveMovementDate(raw string, year, month int) (iso string, ok bool) {
 	}
 	return fmt.Sprintf("%04d-%02d-%02d", year, month, day), true
 }
+
+// rawYearRe reads the 4-digit year a raw date carries ("10 abr 2026").
+var rawYearRe = regexp.MustCompile(`\b(?:19|20)\d{2}\b`)
+
+// rawYear returns the year the raw date carries, or 0 when it carries none.
+func rawYear(raw string) int {
+	y, err := strconv.Atoi(rawYearRe.FindString(raw))
+	if err != nil {
+		return 0
+	}
+	return y
+}
+
+// SuggestMonthYear infers the most frequent month and year from the raw
+// dates of the parked movements. It exists to PRE-FILL the picker of the
+// human who confirms the period, and nothing else: a suggestion, never a
+// truth (the human can change it). Zero means there is nothing to suggest.
+// Ties resolve to the value that appeared first.
+func SuggestMonthYear(rawDates []string) (month, year int) {
+	monthCounts := map[int]int{}
+	monthOrder := make([]int, 0, len(rawDates))
+	yearCounts := map[int]int{}
+	yearOrder := make([]int, 0, len(rawDates))
+	for _, raw := range rawDates {
+		if _, m, ok := parseRawDayMonth(raw); ok {
+			if monthCounts[m] == 0 {
+				monthOrder = append(monthOrder, m)
+			}
+			monthCounts[m]++
+		}
+		if y := rawYear(raw); y > 0 {
+			if yearCounts[y] == 0 {
+				yearOrder = append(yearOrder, y)
+			}
+			yearCounts[y]++
+		}
+	}
+	best := 0
+	for _, m := range monthOrder {
+		if monthCounts[m] > best {
+			best = monthCounts[m]
+			month = m
+		}
+	}
+	best = 0
+	for _, y := range yearOrder {
+		if yearCounts[y] > best {
+			best = yearCounts[y]
+			year = y
+		}
+	}
+	return month, year
+}

@@ -258,11 +258,21 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 	// human supplies month+year and the parked movement dates are derived
 	// against it on resolve.
 	for _, dr := range parsed.DocumentReview {
+		// Pre-fill suggestion for the human: the most frequent month/year
+		// among the parked raws of this document. A suggestion, never a
+		// truth: the human confirms or changes it.
+		rawDates := make([]string, 0, len(parsed.ReviewRequired))
+		for _, rv := range parsed.ReviewRequired {
+			rawDates = append(rawDates, rv.DateOriginal)
+		}
+		suggestedMonth, suggestedYear := SuggestMonthYear(rawDates)
 		payload, err := json.Marshal(map[string]any{
-			"raw_period":  dr.RawPeriod,
-			"reason":      dr.Reason,
-			"document_id": job.DocumentID,
-			"account_id":  accountID,
+			"raw_period":      dr.RawPeriod,
+			"reason":          dr.Reason,
+			"document_id":     job.DocumentID,
+			"account_id":      accountID,
+			"suggested_month": suggestedMonth,
+			"suggested_year":  suggestedYear,
 		})
 		if err != nil {
 			return fmt.Errorf("marshal document review payload: %w", err)
