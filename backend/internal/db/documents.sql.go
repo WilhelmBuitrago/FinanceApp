@@ -228,3 +228,43 @@ func (q *Queries) UpdateDocument(ctx context.Context, arg UpdateDocumentParams) 
 	)
 	return i, err
 }
+
+const updateDocumentPeriod = `-- name: UpdateDocumentPeriod :one
+UPDATE documents SET period_start = ?, period_end = ?, updated_at = ?
+WHERE id = ?
+RETURNING id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at
+`
+
+type UpdateDocumentPeriodParams struct {
+	PeriodStart sql.NullString `json:"period_start"`
+	PeriodEnd   sql.NullString `json:"period_end"`
+	UpdatedAt   string         `json:"updated_at"`
+	ID          string         `json:"id"`
+}
+
+func (q *Queries) UpdateDocumentPeriod(ctx context.Context, arg UpdateDocumentPeriodParams) (Document, error) {
+	row := q.db.QueryRowContext(ctx, updateDocumentPeriod,
+		arg.PeriodStart,
+		arg.PeriodEnd,
+		arg.UpdatedAt,
+		arg.ID,
+	)
+	var i Document
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.DocumentType,
+		&i.Institution,
+		&i.DocumentName,
+		&i.PeriodStart,
+		&i.PeriodEnd,
+		&i.DocumentDate,
+		&i.FileHash,
+		&i.SourceUri,
+		&i.Status,
+		&i.MetadataJson,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

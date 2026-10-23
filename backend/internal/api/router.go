@@ -82,6 +82,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 	mux.HandleFunc("GET /review/entries", rt.listReviewEntries)
 	mux.HandleFunc("POST /review/entries/{id}/resolve", rt.resolveReviewEntry)
 	mux.HandleFunc("POST /review/entries/{id}/discard", rt.discardReviewEntry)
+	mux.HandleFunc("POST /review/entries/{id}/resolve-period", rt.resolveReviewPeriod)
 	mux.HandleFunc("GET /jobs/", rt.getJobByPath)
 	mux.HandleFunc("GET /jobs/{id}/parsed", rt.jobParsed)
 	mux.HandleFunc("GET /jobs/{id}/manifest", rt.jobManifest)

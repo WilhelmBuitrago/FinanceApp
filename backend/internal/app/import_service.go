@@ -78,6 +78,7 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 			DateOriginal        string `json:"date_original"`
 			DescriptionOriginal string `json:"description_original"`
 			AmountOriginal      string `json:"amount_original"`
+			AmountNormalized    int64  `json:"amount_normalized"`
 			PageNumber          int    `json:"page_number"`
 			Reason              string `json:"reason"`
 		} `json:"review_required"`
@@ -219,6 +220,7 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 			RawDescription:        strPtr(rv.DescriptionOriginal),
 			RawDate:               strPtr(rv.DateOriginal),
 			NormalizedDescription: strPtr(rv.DescriptionOriginal),
+			NormalizedAmountMinor: int64Ptr(rv.AmountNormalized),
 			PageNumber:            int64Ptr(int64(rv.PageNumber)),
 			ExtractionID:          strPtr(processingID),
 			ReviewStatus:          "REVIEW_REQUIRED",

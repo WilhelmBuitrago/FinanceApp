@@ -11,6 +11,7 @@ import (
 
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/domain"
+	"financeapp/backend/internal/log"
 	"financeapp/backend/internal/repositories"
 )
 
@@ -139,6 +140,143 @@ func (s *ReviewService) Resolve(ctx context.Context, itemID string, description 
 func (s *ReviewService) Discard(ctx context.Context, itemID string) error {
 	repo := repositories.NewReviewItemsRepository(&repositories.DB{Querier: db.New(s.db)})
 	return repo.Discard(ctx, itemID, time.Now().UTC().Format(time.RFC3339))
+}
+
+// documentPeriodPayload is what a DOCUMENT_PERIOD item carries: the raw
+// period the processor could not read, plus the ids the resolution needs.
+type documentPeriodPayload struct {
+	RawPeriod  string `json:"raw_period"`
+	Reason     string `json:"reason"`
+	DocumentID string `json:"document_id"`
+	AccountID  string `json:"account_id"`
+}
+
+// ResolvePeriod records the human-confirmed month/year for a parked
+// statement period and derives against it the parked movement dates of
+// THAT document: the day comes from the movement's raw date, the month must
+// be the confirmed one, and the day must exist in that month of that year.
+// The movements that fit are imported in the same transaction and their
+// entries and queue items are marked resolved; the ones that do not fit
+// stay parked for individual human review. Already-imported movements are
+// never touched.
+func (s *ReviewService) ResolvePeriod(ctx context.Context, itemID string, month, year int) error {
+	if month < 1 || month > 12 {
+		return fmt.Errorf("month out of range: %d", month)
+	}
+	if year < 2000 || year > 2100 {
+		return fmt.Errorf("year out of range: %d", year)
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	txQuerier := db.New(tx)
+	itemsRepo := repositories.NewReviewItemsRepository(&repositories.DB{Querier: txQuerier})
+
+	item, err := itemsRepo.Get(ctx, itemID)
+	if err != nil {
+		return err
+	}
+	if item.Kind != reviewKindDocumentPeriod {
+		return fmt.Errorf("review item %s is not a document period item: kind %s", itemID, item.Kind)
+	}
+	// The item closes before any money moves: a second submission fails.
+	if err = itemsRepo.Resolve(ctx, itemID, now); err != nil {
+		return err
+	}
+
+	var payload documentPeriodPayload
+	if err := json.Unmarshal([]byte(ptrText(item.PayloadJson)), &payload); err != nil {
+		return fmt.Errorf("read document period payload: %w", err)
+	}
+	if payload.DocumentID == "" || payload.AccountID == "" {
+		return fmt.Errorf("document period payload missing document_id or account_id")
+	}
+
+	start, end := PeriodRangeISO(year, month)
+	if _, err = txQuerier.UpdateDocumentPeriod(ctx, db.UpdateDocumentPeriodParams{
+		ID:          payload.DocumentID,
+		PeriodStart: toNullString(&start),
+		PeriodEnd:   toNullString(&end),
+		UpdatedAt:   now,
+	}); err != nil {
+		return fmt.Errorf("update document period: %w", err)
+	}
+
+	entries, err := txQuerier.ListReviewRequiredByDocument(ctx, payload.DocumentID)
+	if err != nil {
+		return fmt.Errorf("list parked entries: %w", err)
+	}
+	derived := 0
+	for _, entry := range entries {
+		iso, fits := DeriveMovementDate(entry.RawDate.String, year, month)
+		if !fits {
+			continue
+		}
+		var amount int64
+		if entry.NormalizedAmountMinor.Valid {
+			amount = entry.NormalizedAmountMinor.Int64
+		}
+		description := entry.NormalizedDescription.String
+		if description == "" {
+			description = entry.RawDescription.String
+		}
+		fe := domain.FinancialEvent{
+			ID:                 uuid.NewString(),
+			EventType:          classifyEventType(amount),
+			EventDate:          &iso,
+			Status:             "ACTIVE",
+			VerificationStatus: "VERIFIED",
+			Description:        &description,
+			CreatedAt:          now,
+			UpdatedAt:          now,
+		}
+		mv := domain.Movement{
+			ID:               uuid.NewString(),
+			FinancialEventID: fe.ID,
+			AccountID:        payload.AccountID,
+			MovementDate:     iso,
+			AmountMinor:      amount,
+			Description:      &description,
+			Status:           "ACTIVE",
+			CreatedAt:        now,
+			UpdatedAt:        now,
+		}
+		if _, err = writeEventAndMovement(ctx, txQuerier, fe, mv, nil); err != nil {
+			return fmt.Errorf("create derived movement: %w", err)
+		}
+		if err = txQuerier.ResolveSourceEntryDerivedDate(ctx, db.ResolveSourceEntryDerivedDateParams{
+			ID:                    entry.ID,
+			NormalizedDate:        toNullString(&iso),
+			NormalizedDescription: toNullString(&description),
+			NormalizedAmountMinor: sql.NullInt64{Int64: amount, Valid: true},
+			UpdatedAt:             now,
+		}); err != nil {
+			return fmt.Errorf("mark derived entry: %w", err)
+		}
+		if _, err = txQuerier.ResolveReviewItemsBySourceEntry(ctx, db.ResolveReviewItemsBySourceEntryParams{
+			SourceEntryID: toNullString(&entry.ID),
+			ResolvedAt:    toNullString(&now),
+		}); err != nil {
+			return fmt.Errorf("close parked review item: %w", err)
+		}
+		derived++
+	}
+	log.Info(fmt.Sprintf(
+		"Review period resolved document=%s period=%04d-%02d derived=%d parked_left=%d",
+		payload.DocumentID, year, month, derived, len(entries)-derived))
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("commit: %w", err)
+	}
+	return nil
 }
 
 func ptrText(s *string) string {

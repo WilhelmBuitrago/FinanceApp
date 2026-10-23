@@ -137,6 +137,55 @@ func (q *Queries) GetSourceEntry(ctx context.Context, id string) (SourceEntry, e
 	return i, err
 }
 
+const listReviewRequiredByDocument = `-- name: ListReviewRequiredByDocument :many
+SELECT id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date FROM source_entries WHERE document_id = ? AND review_status = 'REVIEW_REQUIRED' ORDER BY row_number
+`
+
+func (q *Queries) ListReviewRequiredByDocument(ctx context.Context, documentID string) ([]SourceEntry, error) {
+	rows, err := q.db.QueryContext(ctx, listReviewRequiredByDocument, documentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SourceEntry
+	for rows.Next() {
+		var i SourceEntry
+		if err := rows.Scan(
+			&i.ID,
+			&i.DocumentID,
+			&i.SourceReference,
+			&i.RawDescription,
+			&i.RawAmountMinor,
+			&i.RawDate,
+			&i.NormalizedDescription,
+			&i.NormalizedAmountMinor,
+			&i.NormalizedDate,
+			&i.PageNumber,
+			&i.RowNumber,
+			&i.Section,
+			&i.ExtractionID,
+			&i.MetadataJson,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ReviewStatus,
+			&i.SourceKey,
+			&i.CorrectedDescription,
+			&i.CorrectedAmountMinor,
+			&i.CorrectedDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSourceEntriesByDocument = `-- name: ListSourceEntriesByDocument :many
 SELECT id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date FROM source_entries WHERE document_id = ?
 `
@@ -184,4 +233,29 @@ func (q *Queries) ListSourceEntriesByDocument(ctx context.Context, documentID st
 		return nil, err
 	}
 	return items, nil
+}
+
+const resolveSourceEntryDerivedDate = `-- name: ResolveSourceEntryDerivedDate :exec
+UPDATE source_entries
+SET normalized_date = ?, normalized_description = ?, normalized_amount_minor = ?, review_status = 'RESOLVED', updated_at = ?
+WHERE id = ?
+`
+
+type ResolveSourceEntryDerivedDateParams struct {
+	NormalizedDate        sql.NullString `json:"normalized_date"`
+	NormalizedDescription sql.NullString `json:"normalized_description"`
+	NormalizedAmountMinor sql.NullInt64  `json:"normalized_amount_minor"`
+	UpdatedAt             string         `json:"updated_at"`
+	ID                    string         `json:"id"`
+}
+
+func (q *Queries) ResolveSourceEntryDerivedDate(ctx context.Context, arg ResolveSourceEntryDerivedDateParams) error {
+	_, err := q.db.ExecContext(ctx, resolveSourceEntryDerivedDate,
+		arg.NormalizedDate,
+		arg.NormalizedDescription,
+		arg.NormalizedAmountMinor,
+		arg.UpdatedAt,
+		arg.ID,
+	)
+	return err
 }

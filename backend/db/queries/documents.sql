@@ -31,3 +31,8 @@ SELECT id, account_id, document_type, institution, document_name, period_start, 
 
 -- name: ListDocumentsByAccount :many
 SELECT id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at FROM documents WHERE account_id = ? ORDER BY document_date DESC;
+
+-- name: UpdateDocumentPeriod :one
+UPDATE documents SET period_start = ?, period_end = ?, updated_at = ?
+WHERE id = ?
+RETURNING id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at;

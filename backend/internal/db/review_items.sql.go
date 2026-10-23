@@ -130,3 +130,21 @@ func (q *Queries) ResolveReviewItem(ctx context.Context, arg ResolveReviewItemPa
 	}
 	return result.RowsAffected()
 }
+
+const resolveReviewItemsBySourceEntry = `-- name: ResolveReviewItemsBySourceEntry :execrows
+UPDATE review_items SET status = 'RESOLVED', resolved_at = ?
+WHERE source_entry_id = ? AND status = 'PENDING'
+`
+
+type ResolveReviewItemsBySourceEntryParams struct {
+	ResolvedAt    sql.NullString `json:"resolved_at"`
+	SourceEntryID sql.NullString `json:"source_entry_id"`
+}
+
+func (q *Queries) ResolveReviewItemsBySourceEntry(ctx context.Context, arg ResolveReviewItemsBySourceEntryParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, resolveReviewItemsBySourceEntry, arg.ResolvedAt, arg.SourceEntryID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}

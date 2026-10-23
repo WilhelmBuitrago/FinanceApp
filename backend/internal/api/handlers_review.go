@@ -18,6 +18,7 @@ type reviewResolver interface {
 	Submit(ctx context.Context, kind string, payload any, sourceEntryID *string) (string, error)
 	Resolve(ctx context.Context, itemID string, description string, amountMinor int64, date string, eventType string, accountID string, categoryID *string) (domain.Movement, error)
 	Discard(ctx context.Context, itemID string) error
+	ResolvePeriod(ctx context.Context, itemID string, month, year int) error
 }
 
 func (rt *router) listReviewEntries(w http.ResponseWriter, r *http.Request) {
@@ -78,4 +79,32 @@ func (rt *router) discardReviewEntry(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Info(fmt.Sprintf("[REVIEW DISCARD] entry=%s", id))
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// resolveReviewPeriod closes a DOCUMENT_PERIOD item: the human supplies the
+// statement month and year (ABR 2026), and the backend derives the full
+// period range and the parked movement dates of that document against it.
+func (rt *router) resolveReviewPeriod(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var req struct {
+		Month int `json:"month"`
+		Year  int `json:"year"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
+		return
+	}
+	if req.Month < 1 || req.Month > 12 || req.Year < 2000 || req.Year > 2100 {
+		http.Error(w, `{"error":"month 1-12 and a four-digit year are required"}`, http.StatusBadRequest)
+		return
+	}
+	if err := rt.reviews.ResolvePeriod(r.Context(), id, req.Month, req.Year); err != nil {
+		log.Info(fmt.Sprintf("[REVIEW PERIOD] failed id=%s err=%v", id, err))
+		writeRepoError(w, err)
+		return
+	}
+	log.Info(fmt.Sprintf("[REVIEW PERIOD] resolved id=%s month=%d year=%d", id, req.Month, req.Year))
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"status":"RESOLVED","id":"` + id + `"}`))
 }

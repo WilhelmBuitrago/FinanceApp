@@ -22,3 +22,7 @@ WHERE id = ? AND status = 'PENDING';
 -- name: DiscardReviewItem :execrows
 UPDATE review_items SET status = 'DISCARDED', resolved_at = ?
 WHERE id = ? AND status = 'PENDING';
+
+-- name: ResolveReviewItemsBySourceEntry :execrows
+UPDATE review_items SET status = 'RESOLVED', resolved_at = ?
+WHERE source_entry_id = ? AND status = 'PENDING';
