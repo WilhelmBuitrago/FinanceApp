@@ -27,7 +27,6 @@ const PRODUCT_LABELS: Record<string, string> = {
   BANK_ACCOUNT: 'Cuenta Nu',
   CREDIT_CARD: 'Tarjeta de crédito Nu',
 };
-
 export function NewAccountDrawer({ onClose, onCreated }: NewAccountDrawerProps) {
   const institutions = useInstitutions();
 
@@ -49,10 +48,9 @@ export function NewAccountDrawer({ onClose, onCreated }: NewAccountDrawerProps) 
 
   const accountName = useMemo(() => {
     if (!effectiveInstitution) return '';
-    const productLabel = PRODUCT_LABELS[effectiveType] ?? effectiveType;
     // Name derives from institution, not user input
     return `${effectiveInstitution.name}`;
-  }, [effectiveInstitution, effectiveType]);
+  }, [effectiveInstitution]);
 
   const submit = async () => {
     if (!effectiveCode || !effectiveType || !accountName) return;

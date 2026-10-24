@@ -284,7 +284,7 @@ export default function TransactionsPage() {
                       {mv.Description ?? '—'}
                     </td>
                     <td className="truncate px-3 py-2 text-ink-2">
-                      {(mv as any).categoryName ?? '—'}
+                      {mv.categoryName || '—'}
                     </td>
                     <td className="truncate px-3 py-2 text-ink-2" title={accountNames.get(mv.AccountID) ?? undefined}>
                       {accountNames.get(mv.AccountID) ?? '—'}

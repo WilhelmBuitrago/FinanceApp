@@ -26,7 +26,6 @@ export default function SettingsPage() {
   // Categorías desde backend
   const [categories, setCategories] = useState<any[]>([]);
   const [newCat, setNewCat] = useState({ name: '', type: 'EXPENSE' });
-  const [loadingCats, setLoadingCats] = useState(true);
 
   useEffect(() => {
     fetch('http://localhost:8081/categories')
@@ -38,8 +37,7 @@ export default function SettingsPage() {
           type: (c.category_type ?? c.CategoryType ?? '').toUpperCase()
         }));
         setCategories(norm);
-      })
-      .finally(()=> setLoadingCats(false));
+      });
   }, []);
 
   const addCategory = async () => {
@@ -111,7 +109,7 @@ export default function SettingsPage() {
     setUpdateProgress(`Descargando versión ${updateAvailable.version}...`);
     try {
       // El plugin permite callback de progreso
-      await updateAvailable.downloadAndInstall((event) => {
+      await updateAvailable.downloadAndInstall((event: { data?: { progress?: { percent?: number } } }) => {
         const percent = event?.data?.progress?.percent ?? 0;
         if (percent) {
           setUpdateProgress(`Descargando ${updateAvailable.version}... ${Math.round(percent * 100)}%`);
