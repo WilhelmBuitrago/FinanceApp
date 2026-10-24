@@ -15,7 +15,10 @@ function jsonResponse(body: unknown, status: number): Response {
 
 describe('fetchJson (through the api helpers)', () => {
   it('returns the parsed body on success', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ ok: true }, 200)));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ ok: true }, 200)),
+    );
     await expect(apiGet('/x')).resolves.toEqual({ ok: true });
   });
 
@@ -32,7 +35,10 @@ describe('fetchJson (through the api helpers)', () => {
   });
 
   it('throws ApiError carrying status and body on failure', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ error: 'duplicate' }, 409)));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ error: 'duplicate' }, 409)),
+    );
     await expect(apiGet('/x')).rejects.toMatchObject({
       name: 'ApiError',
       status: 409,
@@ -43,9 +49,12 @@ describe('fetchJson (through the api helpers)', () => {
   });
 
   it('propagates a network failure as-is', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => {
-      throw new TypeError('Failed to fetch');
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      }),
+    );
     await expect(apiGet('/x')).rejects.toThrow('Failed to fetch');
   });
 });

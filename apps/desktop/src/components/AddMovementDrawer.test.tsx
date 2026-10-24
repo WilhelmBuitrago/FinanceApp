@@ -34,9 +34,7 @@ beforeEach(() => {
 });
 
 function setup(onDuplicate = vi.fn(), onClose = vi.fn()) {
-  render(
-    <AddMovementDrawer accounts={accounts} onClose={onClose} onDuplicate={onDuplicate} />,
-  );
+  render(<AddMovementDrawer accounts={accounts} onClose={onClose} onDuplicate={onDuplicate} />);
   return { onDuplicate, onClose };
 }
 
