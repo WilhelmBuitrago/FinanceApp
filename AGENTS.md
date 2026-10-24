@@ -125,3 +125,16 @@ Rules:
 - **Go**: `go` is on PATH and the module builds with it (verified:
   `go build ./...`, `go vet ./...`, `go test ./...` from `backend/`).
 - **Node**: `npm run build` from `apps/desktop/` (verified working).
+
+### Per-component commands (hard rule)
+
+- **Backend (Go)**: every command runs from `backend/`, the module root:
+  `go build ./...`, `go vet ./...`, `gofmt -l .`, `golangci-lint run ./...`,
+  `sqlc generate` (and `sqlc diff` to verify). The binary is started with
+  `go run ./cmd/financeapp` from `backend/`, never from the repo root.
+- **Desktop (`apps/desktop`)**: in local developer mode **the build is
+  always `npm run build`**, which runs `tsc --noEmit` before bundling. A
+  bare `vite build` silences type errors: that omission already produced
+  one broken commit (ff875da, fixed in cd81ddd), and this rule exists so
+  it never happens again. The standard frontend verification is
+  `npm run build`, `npm run lint` and `npm test`.
