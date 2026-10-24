@@ -9,10 +9,8 @@ import {
   useRecentDocuments,
   useRecentMovements,
 } from '../hooks/useDashboard';
-import { getCategories } from '../api/categories';
-import { ApiError } from '../api/client';
-import { createMovement } from '../api/movements';
-import { getReviewEntries, type ReviewItem } from '../api/review';
+import { AddMovementDrawer } from '../components/AddMovementDrawer';
+import { useReviewNotifications } from '../hooks/useReviewNotifications';
 import { formatDate } from '../lib/formatDate';
 import { formatPeriod } from '../lib/formatPeriod';
 import { formatSignedMoney } from '../lib/formatMoney';
@@ -55,49 +53,14 @@ export default function DashboardPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [addMovementOpen, setAddMovementOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<string[]>([]);
-  const [form, setForm] = useState({cantidad:'', tipo:'Ingreso', cuenta:'', categoria:'', descripcion:'', fecha:''});
-  const [categories, setCategories] = useState<any[]>([]);
+  const { notifications, notify } = useReviewNotifications();
   const accounts = useAccounts();
-
-  useEffect(() => {
-    if (accounts.data && accounts.data.length > 0 && !form.cuenta) {
-      setForm(f => ({...f, cuenta: accounts.data[0].ID}));
-    }
-  }, [accounts.data]);
   const cashFlow = useCashFlow();
   const incomeDist = useIncomeDistribution();
   const expenseDist = useExpenseDistribution();
   const recentMovements = useRecentMovements();
   const recentDocuments = useRecentDocuments();
   const movements = useMovements();
-
-  useEffect(() => {
-    getCategories()
-      .then(data => {
-        const norm = (data || []).map(c => ({
-          id: c.ID,
-          name: c.Name,
-          category_type: (c.CategoryType ?? '').toUpperCase()
-        }));
-        setCategories(norm);
-      })
-      .catch(()=>{});
-    // Notifications come from the real review queue (three triggers), not
-    // from client-side storage.
-    getReviewEntries()
-      .then(items => {
-        const texts = (items || []).map((it: ReviewItem) => {
-          let p:any = {};
-          try { p = JSON.parse(it.PayloadJson || '{}'); } catch { /* payload libre */ }
-          if (it.Kind === 'CATEGORY') return `Movimiento sin categoría: revisá en Revisión`;
-          if (it.Kind === 'DUPLICATE') return `Movimiento duplicado: quedó en Revisión`;
-          return `Extracción requiere verificación (${p.reason || 'movimiento no normalizado'})`;
-        });
-        setNotifications(texts);
-      })
-      .catch(()=>{});
-  }, []);
 
   const accountNames = useMemo(() => {
     const map = new Map<string, string>();
@@ -433,53 +396,11 @@ export default function DashboardPage() {
       )}
       {/* Add Movement Drawer */}
       {addMovementOpen && (
-        <div className="fixed inset-0 z-[10000] flex">
-          <div className="absolute inset-0 bg-black/40 z-0" onClick={() => setAddMovementOpen(false)} />
-          <div className="ml-auto h-full w-[420px] bg-surface border-l border-line p-6 overflow-auto relative z-10" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-4">Agregar movimiento</h2>
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              const amount = Number(parseFloat(form.cantidad).toFixed(2));
-              if (!amount || amount <= 0) return alert('Cantidad debe ser positiva');
-              const sign = form.tipo === 'Egreso' ? -1 : 1;
-              const amountMinor = Math.round(amount * 100) * sign;
-              try {
-                await createMovement({
-                  amount_minor: amountMinor,
-                  type: form.tipo === 'Ingreso' ? 'INCOME' : form.tipo === 'Egreso' ? 'EXPENSE' : 'TRANSFER',
-                  account_id: form.cuenta,
-                  description: form.descripcion,
-                  date: form.fecha,
-                  category_id: form.categoria
-                });
-                window.location.reload();
-              } catch (err) {
-                if (err instanceof ApiError && err.status === 409) {
-                  // The backend parks the duplicate in the review queue; the UI
-                  // only notifies (no client-side queue to lose).
-                  setNotifications(n => [...n, `Movimiento duplicado detectado el ${form.fecha} por $${amount}. Quedó en Revisión.`]);
-                  setAddMovementOpen(false);
-                  return;
-                }
-                // Same copy as before: the raw server body when there is one.
-                const detail = err instanceof ApiError && typeof err.response === 'string'
-                  ? err.response
-                  : (err instanceof Error ? err.message : String(err));
-                alert('Error al crear movimiento: ' + detail);
-              }
-            }}>
-              <div className="space-y-4">
-                <div><label className="text-sm">Cantidad *</label><input type="number" min="0" step="0.01" required value={form.cantidad} onChange={e=>setForm({...form, cantidad:e.target.value})} className="w-full bg-surface border border-line rounded px-2 py-1 text-ink" /></div>
-                <div><label className="text-sm">Tipo *</label><select value={form.tipo} onChange={e=>setForm({...form, tipo:e.target.value})} className="w-full bg-surface border border-line rounded px-2 py-1 text-ink"><option>Ingreso</option><option>Egreso</option>{accounts.data && accounts.data.length > 1 && <option>Transferencia</option>}</select></div>
-                <div><label className="text-sm">Cuenta *</label><select value={form.cuenta} onChange={e=>setForm({...form, cuenta:e.target.value})} className="w-full bg-surface border border-line rounded px-2 py-1 text-ink">{accounts.data?.map(a => <option key={a.ID} value={a.ID}>{a.Name}</option>)}</select></div>
-                <div><label className="text-sm">Categoría</label><select value={form.categoria} onChange={e=>setForm({...form, categoria:e.target.value})} className="w-full bg-surface border border-line rounded px-2 py-1 text-ink"><option value="">Sin categoría</option>{categories.filter(c => { const typeMap: Record<string, string> = { 'Ingreso':'INCOME','Egreso':'EXPENSE','Transferencia':'TRANSFER' }; return c.category_type === typeMap[form.tipo]; }).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-                <div><label className="text-sm">Descripción</label><input type="text" value={form.descripcion} onChange={e=>setForm({...form, descripcion:e.target.value})} className="w-full bg-surface border border-line rounded px-2 py-1 text-ink" /></div>
-                <div><label className="text-sm">Fecha *</label><input type="date" required value={form.fecha} onChange={e=>setForm({...form, fecha:e.target.value})} className="w-full bg-surface border border-line rounded px-2 py-1 text-ink" /></div>
-                <div className="flex justify-end gap-2 pt-4"><button type="button" onClick={() => setAddMovementOpen(false)} className="px-3 py-1 rounded border">Cancelar</button><button type="submit" className="px-3 py-1 rounded bg-accent-strong text-white">Aceptar</button></div>
-              </div>
-            </form>
-          </div>
-        </div>
+        <AddMovementDrawer
+          accounts={accounts.data ?? []}
+          onClose={() => setAddMovementOpen(false)}
+          onDuplicate={notify}
+        />
       )}
     </div>
   );
