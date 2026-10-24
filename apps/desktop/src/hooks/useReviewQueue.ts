@@ -1,0 +1,142 @@
+import { useEffect, useState } from 'react';
+
+import { getAccounts } from '../api/accounts';
+import { getCategories } from '../api/categories';
+import { ApiError } from '../api/client';
+import {
+  discardReviewEntry,
+  getReviewEntries,
+  resolveReviewCategory,
+  resolveReviewMovement,
+  resolveReviewPeriod,
+  type ReviewItem,
+} from '../api/review';
+import { payloadOf } from '../lib/reviewPayload';
+
+/* All review-page state: the queue, the data its cards need (categories
+   to assign, accounts to correct against), the per-item form, and the
+   four resolutions. The resolutions keep the exact UX they had —alert
+   copy, in-place removal, sidebar badge event. */
+
+export function useReviewQueue() {
+  const [items, setItems] = useState<ReviewItem[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [form, setForm] = useState<Record<string, any>>({});
+  const [selectedCat, setSelectedCat] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    getReviewEntries()
+      .then(d => setItems(d || []))
+      .catch(() => setItems([]));
+    getCategories()
+      .then(d => setCategories((d || []).map(c => ({
+        id: c.ID, name: c.Name,
+        type: (c.CategoryType ?? '').toUpperCase(),
+      }))))
+      .catch(() => {});
+    getAccounts()
+      .then(d => setAccounts(d || []))
+      .catch(() => {});
+  }, []);
+
+  const setField = (id: string, patch: any) =>
+    setForm(f => ({ ...f, [id]: { ...(f[id] || {}), ...patch } }));
+
+  // Refreshing the queue in place also tells the sidebar badge to reload.
+  const dropItem = (id: string) => {
+    setItems(its => its.filter(i => i.ID !== id));
+    window.dispatchEvent(new Event('review-queue-changed'));
+  };
+
+  const resolveMovement = async (item: ReviewItem) => {
+    const p = payloadOf(item);
+    const f = form[item.ID] || {};
+    const description = f.description ?? p.description ?? p.description_original ?? '';
+    const date = f.date ?? p.date ?? p.date_original ?? '';
+    const amountMinor = f.amount !== undefined && f.amount !== ''
+      ? Math.round(Number(f.amount) * 100) * (f.type === 'INCOME' ? 1 : -1)
+      : (p.amount_minor ?? 0);
+    const type = f.type ?? p.type ?? 'EXPENSE';
+    const accountId = f.account ?? p.account_id ?? '';
+    if (!date || !accountId || !type) {
+      alert('Completá fecha, monto y cuenta para confirmar');
+      return;
+    }
+    try {
+      await resolveReviewMovement(item.ID, {
+        description, amount_minor: amountMinor, date, type, account_id: accountId,
+      });
+      dropItem(item.ID);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        alert('Este ítem ya fue resuelto');
+        dropItem(item.ID);
+      } else {
+        alert('Error al confirmar la corrección');
+      }
+    }
+  };
+
+  // Document-level resolution: the human supplies the statement month and
+  // year (ABR 2026); the backend computes the full period and derives the
+  // parked movement dates of that document against it.
+  const resolvePeriod = async (item: ReviewItem) => {
+    const f = form[item.ID] || {};
+    const month = Number(f.month);
+    const year = Number(f.year);
+    if (!month || !year) {
+      alert('Elegí el mes y el año del estado de cuenta');
+      return;
+    }
+    try {
+      await resolveReviewPeriod(item.ID, month, year);
+      dropItem(item.ID);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        alert('Este ítem ya fue resuelto');
+        dropItem(item.ID);
+      } else {
+        alert('Error al confirmar el período');
+      }
+    }
+  };
+
+  const resolveCategory = async (item: ReviewItem, categoryId: string | null) => {
+    try {
+      await resolveReviewCategory(item.ID, categoryId);
+      dropItem(item.ID);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        dropItem(item.ID);
+      } else {
+        alert('Error al resolver la categoría');
+      }
+    }
+  };
+
+  const discard = async (item: ReviewItem) => {
+    try {
+      await discardReviewEntry(item.ID);
+      dropItem(item.ID);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        dropItem(item.ID);
+      }
+    }
+  };
+
+  return {
+    items,
+    categories,
+    accounts,
+    form,
+    setField,
+    selectedCat,
+    setSelectedCat,
+    resolveMovement,
+    resolvePeriod,
+    resolveCategory,
+    discard,
+  };
+}
