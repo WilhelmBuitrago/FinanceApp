@@ -1,6 +1,24 @@
 /// <reference types="vite/client" />
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8081';
 
+/* Every call is traced with the same grammar the backend HTTP middleware
+   writes to its daily log ([HTTP] METHOD path -> status duration), so a
+   frontend request and its backend handling read as one story in the
+   console and the log file. No payloads: only method, path, status, time. */
+
+function elapsedMs(started: number): number {
+  return Math.round(performance.now() - started);
+}
+
+function errorLabel(data: unknown): string {
+  if (typeof data === 'string') return data.slice(0, 120);
+  if (data && typeof data === 'object' && 'error' in data) {
+    const msg = (data as { error?: unknown }).error;
+    return typeof msg === 'string' ? msg : '';
+  }
+  return '';
+}
+
 export class ApiError extends Error {
   status: number;
   response?: unknown;
@@ -13,10 +31,21 @@ export class ApiError extends Error {
 }
 
 export async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
-  const res = await fetch(input, init);
+  const method = init?.method ?? 'GET';
+  const path = typeof input === 'string' ? new URL(input).pathname : new URL(input.url).pathname;
+  const started = performance.now();
+  let res: Response;
+  try {
+    res = await fetch(input, init);
+  } catch (err) {
+    console.error(`[HTTP] ${method} ${path} FAILED (${elapsedMs(started)}ms): ${String(err)}`);
+    throw err;
+  }
+  const ms = elapsedMs(started);
   // 204/205 carry no body by definition — some servers still set a
   // Content-Type header, which must NOT trigger a JSON parse of "".
   if (res.status === 204 || res.status === 205) {
+    console.info(`[HTTP] ${method} ${path} -> ${res.status} (${ms}ms)`);
     return undefined as T;
   }
   const contentType = res.headers.get('content-type') ?? '';
@@ -27,8 +56,10 @@ export async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Prom
     data = await res.text();
   }
   if (!res.ok) {
+    console.warn(`[HTTP] ${method} ${path} -> ${res.status} (${ms}ms) ERROR ${errorLabel(data)}`);
     throw new ApiError(`Request failed with ${res.status}`, res.status, data);
   }
+  console.info(`[HTTP] ${method} ${path} -> ${res.status} (${ms}ms)`);
   return data as T;
 }
 

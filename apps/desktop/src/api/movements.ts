@@ -1,4 +1,4 @@
-import { apiGet, apiDelete, apiPut } from './client';
+import { apiGet, apiDelete, apiPut, apiPost } from './client';
 import type { Movement } from '../types/movement';
 
 export async function getMovements(): Promise<Movement[]> {
@@ -13,6 +13,22 @@ export async function getRecentMovements(): Promise<Movement[]> {
 // lives on the financial event behind the movement; the backend moves it.
 export async function setMovementCategory(id: string, categoryId: string | null): Promise<void> {
   await apiPut<void>(`/movements/${id}/category`, { categoryId });
+}
+
+export interface CreateMovementInput {
+  amount_minor: number;
+  type: string; // INCOME | EXPENSE | TRANSFER
+  account_id: string;
+  description: string;
+  date: string;
+  category_id?: string;
+}
+
+// A colliding movement answers 409 with the parked review item: the error
+// carries it (ApiError.response.review_item_id) so the UI can say where
+// the duplicate went.
+export async function createMovement(input: CreateMovementInput): Promise<{ id: string }> {
+  return apiPost<{ id: string }>('/movements', input);
 }
 
 export async function deleteMovement(id: string): Promise<void> {

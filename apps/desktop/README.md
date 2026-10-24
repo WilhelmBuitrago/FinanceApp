@@ -20,12 +20,14 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`client.ts`](./src/api/client.ts) — fetch base, JSON y manejo de errores.
     - [`accounts.ts`](./src/api/accounts.ts) — cuentas bancarias y de tarjeta.
     - [`categories.ts`](./src/api/categories.ts) — categorías del usuario.
+    - [`client.ts`](./src/api/client.ts) — fetch base, JSON, errores y traza HTTP.
     - [`dashboard.ts`](./src/api/dashboard.ts) — flujo de caja y distribuciones.
     - [`documents.ts`](./src/api/documents.ts) — documentos importados.
     - [`financialEvents.ts`](./src/api/financialEvents.ts) — eventos financieros.
     - [`institutions.ts`](./src/api/institutions.ts) — instituciones soportadas.
     - [`jobs.ts`](./src/api/jobs.ts) — trabajos de importación.
     - [`movements.ts`](./src/api/movements.ts) — movimientos.
+    - [`review.ts`](./src/api/review.ts) — cola de revisión humana.
     - [`sourceEntries.ts`](./src/api/sourceEntries.ts) — entradas de origen.
     - [`admin.ts`](./src/api/admin.ts) — operaciones administrativas (purga).
   - **`app/`** — armado de la aplicación.
