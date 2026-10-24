@@ -136,5 +136,25 @@ Rules:
   always `npm run build`**, which runs `tsc --noEmit` before bundling. A
   bare `vite build` silences type errors: that omission already produced
   one broken commit (ff875da, fixed in cd81ddd), and this rule exists so
-  it never happens again. The standard frontend verification is
-  `npm run build`, `npm run lint` and `npm test`.
+  it never happens again.
+
+### Mandatory verification battery
+
+After any change to a component, run that component's battery from its
+root and report the evidence (exit codes and counts). A change without
+green evidence is not done. State of record on 2026-10-24: all three
+batteries green.
+
+- **Backend** (from `backend/`): `gofmt -l .` (empty = formatting OK),
+  `goimports -l .` (empty = imports OK), `go build ./...`,
+  `go vet ./...`, `go test -count=1 ./...`, `golangci-lint run ./...`
+  (0 findings), and `sqlc diff` (must stay clean) whenever migrations or
+  `backend/db/queries/` changed.
+- **Processor** (always the env interpreter, never bare `python`):
+  `<python.exe> -m compileall -q apps/processor` (everything compiles),
+  `<python.exe> -m tabnanny -q apps/processor` (consistent indentation),
+  and the six suites `<python.exe> tests/<file>.py`. Full PEP8 linting
+  (ruff/flake8/black) is NOT installed in the env: installing it is a
+  maintainer decision, not an agent action.
+- **Desktop** (from `apps/desktop/`): `npm run build` (the type gate),
+  `npm run lint` (0 problems), `npm test`, `npm run format:check`.
