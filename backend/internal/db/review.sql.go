@@ -10,54 +10,6 @@ import (
 	"database/sql"
 )
 
-const listReviewEntries = `-- name: ListReviewEntries :many
-SELECT id, document_id, raw_description, raw_date, page_number, metadata_json, created_at
-FROM source_entries
-WHERE review_status = 'REVIEW_REQUIRED'
-ORDER BY created_at
-`
-
-type ListReviewEntriesRow struct {
-	ID             string         `json:"id"`
-	DocumentID     string         `json:"document_id"`
-	RawDescription sql.NullString `json:"raw_description"`
-	RawDate        sql.NullString `json:"raw_date"`
-	PageNumber     sql.NullInt64  `json:"page_number"`
-	MetadataJson   sql.NullString `json:"metadata_json"`
-	CreatedAt      string         `json:"created_at"`
-}
-
-func (q *Queries) ListReviewEntries(ctx context.Context) ([]ListReviewEntriesRow, error) {
-	rows, err := q.db.QueryContext(ctx, listReviewEntries)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListReviewEntriesRow
-	for rows.Next() {
-		var i ListReviewEntriesRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.DocumentID,
-			&i.RawDescription,
-			&i.RawDate,
-			&i.PageNumber,
-			&i.MetadataJson,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const resolveSourceEntry = `-- name: ResolveSourceEntry :execrows
 UPDATE source_entries
 SET review_status = 'RESOLVED',

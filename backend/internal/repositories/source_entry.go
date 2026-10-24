@@ -77,6 +77,29 @@ func (r *SourceEntryRepository) ListByDocument(ctx context.Context, documentID s
 	return out, nil
 }
 
+// Resolve parks the human correction on the source entry. Zero rows
+// affected means the entry is no longer parked: ErrConflict, so a second
+// submission cannot apply the correction twice.
+func (r *SourceEntryRepository) Resolve(ctx context.Context, id string, correctedDescription *string, correctedAmountMinor *int64, correctedDate *string, updatedAt string) error {
+	if r.db.Querier == nil {
+		return ErrUnavailable
+	}
+	affected, err := r.db.Querier.ResolveSourceEntry(ctx, db.ResolveSourceEntryParams{
+		ID:                   id,
+		CorrectedDescription: toNullString(correctedDescription),
+		CorrectedAmountMinor: toNullInt64(correctedAmountMinor),
+		CorrectedDate:        toNullString(correctedDate),
+		UpdatedAt:            updatedAt,
+	})
+	if err != nil {
+		return translateError(err)
+	}
+	if affected == 0 {
+		return ErrConflict
+	}
+	return nil
+}
+
 func mapDBSourceEntryToDomain(s db.SourceEntry) domain.SourceEntry {
 	return domain.SourceEntry{
 		ID:                    s.ID,

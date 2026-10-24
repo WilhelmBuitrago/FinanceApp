@@ -350,6 +350,6 @@ func markSourceEntryResolved(ctx context.Context, q db.Querier, item repositorie
 	if item.SourceEntryID == nil {
 		return nil
 	}
-	repo := repositories.NewReviewRepository(&repositories.DB{Querier: q})
+	repo := repositories.NewSourceEntryRepository(&repositories.DB{Querier: q})
 	return repo.Resolve(ctx, *item.SourceEntryID, &correction.Description, &correction.AmountMinor, &correction.Date, time.Now().UTC().Format(time.RFC3339))
 }

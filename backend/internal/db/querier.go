@@ -50,7 +50,6 @@ type Querier interface {
 	ListPendingReviewItems(ctx context.Context) ([]ReviewItem, error)
 	ListRelationsByEvent(ctx context.Context, arg ListRelationsByEventParams) ([]EventRelation, error)
 	ListRelationsByMovement(ctx context.Context, arg ListRelationsByMovementParams) ([]MovementRelation, error)
-	ListReviewEntries(ctx context.Context) ([]ListReviewEntriesRow, error)
 	ListReviewRequiredByDocument(ctx context.Context, documentID string) ([]SourceEntry, error)
 	ListSourceEntriesByDocument(ctx context.Context, documentID string) ([]SourceEntry, error)
 	ResolveReviewItem(ctx context.Context, arg ResolveReviewItemParams) (int64, error)
