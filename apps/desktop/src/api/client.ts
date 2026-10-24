@@ -46,6 +46,14 @@ export function apiPost<T>(path: string, body: unknown): Promise<T> {
   });
 }
 
+export function apiPut<T>(path: string, body: unknown): Promise<T> {
+  return fetchJson<T>(`${BASE_URL}${path}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
 export function apiPostForm<T>(path: string, form: FormData): Promise<T> {
   return fetchJson<T>(`${BASE_URL}${path}`, {
     method: 'POST',

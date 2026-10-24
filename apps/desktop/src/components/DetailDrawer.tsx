@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { getCategories } from '../api/categories';
 import { getDocument } from '../api/documents';
 import { getFinancialEvent } from '../api/financialEvents';
+import { setMovementCategory } from '../api/movements';
 import { getSourceEntry } from '../api/sourceEntries';
 import { useResource } from '../hooks/useResource';
 import { eventTypeLabel } from '../lib/eventType';
@@ -16,6 +18,7 @@ import {
   DrawerShell,
 } from './DrawerShell';
 import { StatusBadge } from './ui/StatusBadge';
+import type { Category } from '../types/category';
 import type { Movement } from '../types/movement';
 
 /* Traceability drawer — the product's core navigation:
@@ -63,6 +66,46 @@ export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerPro
   const entry = useResource(movement?.SourceEntryID ?? null, getSourceEntry);
   const document_ = useResource(entry.status === 'ready' ? entry.data.DocumentID : null, getDocument);
 
+  // Category assignment (v0.1.1): the human picks one of their own
+  // categories for this movement, or leaves it uncategorized. Leaving it
+  // uncategorized is a valid state — a missing category never forces the
+  // movement into the review queue. The category lives on the financial
+  // event; PUT /movements/{id}/category moves it there.
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getCategories()
+      .then((data) => { if (!cancelled) setCategories(data); })
+      .catch(() => { if (!cancelled) setCategories([]); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Same filtering the create form uses: only categories of the movement's
+  // event type. Until the event resolves, every category stays available.
+  const eventType = event.status === 'ready' ? event.data.EventType : '';
+  const categoryOptions = eventType
+    ? categories.filter((c) => (c.CategoryType ?? '').toUpperCase() === eventType)
+    : categories;
+
+  const assignCategory = async (categoryId: string | null) => {
+    if (!movement) return;
+    setSavingCategory(true);
+    setCategoryError(null);
+    try {
+      await setMovementCategory(movement.ID, categoryId);
+      // The table behind the drawer shows the category name, so it must
+      // reflect the change: same refresh contract as the delete below.
+      window.location.reload();
+    } catch {
+      setCategoryError('No se pudo guardar la categoría.');
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
   if (!movement) return null;
 
   const amountClass =
@@ -90,6 +133,24 @@ export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerPro
               >
                 {accountName ?? movement.AccountID}
               </Link>
+            </KV>
+            <KV label="Categoría">
+              {categoryError ? (
+                <span className="text-neg">{categoryError}</span>
+              ) : (
+                <select
+                  value={movement.categoryId ?? ''}
+                  onChange={(e) => assignCategory(e.target.value || null)}
+                  disabled={savingCategory}
+                  aria-label="Categoría del movimiento"
+                  className="rounded-tk border border-line bg-bg px-2 py-1 text-body text-ink disabled:opacity-40"
+                >
+                  <option value="">Sin categoría</option>
+                  {categoryOptions.map((c) => (
+                    <option key={c.ID} value={c.ID}>{c.Name}</option>
+                  ))}
+                </select>
+              )}
             </KV>
             <KV label="Estado">
               <StatusBadge status={movement.Status} />
