@@ -106,7 +106,7 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
   - [`Cargo.lock`](./src-tauri/Cargo.lock) — dependencias fijadas.
   - [`build.rs`](./src-tauri/build.rs) — script de compilación de Tauri.
   - [`capabilities/default.json`](./src-tauri/capabilities/default.json) — permisos del plugin updater.
-  - [`custom.wxs`](./src-tauri/custom.wxs) — personalización del instalador WiX.
+  - [`main.wxs`](./src-tauri/main.wxs) — plantilla WiX del instalador: acciones de Python, borrado de AppData, UI de desinstalación.
   - **`icons/`** — iconos de la app (Windows y Android).
 - `dist/` — salida de `npm run build` (ignorada por git).
 - `node_modules/` — dependencias instaladas (ignorada por git).

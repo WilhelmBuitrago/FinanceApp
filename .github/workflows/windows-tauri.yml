@@ -145,8 +145,7 @@ jobs:
 
           $paths = @(
             "apps/desktop/src-tauri/main.wxs",
-            "apps/desktop/src-tauri/tauri.conf.json",
-            "apps/desktop/src-tauri/custom.wxs"
+            "apps/desktop/src-tauri/tauri.conf.json"
           )
 
           foreach ($path in $paths) {
