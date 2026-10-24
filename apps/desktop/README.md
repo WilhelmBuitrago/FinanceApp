@@ -43,6 +43,7 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`DonutChart.tsx`](./src/components/DonutChart.tsx) — distribuciones.
     - [`ChartCard.tsx`](./src/components/ChartCard.tsx) — tarjeta contenedora de gráficos.
     - [`ConfirmModal.tsx`](./src/components/ConfirmModal.tsx) — confirmación de acciones.
+    - [`AddMovementDrawer.tsx`](./src/components/AddMovementDrawer.tsx) — alta manual de movimiento.
     - [`DetailDrawer.tsx`](./src/components/DetailDrawer.tsx) — panel de detalle.
     - [`DocumentDrawer.tsx`](./src/components/DocumentDrawer.tsx) — detalle de documento.
     - [`ImportDocumentDrawer.tsx`](./src/components/ImportDocumentDrawer.tsx) — flujo de importación.
@@ -54,23 +55,31 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`SummaryStrip.tsx`](./src/components/SummaryStrip.tsx) — franja de totales.
     - [`CopyId.tsx`](./src/components/CopyId.tsx) — copiar identificador.
     - [`icons.tsx`](./src/components/icons.tsx) — iconografía propia.
+    - **`review/`** — una card por tipo de ítem de la cola de revisión.
+      - [`ReviewCategoryCard.tsx`](./src/components/review/ReviewCategoryCard.tsx) — movimiento sin categoría.
+      - [`ReviewPeriodCard.tsx`](./src/components/review/ReviewPeriodCard.tsx) — período de documento no reconocido.
+      - [`ReviewMovementCard.tsx`](./src/components/review/ReviewMovementCard.tsx) — duplicado y extracción.
     - **`ui/`** — primitivas de interfaz.
       - [`EmptyState.tsx`](./src/components/ui/EmptyState.tsx) — estado vacío.
       - [`ErrorState.tsx`](./src/components/ui/ErrorState.tsx) — estado de error.
       - [`SkeletonRows.tsx`](./src/components/ui/SkeletonRows.tsx) — filas de carga.
       - [`StatusBadge.tsx`](./src/components/ui/StatusBadge.tsx) — etiqueta de estado.
   - **`hooks/`** — acceso a datos por recurso.
-    - [`useResource.ts`](./src/hooks/useResource.ts) — hook genérico de recursos.
+    - [`useResource.ts`](./src/hooks/useResource.ts) — hook genérico de recursos (por id, con reintento).
+    - [`useListQuery.ts`](./src/hooks/useListQuery.ts) — hook genérico de listas (el único).
     - [`useAccounts.ts`](./src/hooks/useAccounts.ts) — cuentas.
     - [`useDashboard.ts`](./src/hooks/useDashboard.ts) — datos del dashboard.
     - [`useDocuments.ts`](./src/hooks/useDocuments.ts) — documentos.
     - [`useMovements.ts`](./src/hooks/useMovements.ts) — movimientos.
+    - [`useReviewQueue.ts`](./src/hooks/useReviewQueue.ts) — cola de revisión y sus resoluciones.
+    - [`useReviewNotifications.ts`](./src/hooks/useReviewNotifications.ts) — campana de notificaciones del dashboard.
   - **`lib/`** — utilidades puras de presentación.
     - [`formatMoney.ts`](./src/lib/formatMoney.ts) — formato de montos.
     - [`formatDate.ts`](./src/lib/formatDate.ts) — formato de fechas.
     - [`formatPeriod.ts`](./src/lib/formatPeriod.ts) — formato de períodos.
     - [`accountType.ts`](./src/lib/accountType.ts) — etiquetas de tipo de cuenta.
     - [`eventType.ts`](./src/lib/eventType.ts) — etiquetas de tipo de evento.
+    - [`reviewPayload.ts`](./src/lib/reviewPayload.ts) — parseo defensivo del payload de un ítem en revisión.
   - **`types/`** — contratos TypeScript del backend, un archivo por entidad.
     - [`account.ts`](./src/types/account.ts) — cuenta.
     - [`api.ts`](./src/types/api.ts) — errores de API y estado de consulta.
