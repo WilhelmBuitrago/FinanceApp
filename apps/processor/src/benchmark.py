@@ -2,8 +2,14 @@
 
 import os
 import json
+import sys
 import argparse
-from validation.benchmark import BenchmarkNuParser
+from pathlib import Path
+
+# Run from any working directory: the processor packages live at the root.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from benchmarks.benchmarks import BenchmarkNuParser
 
 
 def discover_processing_ids(artifacts_path: str):
