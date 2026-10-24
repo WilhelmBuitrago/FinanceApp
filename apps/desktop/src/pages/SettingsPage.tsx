@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { purgeAllData } from '../api/admin';
 import { invalidateCollections } from '../lib/dataBus';
+import { progressLabel } from '../lib/updateProgress';
 import type { Category, CategoryOption } from '../types/category';
 import {
   createCategory,
@@ -129,11 +130,9 @@ export default function SettingsPage() {
         }
         if (event.event === 'Progress') {
           downloaded += event.data.chunkLength;
-          const label =
-            total > 0
-              ? `${Math.round((downloaded / total) * 100)}%`
-              : `${Math.round(downloaded / 1024)} KB`;
-          setUpdateProgress(`Descargando ${updateAvailable.version}... ${label}`);
+          setUpdateProgress(
+            `Descargando ${updateAvailable.version}... ${progressLabel(downloaded, total)}`,
+          );
         }
       });
       setUpdateProgress('Instalación completada. Reiniciando...');
