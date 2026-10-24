@@ -136,6 +136,18 @@ func (s *ReviewService) Resolve(ctx context.Context, itemID string, description 
 	return created, nil
 }
 
+// Kind returns the queue item's kind so the HTTP layer can validate the
+// correction per kind before resolving: a CATEGORY item only needs the
+// category; the movement-creating kinds need the full correction.
+func (s *ReviewService) Kind(ctx context.Context, itemID string) (string, error) {
+	repo := repositories.NewReviewItemsRepository(&repositories.DB{Querier: db.New(s.db)})
+	item, err := repo.Get(ctx, itemID)
+	if err != nil {
+		return "", err
+	}
+	return item.Kind, nil
+}
+
 // Discard parks an item as discarded: the human decided it is not real.
 func (s *ReviewService) Discard(ctx context.Context, itemID string) error {
 	repo := repositories.NewReviewItemsRepository(&repositories.DB{Querier: db.New(s.db)})

@@ -16,6 +16,7 @@ import (
 type reviewResolver interface {
 	ListPending(ctx context.Context) ([]repositories.ReviewItemRecord, error)
 	Submit(ctx context.Context, kind string, payload any, sourceEntryID *string) (string, error)
+	Kind(ctx context.Context, itemID string) (string, error)
 	Resolve(ctx context.Context, itemID string, description string, amountMinor int64, date string, eventType string, accountID string, categoryID *string) (domain.Movement, error)
 	Discard(ctx context.Context, itemID string) error
 	ResolvePeriod(ctx context.Context, itemID string, month, year int) error
@@ -45,15 +46,27 @@ func (rt *router) resolveReviewEntry(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
 		return
 	}
-	if req.AccountID == "" || req.Date == "" || req.Description == "" {
-		http.Error(w, `{"error":"account_id, date and description are required"}`, http.StatusBadRequest)
+	// The correction shape depends on the kind: a CATEGORY item only moves
+	// the category on an existing movement, so demanding the movement
+	// fields here made it unresolvable (the frontend correctly sends only
+	// category_id). The kinds that CREATE a movement keep requiring the
+	// full correction.
+	kind, err := rt.reviews.Kind(r.Context(), id)
+	if err != nil {
+		writeLookupError(w, err)
 		return
 	}
-	// The event_type CHECK in the schema accepts INCOME and EXPENSE: validate
-	// here so the caller gets a clear message instead of a constraint crash.
-	if req.Type != "INCOME" && req.Type != "EXPENSE" {
-		http.Error(w, `{"error":"type must be INCOME or EXPENSE"}`, http.StatusBadRequest)
-		return
+	if kind != "CATEGORY" {
+		if req.AccountID == "" || req.Date == "" || req.Description == "" {
+			http.Error(w, `{"error":"account_id, date and description are required"}`, http.StatusBadRequest)
+			return
+		}
+		// The event_type CHECK in the schema accepts INCOME and EXPENSE: validate
+		// here so the caller gets a clear message instead of a constraint crash.
+		if req.Type != "INCOME" && req.Type != "EXPENSE" {
+			http.Error(w, `{"error":"type must be INCOME or EXPENSE"}`, http.StatusBadRequest)
+			return
+		}
 	}
 
 	created, err := rt.reviews.Resolve(r.Context(), id, req.Description, req.AmountMinor, req.Date, req.Type, req.AccountID, req.CategoryID)
