@@ -65,6 +65,7 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - **`ui/`** — primitivas de interfaz.
       - [`EmptyState.tsx`](./src/components/ui/EmptyState.tsx) — estado vacío.
       - [`ErrorState.tsx`](./src/components/ui/ErrorState.tsx) — estado de error.
+      - [`Notice.tsx`](./src/components/ui/Notice.tsx) — aviso transicional inline (reemplaza a `alert`).
       - [`SkeletonRows.tsx`](./src/components/ui/SkeletonRows.tsx) — filas de carga.
       - [`StatusBadge.tsx`](./src/components/ui/StatusBadge.tsx) — etiqueta de estado.
   - **`hooks/`** — acceso a datos por recurso.
@@ -83,6 +84,7 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`accountType.ts`](./src/lib/accountType.ts) — etiquetas de tipo de cuenta.
     - [`eventType.ts`](./src/lib/eventType.ts) — etiquetas de tipo de evento.
     - [`reviewPayload.ts`](./src/lib/reviewPayload.ts) — parseo defensivo del payload de un ítem en revisión.
+    - [`reviewEvents.ts`](./src/lib/reviewEvents.ts) — nombres de eventos compartidos (`REVIEW_QUEUE_CHANGED_EVENT`).
     - [`version.ts`](./src/lib/version.ts) — versión del componente (lee `package.json`).
   - **`test/`** — setup de Vitest (`@testing-library/jest-dom`); los tests viven al lado de cada módulo (`*.test.ts` / `*.test.tsx`).
   - **`types/`** — contratos TypeScript del backend, un archivo por entidad.
@@ -126,8 +128,10 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
 - `npm run lint` **verde**: 0 errores. 28 warnings son deuda documentada en
   `eslint.config.mjs` (los `any` del payload de revisión y las reglas de la
   era React Compiler: `set-state-in-effect`, `purity`).
-- `npm test` **verde**: 16 tests en 5 archivos (payload de revisión, contrato
-  del cliente HTTP, `useListQuery`, la card de CATEGORY, la versión).
+- `npm test` **verde**: 55 tests en 14 archivos (payload de revisión, contrato
+  del cliente HTTP, `useListQuery`, las tres cards de revisión, el drawer de
+  alta —incluida su rama 409—, `useReviewQueue` completo con sus ramas de
+  validación y 409, las utilidades de formato y la versión).
 - `npx prettier --check .` **verde** (CRLF del repo normalizado a LF).
 - La publicación (MSI) la dispara el workflow `windows-tauri.yml` al empujar un
   tag de versión; con el interruptor del usuario, nunca de forma automática
