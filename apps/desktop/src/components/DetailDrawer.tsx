@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { getCategories } from '../api/categories';
 import { getDocument } from '../api/documents';
 import { getFinancialEvent } from '../api/financialEvents';
-import { setMovementCategory } from '../api/movements';
+import { deleteMovement, setMovementCategory } from '../api/movements';
 import { getSourceEntry } from '../api/sourceEntries';
 import { useResource } from '../hooks/useResource';
 import { eventTypeLabel } from '../lib/eventType';
@@ -164,7 +164,6 @@ export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerPro
               onClick={async () => {
                 if (!confirm('¿Eliminar este movimiento? Esta acción no se puede deshacer.')) return;
                 try {
-                  const { deleteMovement } = await import('../api/movements');
                   await deleteMovement(movement.ID);
                   onClose();
                   window.location.reload();

@@ -19,6 +19,7 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
   - **`api/`** — cliente HTTP, un módulo por recurso del backend.
     - [`client.ts`](./src/api/client.ts) — fetch base, JSON y manejo de errores.
     - [`accounts.ts`](./src/api/accounts.ts) — cuentas bancarias y de tarjeta.
+    - [`categories.ts`](./src/api/categories.ts) — categorías del usuario.
     - [`dashboard.ts`](./src/api/dashboard.ts) — flujo de caja y distribuciones.
     - [`documents.ts`](./src/api/documents.ts) — documentos importados.
     - [`financialEvents.ts`](./src/api/financialEvents.ts) — eventos financieros.
@@ -52,12 +53,8 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`CopyId.tsx`](./src/components/CopyId.tsx) — copiar identificador.
     - [`icons.tsx`](./src/components/icons.tsx) — iconografía propia.
     - **`ui/`** — primitivas de interfaz.
-      - [`DataTable.tsx`](./src/components/ui/DataTable.tsx) — tabla de datos.
       - [`EmptyState.tsx`](./src/components/ui/EmptyState.tsx) — estado vacío.
       - [`ErrorState.tsx`](./src/components/ui/ErrorState.tsx) — estado de error.
-      - [`LoadingState.tsx`](./src/components/ui/LoadingState.tsx) — estado de carga.
-      - [`PageHeader.tsx`](./src/components/ui/PageHeader.tsx) — encabezado de página.
-      - [`SearchInput.tsx`](./src/components/ui/SearchInput.tsx) — campo de búsqueda.
       - [`SkeletonRows.tsx`](./src/components/ui/SkeletonRows.tsx) — filas de carga.
       - [`StatusBadge.tsx`](./src/components/ui/StatusBadge.tsx) — etiqueta de estado.
   - **`hooks/`** — acceso a datos por recurso.
@@ -72,13 +69,22 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`formatPeriod.ts`](./src/lib/formatPeriod.ts) — formato de períodos.
     - [`accountType.ts`](./src/lib/accountType.ts) — etiquetas de tipo de cuenta.
     - [`eventType.ts`](./src/lib/eventType.ts) — etiquetas de tipo de evento.
+  - **`types/`** — contratos TypeScript del backend, un archivo por entidad.
+    - [`account.ts`](./src/types/account.ts) — cuenta.
+    - [`api.ts`](./src/types/api.ts) — errores de API y estado de consulta.
+    - [`category.ts`](./src/types/category.ts) — categoría.
+    - [`document.ts`](./src/types/document.ts) — documento.
+    - [`financial-event.ts`](./src/types/financial-event.ts) — evento financiero.
+    - [`import-job.ts`](./src/types/import-job.ts) — trabajo de importación.
+    - [`institution.ts`](./src/types/institution.ts) — institución.
+    - [`movement.ts`](./src/types/movement.ts) — movimiento.
+    - [`source-entry.ts`](./src/types/source-entry.ts) — entrada de origen.
   - **`pages/`** — pantallas enrutadas.
     - [`DashboardPage.tsx`](./src/pages/DashboardPage.tsx) — resumen financiero.
     - [`AccountsPage.tsx`](./src/pages/AccountsPage.tsx) — listado de cuentas.
     - [`AccountDetailPage.tsx`](./src/pages/AccountDetailPage.tsx) — detalle de cuenta.
     - [`TransactionsPage.tsx`](./src/pages/TransactionsPage.tsx) — movimientos.
     - [`DocumentsPage.tsx`](./src/pages/DocumentsPage.tsx) — documentos.
-    - [`ImportPage.tsx`](./src/pages/ImportPage.tsx) — importación de extractos.
     - [`ReviewPage.tsx`](./src/pages/ReviewPage.tsx) — revisión de extracciones.
     - [`ReportsPage.tsx`](./src/pages/ReportsPage.tsx) — reportes.
     - [`SettingsPage.tsx`](./src/pages/SettingsPage.tsx) — configuración.
@@ -98,10 +104,8 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
 
 - Versión del paquete: **0.1.0**. Stack: Tauri 2, React 18, Vite 8, TypeScript 5,
   Tailwind 4, react-router-dom 7.
-- `npm run build` **verde** (2026-10-21): construye en ~10 s, sin errores.
-- Warning conocido: `INEFFECTIVE_DYNAMIC_IMPORT` en `src/api/movements.ts`
-  (importado dinámico y estático a la vez). No rompe nada; el code-splitting de
-  ese módulo no aplica. Pendiente de limpieza.
+- `npm run build` **verde** (2026-10-24): `tsc --noEmit && vite build` en ~11 s,
+  sin errores ni warnings.
 - La publicación (MSI) la dispara el workflow `windows-tauri.yml` al empujar un
   tag de versión; con el interruptor del usuario, nunca de forma automática
   desde acá.
