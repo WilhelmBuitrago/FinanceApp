@@ -1,15 +1,12 @@
 package api
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/log"
-
-	_ "modernc.org/sqlite"
 )
 
 func (rt *router) listCategories(w http.ResponseWriter, r *http.Request) {
@@ -90,15 +87,7 @@ func (rt *router) deleteCategory(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"failed to list affected movements"}`, http.StatusInternalServerError)
 		return
 	}
-	// Soft delete for safety, but we can physically delete for now
-	dbConn, err := sql.Open("sqlite", rt.cfg.DatabasePath)
-	if err != nil {
-		http.Error(w, `{"error":"db open failed"}`, http.StatusInternalServerError)
-		return
-	}
-	defer func() { _ = dbConn.Close() }()
-	_, err = dbConn.ExecContext(r.Context(), "DELETE FROM categories WHERE id = ?", id)
-	if err != nil {
+	if err := rt.categoryRepo.Delete(r.Context(), id); err != nil {
 		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
 		return
 	}

@@ -16,3 +16,6 @@ SELECT id, name, parent_id, category_type, status, created_at, updated_at FROM c
 
 -- name: ListCategories :many
 SELECT id, name, parent_id, category_type, status, created_at, updated_at FROM categories WHERE status = ? ORDER BY name;
+
+-- name: DeleteCategory :exec
+DELETE FROM categories WHERE id = ?;

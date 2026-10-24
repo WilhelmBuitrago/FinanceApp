@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/domain"
@@ -84,4 +85,21 @@ func mapDBFinancialEventToDomain(f db.FinancialEvent) domain.FinancialEvent {
 		CreatedAt:          f.CreatedAt,
 		UpdatedAt:          f.UpdatedAt,
 	}
+}
+
+// SetCategory moves (or clears, with nil) the category on the financial
+// event: the category lives on the event, not on the movement. A missing
+// event affects zero rows and is not an error (same as the raw UPDATE it
+// replaces).
+func (r *FinancialEventRepository) SetCategory(ctx context.Context, eventID string, categoryID *string) error {
+	if r.db.Querier == nil {
+		return ErrUnavailable
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	_, err := r.db.Querier.UpdateFinancialEventCategory(ctx, db.UpdateFinancialEventCategoryParams{
+		ID:         eventID,
+		CategoryID: toNullString(categoryID),
+		UpdatedAt:  now,
+	})
+	return translateError(err)
 }

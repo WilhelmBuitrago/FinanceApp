@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,8 +9,6 @@ import (
 
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/log"
-
-	_ "modernc.org/sqlite"
 )
 
 // movementWriter is satisfied by app.MovementService. The api package cannot
@@ -176,14 +173,7 @@ func (rt *router) setMovementCategory(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"no financial event"}`, http.StatusBadRequest)
 		return
 	}
-	dbConn, err := sql.Open("sqlite", rt.cfg.DatabasePath)
-	if err != nil {
-		http.Error(w, `{"error":"db open"}`, http.StatusInternalServerError)
-		return
-	}
-	defer func() { _ = dbConn.Close() }()
-	_, err = dbConn.ExecContext(r.Context(), "UPDATE financial_events SET category_id = ?, updated_at = ? WHERE id = ?", body.CategoryID, timeNowUTC(), mv.FinancialEventID)
-	if err != nil {
+	if err := rt.eventRepo.SetCategory(r.Context(), mv.FinancialEventID, body.CategoryID); err != nil {
 		http.Error(w, `{"error":"update failed"}`, http.StatusInternalServerError)
 		return
 	}
@@ -192,15 +182,9 @@ func (rt *router) setMovementCategory(w http.ResponseWriter, r *http.Request) {
 
 func (rt *router) deleteMovement(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	dbConn, err := sql.Open("sqlite", rt.cfg.DatabasePath)
-	if err != nil {
-		http.Error(w, `{"error":"db"}`, http.StatusInternalServerError)
-		return
-	}
-	defer func() { _ = dbConn.Close() }()
-	if _, err := dbConn.ExecContext(r.Context(), "DELETE FROM movements WHERE id = ?", id); err != nil {
+	if err := rt.movementRepo.Delete(r.Context(), id); err != nil {
 		log.Info(fmt.Sprintf("[MOVEMENT DELETE] failed id=%s err=%v", id, err))
-		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+		writeRepoError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

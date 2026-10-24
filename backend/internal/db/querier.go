@@ -23,6 +23,7 @@ type Querier interface {
 	CreateMovementRelation(ctx context.Context, arg CreateMovementRelationParams) (MovementRelation, error)
 	CreateReviewItem(ctx context.Context, arg CreateReviewItemParams) error
 	CreateSourceEntry(ctx context.Context, arg CreateSourceEntryParams) (SourceEntry, error)
+	DeleteCategory(ctx context.Context, id string) error
 	DeleteMovement(ctx context.Context, id string) error
 	DiscardReviewItem(ctx context.Context, arg DiscardReviewItemParams) (int64, error)
 	GetAccount(ctx context.Context, id string) (Account, error)

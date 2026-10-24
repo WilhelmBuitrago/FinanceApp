@@ -66,6 +66,16 @@ func (r *CategoryRepository) List(ctx context.Context, status string) ([]domain.
 	return out, nil
 }
 
+// Delete removes a category row. Deleting a category that does not exist
+// affects zero rows and is not an error (SQLite semantics), matching the
+// HTTP layer's expectations.
+func (r *CategoryRepository) Delete(ctx context.Context, id string) error {
+	if r.db.Querier == nil {
+		return ErrUnavailable
+	}
+	return translateError(r.db.Querier.DeleteCategory(ctx, id))
+}
+
 func mapDBCategoryToDomain(c db.Category) domain.Category {
 	return domain.Category{
 		ID:           c.ID,
