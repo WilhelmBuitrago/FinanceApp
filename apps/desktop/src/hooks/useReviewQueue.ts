@@ -12,7 +12,7 @@ import {
   type ReviewItem,
 } from '../api/review';
 import { payloadOf } from '../lib/reviewPayload';
-import { REVIEW_QUEUE_CHANGED_EVENT } from '../lib/reviewEvents';
+import { invalidateCollections } from '../lib/dataBus';
 
 /* All review-page state: the queue, the data its cards need (categories
    to assign, accounts to correct against), the per-item form, and the
@@ -51,10 +51,12 @@ export function useReviewQueue() {
   const setField = (id: string, patch: any) =>
     setForm((f) => ({ ...f, [id]: { ...(f[id] || {}), ...patch } }));
 
-  // Refreshing the queue in place also tells the sidebar badge to reload.
+  // The queue closed this item; every screen that reads the queue or the
+  // movements it produced refetches through the bus. The badge does too —
+  // no custom event needed anymore.
   const dropItem = (id: string) => {
     setItems((its) => its.filter((i) => i.ID !== id));
-    window.dispatchEvent(new Event(REVIEW_QUEUE_CHANGED_EVENT));
+    invalidateCollections('review', 'movements', 'dashboard', 'categories');
   };
 
   const dismissNotice = () => setNotice(null);

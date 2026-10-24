@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { purgeAllData } from '../api/admin';
+import { invalidateCollections } from '../lib/dataBus';
 import {
   createCategory,
   deleteCategory as deleteCategoryApi,
@@ -52,8 +53,9 @@ export default function SettingsPage() {
       const cat = await createCategory(id, newCat.name.trim(), newCat.type);
       setCategories((c) => [...c, cat]);
       setNewCat({ name: '', type: 'EXPENSE' });
-      // Auto-refresh to ensure persistence
-      setTimeout(() => window.location.reload(), 300);
+      // The bus refetches the list from the server (the real persistence
+      // check the old reload did) without tearing the app down.
+      invalidateCollections('categories');
     } catch {
       // A failed create leaves the list untouched, exactly as before.
     }
@@ -63,8 +65,9 @@ export default function SettingsPage() {
     try {
       await deleteCategoryApi(id);
       setCategories((c) => c.filter((x) => x.id !== id));
-      // The backend parks the affected movements in the unified review queue;
-      // the UI only refreshes the list.
+      // The backend parks the affected movements in the unified review
+      // queue: the movement views and the badge refetch through the bus.
+      invalidateCollections('categories', 'movements', 'review');
     } catch {
       // A failed delete leaves the list untouched, exactly as before.
     }

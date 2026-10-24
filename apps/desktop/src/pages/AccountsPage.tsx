@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAccounts } from '../hooks/useAccounts';
 import { useMovements } from '../hooks/useMovements';
 import { accountTypeLabel } from '../lib/accountType';
+import { invalidateCollections } from '../lib/dataBus';
 import { formatDate } from '../lib/formatDate';
 import { NewAccountDrawer } from '../components/NewAccountDrawer';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -21,9 +22,8 @@ const primaryButton =
   'inline-flex h-8 items-center rounded-[8px] bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:hover:bg-accent-strong';
 
 export default function AccountsPage() {
-  const [refreshKey, setRefreshKey] = useState(0);
-  const accounts = useAccounts(refreshKey);
-  const movements = useMovements(refreshKey);
+  const accounts = useAccounts();
+  const movements = useMovements();
   const navigate = useNavigate();
   const [wizardOpen, setWizardOpen] = useState(false);
 
@@ -67,7 +67,7 @@ export default function AccountsPage() {
       ) : accounts.error ? (
         <ErrorState
           message="No se pudo cargar las cuentas desde el servidor."
-          onRetry={() => setRefreshKey((k) => k + 1)}
+          onRetry={() => invalidateCollections('accounts', 'movements')}
         />
       ) : noAccounts ? (
         <EmptyState
@@ -145,15 +145,7 @@ export default function AccountsPage() {
         </div>
       )}
 
-      {wizardOpen && (
-        <NewAccountDrawer
-          onClose={() => setWizardOpen(false)}
-          onCreated={() => {
-            setWizardOpen(false);
-            setRefreshKey((k) => k + 1);
-          }}
-        />
-      )}
+      {wizardOpen && <NewAccountDrawer onClose={() => setWizardOpen(false)} />}
     </div>
   );
 }

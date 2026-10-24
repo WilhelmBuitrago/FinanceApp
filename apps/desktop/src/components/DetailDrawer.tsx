@@ -19,6 +19,7 @@ import {
 } from './DrawerShell';
 import { StatusBadge } from './ui/StatusBadge';
 import { ConfirmModal } from './ConfirmModal';
+import { invalidateCollections } from '../lib/dataBus';
 import type { Category } from '../types/category';
 import type { Movement } from '../types/movement';
 
@@ -63,11 +64,15 @@ function SectionError({ onRetry }: { onRetry: () => void }) {
 }
 
 export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerProps) {
-  const event = useResource(movement?.FinancialEventID, getFinancialEvent);
-  const entry = useResource(movement?.SourceEntryID ?? null, getSourceEntry);
+  // The traceability graph behind the movement: all three refetch when a
+  // mutation invalidates 'movements' (the category lives on the event, a
+  // delete takes the movement down).
+  const event = useResource(movement?.FinancialEventID, getFinancialEvent, ['movements']);
+  const entry = useResource(movement?.SourceEntryID ?? null, getSourceEntry, ['movements']);
   const document_ = useResource(
     entry.status === 'ready' ? entry.data.DocumentID : null,
     getDocument,
+    ['movements'],
   );
 
   // Category assignment (v0.1.1): the human picks one of their own
@@ -111,9 +116,9 @@ export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerPro
     setCategoryError(null);
     try {
       await setMovementCategory(movement.ID, categoryId);
-      // The table behind the drawer shows the category name, so it must
-      // reflect the change: same refresh contract as the delete below.
-      window.location.reload();
+      // The event behind the movement changed: every movement view — and
+      // this drawer's own traceability sections — refetches through the bus.
+      invalidateCollections('movements');
     } catch {
       setCategoryError('No se pudo guardar la categoría.');
     } finally {
@@ -202,7 +207,9 @@ export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerPro
                       await deleteMovement(movement.ID);
                       setConfirmingDelete(false);
                       onClose();
-                      window.location.reload();
+                      // The movement is gone: lists and aggregates refetch
+                      // through the bus, no document reload.
+                      invalidateCollections('movements', 'dashboard');
                     } catch {
                       setDeleteError('No se pudo eliminar el movimiento');
                       setConfirmingDelete(false);

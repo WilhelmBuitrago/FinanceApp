@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 
 import { createAccount } from '../api/accounts';
 import { ApiError } from '../api/client';
+import { invalidateCollections } from '../lib/dataBus';
 import { useInstitutions } from '../hooks/useDashboard';
 import { accountTypeLabel } from '../lib/accountType';
 import {
@@ -20,14 +21,13 @@ import { FormField, inputClass, selectClass } from './FormField';
 
 interface NewAccountDrawerProps {
   onClose: () => void;
-  onCreated: () => void;
 }
 
 const PRODUCT_LABELS: Record<string, string> = {
   BANK_ACCOUNT: 'Cuenta Nu',
   CREDIT_CARD: 'Tarjeta de crédito Nu',
 };
-export function NewAccountDrawer({ onClose, onCreated }: NewAccountDrawerProps) {
+export function NewAccountDrawer({ onClose }: NewAccountDrawerProps) {
   const institutions = useInstitutions();
 
   const [institutionCode, setInstitutionCode] = useState('');
@@ -66,7 +66,10 @@ export function NewAccountDrawer({ onClose, onCreated }: NewAccountDrawerProps) 
         institution: effectiveCode,
         validation_data: validationData.trim() || undefined,
       });
-      onCreated();
+      // Every screen listing accounts refetches through the bus; the drawer
+      // closes itself, as the page used to do for it.
+      invalidateCollections('accounts');
+      onClose();
     } catch (err) {
       const detail =
         err instanceof ApiError && err.response && typeof err.response === 'object'

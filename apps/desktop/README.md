@@ -70,7 +70,7 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
       - [`StatusBadge.tsx`](./src/components/ui/StatusBadge.tsx) — etiqueta de estado.
   - **`hooks/`** — acceso a datos por recurso.
     - [`useResource.ts`](./src/hooks/useResource.ts) — hook genérico de recursos (por id, con reintento).
-    - [`useListQuery.ts`](./src/hooks/useListQuery.ts) — hook genérico de listas (el único).
+    - [`useListQuery.ts`](./src/hooks/useListQuery.ts) — hook genérico de listas (el único; acepta `refreshKey` y colecciones del bus).
     - [`useAccounts.ts`](./src/hooks/useAccounts.ts) — cuentas.
     - [`useDashboard.ts`](./src/hooks/useDashboard.ts) — datos del dashboard.
     - [`useDocuments.ts`](./src/hooks/useDocuments.ts) — documentos.
@@ -84,7 +84,7 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`accountType.ts`](./src/lib/accountType.ts) — etiquetas de tipo de cuenta.
     - [`eventType.ts`](./src/lib/eventType.ts) — etiquetas de tipo de evento.
     - [`reviewPayload.ts`](./src/lib/reviewPayload.ts) — parseo defensivo del payload de un ítem en revisión.
-    - [`reviewEvents.ts`](./src/lib/reviewEvents.ts) — nombres de eventos compartidos (`REVIEW_QUEUE_CHANGED_EVENT`).
+    - [`dataBus.ts`](./src/lib/dataBus.ts) — bus de invalidación compartido (colecciones versionadas; `useSyncExternalStore`).
     - [`version.ts`](./src/lib/version.ts) — versión del componente (lee `package.json`).
   - **`test/`** — setup de Vitest (`@testing-library/jest-dom`); los tests viven al lado de cada módulo (`*.test.ts` / `*.test.tsx`).
   - **`types/`** — contratos TypeScript del backend, un archivo por entidad.
@@ -128,10 +128,15 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
 - `npm run lint` **verde**: 0 errores. 28 warnings son deuda documentada en
   `eslint.config.mjs` (los `any` del payload de revisión y las reglas de la
   era React Compiler: `set-state-in-effect`, `purity`).
-- `npm test` **verde**: 55 tests en 14 archivos (payload de revisión, contrato
-  del cliente HTTP, `useListQuery`, las tres cards de revisión, el drawer de
-  alta —incluida su rama 409—, `useReviewQueue` completo con sus ramas de
-  validación y 409, las utilidades de formato y la versión).
+- `npm test` **verde**: 63 tests en 15 archivos (payload de revisión, contrato
+  del cliente HTTP, `useListQuery` (con el bus), las tres cards de revisión, el
+  drawer de alta, `useReviewQueue` completo, las utilidades de formato, la
+  versión y el bus de invalidación).
+- Refresco de datos: **sin `window.location.reload` en las mutaciones** —
+  cada una publica las colecciones que dejó obsoletas (`dataBus`) y las
+  pantallas suscritas refetchean solas. La única recarga completa que
+  sobrevive es la de la purga (borra todo el sistema: presentar el vacío es
+  su semántica, documentada en el código).
 - `npx prettier --check .` **verde** (CRLF del repo normalizado a LF).
 - La publicación (MSI) la dispara el workflow `windows-tauri.yml` al empujar un
   tag de versión; con el interruptor del usuario, nunca de forma automática

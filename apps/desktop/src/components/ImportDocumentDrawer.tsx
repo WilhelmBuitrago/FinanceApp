@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { uploadDocument } from '../api/documents';
 import { getJob } from '../api/jobs';
 import { getReviewEntries, type ReviewItem } from '../api/review';
-import { REVIEW_QUEUE_CHANGED_EVENT } from '../lib/reviewEvents';
+import { invalidateCollections } from '../lib/dataBus';
 import { ApiError } from '../api/client';
 import {
   DrawerBody,
@@ -25,10 +25,10 @@ import type { Account } from '../types/account';
 interface ImportDocumentDrawerProps {
   accounts: Account[];
   onClose: () => void;
-  onImported: () => void;
+  onFinished: () => void;
 }
 
-export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDocumentDrawerProps) {
+export function ImportDocumentDrawer({ accounts, onClose, onFinished }: ImportDocumentDrawerProps) {
   const [accountId, setAccountId] = useState(accounts[0]?.ID ?? '');
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -67,8 +67,11 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
             }
           });
           setReviewCount(mine.length);
-          window.dispatchEvent(new Event(REVIEW_QUEUE_CHANGED_EVENT));
-          onImported();
+          // An import lands documents, movements, aggregates and possibly
+          // review items: every screen showing them refetches through the
+          // bus (this replaces the window event the badge used to need).
+          invalidateCollections('documents', 'movements', 'dashboard', 'review');
+          onFinished();
           return;
         }
       } catch {
@@ -356,7 +359,7 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
               ) : (
                 <button
                   onClick={() => {
-                    onImported();
+                    onFinished();
                     onClose();
                   }}
                   className="inline-flex h-8 items-center justify-center rounded-tk bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"

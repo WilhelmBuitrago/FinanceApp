@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAccounts } from '../hooks/useAccounts';
 import { useDocuments } from '../hooks/useDocuments';
+import { invalidateCollections } from '../lib/dataBus';
 import { formatDate } from '../lib/formatDate';
 import { formatPeriod } from '../lib/formatPeriod';
 import { DocumentDrawer } from '../components/DocumentDrawer';
@@ -24,9 +25,8 @@ const primaryButton =
   'inline-flex h-8 items-center rounded-[8px] bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:hover:bg-accent-strong';
 
 export default function DocumentsPage() {
-  const [refreshKey, setRefreshKey] = useState(0);
-  const accounts = useAccounts(refreshKey);
-  const documents = useDocuments(refreshKey);
+  const accounts = useAccounts();
+  const documents = useDocuments();
   const [importOpen, setImportOpen] = useState(false);
   const [selected, setSelected] = useState<Document | null>(null);
 
@@ -50,7 +50,7 @@ export default function DocumentsPage() {
       ) : documents.error ? (
         <ErrorState
           message="No se pudo cargar los documentos desde el servidor."
-          onRetry={() => setRefreshKey((k) => k + 1)}
+          onRetry={() => invalidateCollections('accounts', 'documents')}
         />
       ) : noAccounts ? (
         /* The flow starts at configuration — no table, no upload button. */
@@ -153,10 +153,7 @@ export default function DocumentsPage() {
         <ImportDocumentDrawer
           accounts={accounts.data ?? []}
           onClose={() => setImportOpen(false)}
-          onImported={() => {
-            setImportOpen(false);
-            setRefreshKey((k) => k + 1);
-          }}
+          onFinished={() => setImportOpen(false)}
         />
       )}
 

@@ -3,5 +3,5 @@ import type { Document } from '../types/document';
 import { useListQuery } from './useListQuery';
 
 export function useDocuments(refreshKey = 0) {
-  return useListQuery<Document[]>(getDocuments, refreshKey);
+  return useListQuery<Document[]>(getDocuments, refreshKey, ['documents']);
 }

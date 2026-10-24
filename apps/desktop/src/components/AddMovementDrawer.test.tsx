@@ -4,11 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMovement } from '../api/movements';
 import { getCategories } from '../api/categories';
 import { ApiError } from '../api/client';
+import { invalidateCollections } from '../lib/dataBus';
 import { AddMovementDrawer } from './AddMovementDrawer';
 import type { Account } from '../types/account';
 
 vi.mock('../api/movements', () => ({ createMovement: vi.fn() }));
 vi.mock('../api/categories', () => ({ getCategories: vi.fn() }));
+vi.mock('../lib/dataBus', () => ({
+  invalidateCollections: vi.fn(),
+  useCollectionVersion: vi.fn(() => '0'),
+}));
 
 const accounts: Account[] = [
   {
@@ -23,14 +28,9 @@ const accounts: Account[] = [
   },
 ];
 
-const reload = vi.fn();
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getCategories).mockResolvedValue([]);
-  Object.defineProperty(window, 'location', {
-    writable: true,
-    value: { ...window.location, reload },
-  });
 });
 
 function setup(onDuplicate = vi.fn(), onClose = vi.fn()) {
@@ -46,7 +46,7 @@ describe('AddMovementDrawer', () => {
     expect(createMovement).not.toHaveBeenCalled();
   });
 
-  it('sends the corrected body and reloads on success', async () => {
+  it('sends the corrected body and republishes the moved data', async () => {
     vi.mocked(createMovement).mockResolvedValue({ id: 'mv_1' });
     setup();
     fireEvent.change(screen.getByLabelText(/Cantidad/), { target: { value: '25.5' } });
@@ -65,7 +65,9 @@ describe('AddMovementDrawer', () => {
       date: '2026-10-01',
       category_id: '',
     });
-    await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
+    // The bus carries the invalidation: lists and aggregates refetch, no
+    // document reload.
+    expect(invalidateCollections).toHaveBeenCalledWith('movements', 'dashboard');
   });
 
   it('reports a duplicate through onDuplicate and closes, without inventing data', async () => {

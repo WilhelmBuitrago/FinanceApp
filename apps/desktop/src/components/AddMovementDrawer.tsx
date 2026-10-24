@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { ApiError } from '../api/client';
+import { invalidateCollections } from '../lib/dataBus';
 import { createMovement } from '../api/movements';
 import { getCategories } from '../api/categories';
 import type { Account } from '../types/account';
@@ -81,7 +82,9 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
                 date: form.fecha,
                 category_id: form.categoria,
               });
-              window.location.reload();
+              // Every screen showing movements or their aggregates refetches
+              // through the bus; no document reload.
+              invalidateCollections('movements', 'dashboard');
             } catch (err) {
               if (err instanceof ApiError && err.status === 409) {
                 // The backend parks the duplicate in the review queue; the UI

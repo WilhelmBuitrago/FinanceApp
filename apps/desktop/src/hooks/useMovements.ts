@@ -3,5 +3,5 @@ import type { Movement } from '../types/movement';
 import { useListQuery } from './useListQuery';
 
 export function useMovements(refreshKey = 0) {
-  return useListQuery<Movement[]>(getMovements, refreshKey);
+  return useListQuery<Movement[]>(getMovements, refreshKey, ['movements']);
 }

@@ -11,6 +11,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { useAccounts } from '../hooks/useAccounts';
 import { useResource } from '../hooks/useResource';
 import { accountTypeLabel } from '../lib/accountType';
+import { invalidateCollections } from '../lib/dataBus';
 import { formatDate } from '../lib/formatDate';
 import { formatSignedMoney } from '../lib/formatMoney';
 import type { Movement } from '../types/movement';
@@ -27,8 +28,7 @@ const tableHead =
 export default function AccountDetailPage() {
   const { id = '' } = useParams();
 
-  const [refreshKey, setRefreshKey] = useState(0);
-  const accounts = useAccounts(refreshKey);
+  const accounts = useAccounts();
   const movements = useResource(id || null, getAccountMovements);
   const documents = useResource(id || null, getAccountDocuments);
 
@@ -67,7 +67,7 @@ export default function AccountDetailPage() {
       ) : accounts.error ? (
         <ErrorState
           message="No se pudo cargar la cuenta desde el servidor."
-          onRetry={() => setRefreshKey((k) => k + 1)}
+          onRetry={() => invalidateCollections('accounts', 'movements', 'documents')}
         />
       ) : account ? (
         <header className="space-y-3">

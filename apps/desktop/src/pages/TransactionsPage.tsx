@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAccounts } from '../hooks/useAccounts';
 import { useMovements } from '../hooks/useMovements';
+import { invalidateCollections } from '../lib/dataBus';
 import { formatDate } from '../lib/formatDate';
 import { formatSignedMoney } from '../lib/formatMoney';
 import { DetailDrawer } from '../components/DetailDrawer';
@@ -213,7 +214,7 @@ export default function TransactionsPage() {
       ) : movements.error ? (
         <ErrorState
           message="No se pudo cargar los movimientos desde el servidor."
-          onRetry={() => window.location.reload()}
+          onRetry={() => invalidateCollections('movements', 'accounts')}
         />
       ) : total === 0 ? (
         <EmptyState

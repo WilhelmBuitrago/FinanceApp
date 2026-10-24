@@ -9,8 +9,8 @@ import {
   IconTransfer,
   IconWallet,
 } from '../../components/icons';
+import { useCollectionVersion } from '../../lib/dataBus';
 import { getReviewEntries } from '../../api/review';
-import { REVIEW_QUEUE_CHANGED_EVENT } from '../../lib/reviewEvents';
 import { APP_VERSION } from '../../lib/version';
 
 interface SidebarProps {
@@ -36,19 +36,17 @@ const toolsNav: NavItemDef[] = [
   { to: '/settings', label: 'Configuración', Icon: IconGear },
 ];
 
-// Pending review count: the honest "you have items waiting" signal. It reads
-// the real queue and refreshes when any page signals a change.
+// Pending review count: the honest "you have items waiting" signal. It
+// reads the real queue and refetches whenever anything invalidates the
+// 'review' collection (a resolution, an import, a category delete).
 function useReviewCount(): number {
   const [count, setCount] = useState(0);
+  const reviewVersion = useCollectionVersion('review');
   useEffect(() => {
-    const load = () =>
-      getReviewEntries()
-        .then((d) => setCount((d || []).length))
-        .catch(() => {});
-    load();
-    window.addEventListener(REVIEW_QUEUE_CHANGED_EVENT, load);
-    return () => window.removeEventListener(REVIEW_QUEUE_CHANGED_EVENT, load);
-  }, []);
+    getReviewEntries()
+      .then((d) => setCount((d || []).length))
+      .catch(() => {});
+  }, [reviewVersion]);
   return count;
 }
 
