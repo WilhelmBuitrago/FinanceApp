@@ -64,7 +64,10 @@ function SectionError({ onRetry }: { onRetry: () => void }) {
 export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerProps) {
   const event = useResource(movement?.FinancialEventID, getFinancialEvent);
   const entry = useResource(movement?.SourceEntryID ?? null, getSourceEntry);
-  const document_ = useResource(entry.status === 'ready' ? entry.data.DocumentID : null, getDocument);
+  const document_ = useResource(
+    entry.status === 'ready' ? entry.data.DocumentID : null,
+    getDocument,
+  );
 
   // Category assignment (v0.1.1): the human picks one of their own
   // categories for this movement, or leaves it uncategorized. Leaving it
@@ -78,9 +81,15 @@ export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerPro
   useEffect(() => {
     let cancelled = false;
     getCategories()
-      .then((data) => { if (!cancelled) setCategories(data); })
-      .catch(() => { if (!cancelled) setCategories([]); });
-    return () => { cancelled = true; };
+      .then((data) => {
+        if (!cancelled) setCategories(data);
+      })
+      .catch(() => {
+        if (!cancelled) setCategories([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Same filtering the create form uses: only categories of the movement's
@@ -147,7 +156,9 @@ export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerPro
                 >
                   <option value="">Sin categoría</option>
                   {categoryOptions.map((c) => (
-                    <option key={c.ID} value={c.ID}>{c.Name}</option>
+                    <option key={c.ID} value={c.ID}>
+                      {c.Name}
+                    </option>
                   ))}
                 </select>
               )}
@@ -162,12 +173,13 @@ export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerPro
           <div className="pt-2">
             <button
               onClick={async () => {
-                if (!confirm('¿Eliminar este movimiento? Esta acción no se puede deshacer.')) return;
+                if (!confirm('¿Eliminar este movimiento? Esta acción no se puede deshacer.'))
+                  return;
                 try {
                   await deleteMovement(movement.ID);
                   onClose();
                   window.location.reload();
-                } catch (e) {
+                } catch {
                   alert('No se pudo eliminar el movimiento');
                 }
               }}
