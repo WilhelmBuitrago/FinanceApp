@@ -87,15 +87,17 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`dataBus.ts`](./src/lib/dataBus.ts) — bus de invalidación compartido (colecciones versionadas; `useSyncExternalStore`).
     - [`version.ts`](./src/lib/version.ts) — versión del componente (lee `package.json`).
   - **`test/`** — setup de Vitest (`@testing-library/jest-dom`); los tests viven al lado de cada módulo (`*.test.ts` / `*.test.tsx`).
-  - **`types/`** — contratos TypeScript del backend, un archivo por entidad.
+  - **`types/`** — contratos TypeScript del backend y de la UI, un archivo por
+    concepto.
     - [`account.ts`](./src/types/account.ts) — cuenta.
     - [`api.ts`](./src/types/api.ts) — errores de API y estado de consulta.
-    - [`category.ts`](./src/types/category.ts) — categoría.
+    - [`category.ts`](./src/types/category.ts) — categoría y `CategoryOption` (la forma que consume la UI).
     - [`document.ts`](./src/types/document.ts) — documento.
     - [`financial-event.ts`](./src/types/financial-event.ts) — evento financiero.
     - [`import-job.ts`](./src/types/import-job.ts) — trabajo de importación.
     - [`institution.ts`](./src/types/institution.ts) — institución.
     - [`movement.ts`](./src/types/movement.ts) — movimiento.
+    - [`review-payload.ts`](./src/types/review-payload.ts) — payload de un ítem en revisión (todas las keys opcionales a propósito).
     - [`source-entry.ts`](./src/types/source-entry.ts) — entrada de origen.
   - **`pages/`** — pantallas enrutadas.
     - [`DashboardPage.tsx`](./src/pages/DashboardPage.tsx) — resumen financiero.
@@ -128,10 +130,13 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
 - `npm run lint` **verde**: 0 errores. 28 warnings son deuda documentada en
   `eslint.config.mjs` (los `any` del payload de revisión y las reglas de la
   era React Compiler: `set-state-in-effect`, `purity`).
-- `npm test` **verde**: 63 tests en 15 archivos (payload de revisión, contrato
-  del cliente HTTP, `useListQuery` (con el bus), las tres cards de revisión, el
-  drawer de alta, `useReviewQueue` completo, las utilidades de formato, la
-  versión y el bus de invalidación).
+- `npm test` **verde**: 89 tests en 21 archivos (payload de revisión, contrato
+  del cliente HTTP, las formas de request de `api/review`, `api/movements` y
+  `api/categories`, `useListQuery` y `useResource` (con el bus), las tres cards
+  de revisión, el drawer de detalle (cadena completa, asignación de categoría,
+  borrado con confirmación), el drawer de alta, `useReviewQueue`,
+  `useReviewNotifications`, las utilidades de formato, la versión y el bus de
+  invalidación).
 - Refresco de datos: **sin `window.location.reload` en las mutaciones** —
   cada una publica las colecciones que dejó obsoletas (`dataBus`) y las
   pantallas suscritas refetchean solas. La única recarga completa que
