@@ -11,7 +11,7 @@ import (
 )
 
 func TestInstallmentPlan_Create_WithInstallments_RoundTrip(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -65,7 +65,7 @@ func TestInstallmentPlan_Create_WithInstallments_RoundTrip(t *testing.T) {
 // installment number inside a plan is rejected with repositories.ErrConflict. The unique
 // index is the backstop; this test keeps the taxonomy stable regardless of it.
 func TestInstallmentPlan_DuplicateNumber_Conflict(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 

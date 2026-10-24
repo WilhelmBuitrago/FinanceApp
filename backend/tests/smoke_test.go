@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	"financeapp/backend/internal/domain"
-	"financeapp/backend/internal/repositories"
 )
 
 // TestSmokeAccountCreateGet is the end-to-end smoke check: with the real
 // schema applied, an account survives a create/get round trip.
 func TestSmokeAccountCreateGet(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 
 	acc := domain.Account{

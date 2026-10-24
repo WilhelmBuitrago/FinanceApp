@@ -10,7 +10,7 @@ import (
 )
 
 func TestAccount_Create_GetByID_RoundTrip(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 	acc := domain.Account{
@@ -40,7 +40,7 @@ func TestAccount_Create_GetByID_RoundTrip(t *testing.T) {
 }
 
 func TestAccount_GetByID_NotFound(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	_, err := p.AccountRepo.GetByID(ctx, "nonexistent")
 	if err == nil {
@@ -52,7 +52,7 @@ func TestAccount_GetByID_NotFound(t *testing.T) {
 }
 
 func TestAccount_ListByUserID(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 	accounts := []domain.Account{
@@ -75,7 +75,7 @@ func TestAccount_ListByUserID(t *testing.T) {
 }
 
 func TestAccount_List_ReturnsEmpty(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	list, err := p.AccountRepo.List(ctx)
 	if err != nil {

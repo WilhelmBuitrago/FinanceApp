@@ -11,7 +11,7 @@ import (
 )
 
 func TestMovement_Create_WithComponents_RoundTrip(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -69,7 +69,7 @@ func TestMovement_Create_WithComponents_RoundTrip(t *testing.T) {
 }
 
 func TestMovement_ForeignKeyViolation(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -99,7 +99,7 @@ func TestMovement_ForeignKeyViolation(t *testing.T) {
 }
 
 func TestMovement_DuplicateDocumentaryValues_Independence(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -140,7 +140,7 @@ func TestMovement_DuplicateDocumentaryValues_Independence(t *testing.T) {
 // separate instruments bound to an account, so the breakdown must cover the
 // five types this issuer produces.
 func TestMovement_ComponentTypes_NuCatalog(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 

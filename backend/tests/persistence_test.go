@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"financeapp/backend/internal/repositories"
 	"testing"
 	"time"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func TestPersistence_Smoke_FullChain(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 

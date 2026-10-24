@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"financeapp/backend/internal/repositories"
 	"testing"
 	"time"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func TestRelation_MovementRelation_CreateList(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -53,7 +52,7 @@ func TestRelation_MovementRelation_CreateList(t *testing.T) {
 }
 
 func TestRelation_EventRelation_CreateList_States(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 

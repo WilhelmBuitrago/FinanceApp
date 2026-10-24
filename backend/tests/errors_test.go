@@ -10,7 +10,7 @@ import (
 )
 
 func TestErrors_Taxonomy_NotFound(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	_, err := p.AccountRepo.GetByID(ctx, "does-not-exist")
 	if err != repositories.ErrNotFound {
@@ -19,7 +19,7 @@ func TestErrors_Taxonomy_NotFound(t *testing.T) {
 }
 
 func TestErrors_Taxonomy_Constraint(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 	acc := domain.Account{ID: "acc-const", UserID: "u", Name: "A", AccountType: "BANK_ACCOUNT", Currency: "USD", Status: "ACTIVE", CreatedAt: now, UpdatedAt: now}

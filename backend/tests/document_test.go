@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"financeapp/backend/internal/repositories"
 	"testing"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 // TestDocument_Update_PersistsStatus pins that a document status change made
 // during the import confirm flow actually reaches the database.
 func TestDocument_Update_PersistsStatus(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 

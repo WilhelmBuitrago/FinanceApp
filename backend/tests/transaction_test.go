@@ -14,7 +14,7 @@ import (
 // component type aborts the whole write: no orphan movement, no orphan
 // financial event. This is the guarantee the credit card breakdown depends on.
 func TestMovementService_RollbackOnComponentFailure(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -46,7 +46,7 @@ func TestMovementService_RollbackOnComponentFailure(t *testing.T) {
 // event, movement and components commit together and the movement gets its
 // components linked.
 func TestMovementService_CreatesEventMovementAndComponents(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
@@ -86,7 +86,7 @@ func TestMovementService_CreatesEventMovementAndComponents(t *testing.T) {
 }
 
 func TestTransaction_RollbackOnInstallmentFailure(t *testing.T) {
-	p := repositories.NewTestPersistence(t)
+	p := newTestPersistence(t)
 	ctx := context.Background()
 	now := time.Now().UTC().Format(time.RFC3339)
 
