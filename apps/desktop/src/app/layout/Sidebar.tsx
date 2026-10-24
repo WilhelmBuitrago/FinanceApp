@@ -9,6 +9,7 @@ import {
   IconTransfer,
   IconWallet,
 } from '../../components/icons';
+import { getReviewEntries } from '../../api/review';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -39,8 +40,7 @@ function useReviewCount(): number {
   const [count, setCount] = useState(0);
   useEffect(() => {
     const load = () =>
-      fetch('http://localhost:8081/review/entries')
-        .then(r => r.json())
+      getReviewEntries()
         .then(d => setCount((d || []).length))
         .catch(() => {});
     load();

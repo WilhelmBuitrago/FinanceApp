@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { purgeAllData } from '../api/admin';
+import { createCategory, deleteCategory as deleteCategoryApi, getCategories } from '../api/categories';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { SectionHeader } from '../components/SectionHeader';
 import { check } from '@tauri-apps/plugin-updater';
@@ -28,41 +29,40 @@ export default function SettingsPage() {
   const [newCat, setNewCat] = useState({ name: '', type: 'EXPENSE' });
 
   useEffect(() => {
-    fetch('http://localhost:8081/categories')
-      .then(r => r.json())
+    getCategories()
       .then(data => {
-        const norm = (data || []).map((c:any) => ({
-          id: c.id ?? c.ID,
-          name: c.name ?? c.Name,
-          type: (c.category_type ?? c.CategoryType ?? '').toUpperCase()
+        const norm = (data || []).map(c => ({
+          id: c.ID,
+          name: c.Name,
+          type: (c.CategoryType ?? '').toUpperCase()
         }));
         setCategories(norm);
-      });
+      })
+      .catch(() => {});
   }, []);
 
   const addCategory = async () => {
     if (!newCat.name.trim()) return;
     const id = 'cat_' + Date.now();
-    const res = await fetch('http://localhost:8081/categories', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ id, name: newCat.name.trim(), category_type: newCat.type })
-    });
-    if (res.ok) {
-      const cat = await res.json();
+    try {
+      const cat = await createCategory(id, newCat.name.trim(), newCat.type);
       setCategories(c => [...c, cat]);
       setNewCat({ name: '', type: 'EXPENSE' });
       // Auto-refresh to ensure persistence
       setTimeout(()=> window.location.reload(), 300);
+    } catch {
+      // A failed create leaves the list untouched, exactly as before.
     }
   };
 
   const deleteCategory = async (id: string) => {
-    const res = await fetch(`http://localhost:8081/categories/${id}`, { method: 'DELETE' });
-    if (res.ok) {
+    try {
+      await deleteCategoryApi(id);
       setCategories(c => c.filter(x => x.id !== id));
       // The backend parks the affected movements in the unified review queue;
       // the UI only refreshes the list.
+    } catch {
+      // A failed delete leaves the list untouched, exactly as before.
     }
   };
 
