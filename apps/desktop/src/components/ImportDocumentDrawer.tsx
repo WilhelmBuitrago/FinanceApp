@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { uploadDocument } from '../api/documents';
 import { getJob } from '../api/jobs';
+import { getReviewEntries, type ReviewItem } from '../api/review';
 import { ApiError } from '../api/client';
 import {
   DrawerBody,
@@ -51,9 +52,9 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
         if (cancelled) return;
         if (job.Status === 'SUCCESS' || job.Status === 'FAILED') {
           setJobState(job.Status);
-          const items = await fetch('http://localhost:8081/review/entries').then(r => r.json()).catch(() => []);
+          const items = await getReviewEntries().catch(() => [] as ReviewItem[]);
           if (cancelled) return;
-          const mine = (items || []).filter((it: any) => {
+          const mine = (items || []).filter((it: ReviewItem) => {
             try { return JSON.parse(it.PayloadJson || '{}').document_id === uploadResult.document_id; } catch { return false; }
           });
           setReviewCount(mine.length);

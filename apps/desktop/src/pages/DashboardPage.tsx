@@ -9,6 +9,10 @@ import {
   useRecentDocuments,
   useRecentMovements,
 } from '../hooks/useDashboard';
+import { getCategories } from '../api/categories';
+import { ApiError } from '../api/client';
+import { createMovement } from '../api/movements';
+import { getReviewEntries, type ReviewItem } from '../api/review';
 import { formatDate } from '../lib/formatDate';
 import { formatPeriod } from '../lib/formatPeriod';
 import { formatSignedMoney } from '../lib/formatMoney';
@@ -69,23 +73,21 @@ export default function DashboardPage() {
   const movements = useMovements();
 
   useEffect(() => {
-    fetch('http://localhost:8081/categories')
-      .then(r=>r.json())
+    getCategories()
       .then(data => {
-        const norm = (data || []).map((c:any) => ({
-          id: c.id ?? c.ID,
-          name: c.name ?? c.Name,
-          category_type: (c.category_type ?? c.CategoryType ?? '').toUpperCase()
+        const norm = (data || []).map(c => ({
+          id: c.ID,
+          name: c.Name,
+          category_type: (c.CategoryType ?? '').toUpperCase()
         }));
         setCategories(norm);
       })
       .catch(()=>{});
     // Notifications come from the real review queue (three triggers), not
     // from client-side storage.
-    fetch('http://localhost:8081/review/entries')
-      .then(r=>r.json())
+    getReviewEntries()
       .then(items => {
-        const texts = (items || []).map((it:any) => {
+        const texts = (items || []).map((it: ReviewItem) => {
           let p:any = {};
           try { p = JSON.parse(it.PayloadJson || '{}'); } catch { /* payload libre */ }
           if (it.Kind === 'CATEGORY') return `Movimiento sin categoría: revisá en Revisión`;
@@ -441,24 +443,30 @@ export default function DashboardPage() {
               if (!amount || amount <= 0) return alert('Cantidad debe ser positiva');
               const sign = form.tipo === 'Egreso' ? -1 : 1;
               const amountMinor = Math.round(amount * 100) * sign;
-              const body = {
-                amount_minor: amountMinor,
-                type: form.tipo === 'Ingreso' ? 'INCOME' : form.tipo === 'Egreso' ? 'EXPENSE' : 'TRANSFER',
-                account_id: form.cuenta,
-                description: form.descripcion,
-                date: form.fecha,
-                category_id: form.categoria
-              };
-              const res = await fetch('http://localhost:8081/movements', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
-              if (res.status === 409) {
-                // The backend parks the duplicate in the review queue; the UI
-                // only notifies (no client-side queue to lose).
-                setNotifications(n => [...n, `Movimiento duplicado detectado el ${form.fecha} por $${amount}. Quedó en Revisión.`]);
-                setAddMovementOpen(false);
-                return;
+              try {
+                await createMovement({
+                  amount_minor: amountMinor,
+                  type: form.tipo === 'Ingreso' ? 'INCOME' : form.tipo === 'Egreso' ? 'EXPENSE' : 'TRANSFER',
+                  account_id: form.cuenta,
+                  description: form.descripcion,
+                  date: form.fecha,
+                  category_id: form.categoria
+                });
+                window.location.reload();
+              } catch (err) {
+                if (err instanceof ApiError && err.status === 409) {
+                  // The backend parks the duplicate in the review queue; the UI
+                  // only notifies (no client-side queue to lose).
+                  setNotifications(n => [...n, `Movimiento duplicado detectado el ${form.fecha} por $${amount}. Quedó en Revisión.`]);
+                  setAddMovementOpen(false);
+                  return;
+                }
+                // Same copy as before: the raw server body when there is one.
+                const detail = err instanceof ApiError && typeof err.response === 'string'
+                  ? err.response
+                  : (err instanceof Error ? err.message : String(err));
+                alert('Error al crear movimiento: ' + detail);
               }
-              if (!res.ok) { alert('Error al crear movimiento: ' + await res.text()); return; }
-              window.location.reload();
             }}>
               <div className="space-y-4">
                 <div><label className="text-sm">Cantidad *</label><input type="number" min="0" step="0.01" required value={form.cantidad} onChange={e=>setForm({...form, cantidad:e.target.value})} className="w-full bg-surface border border-line rounded px-2 py-1 text-ink" /></div>
