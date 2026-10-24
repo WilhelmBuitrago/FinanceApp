@@ -21,7 +21,8 @@ import type { Movement } from '../types/movement';
    not yet registered shows the honest "sin ficha" state — no invented
    entity, no 404 round-trip. Its movements and documents are real. */
 
-const tableHead = 'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
+const tableHead =
+  'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
 
 export default function AccountDetailPage() {
   const { id = '' } = useParams();
@@ -89,7 +90,9 @@ export default function AccountDetailPage() {
           <p className="flex flex-wrap items-center gap-2 text-body text-ink-2">
             <span className="font-mono text-meta text-ink-3">{id}</span>
             <span aria-hidden="true">·</span>
-            <span>Referenciada por la actividad importada, pero aún no existe como entidad registrada.</span>
+            <span>
+              Referenciada por la actividad importada, pero aún no existe como entidad registrada.
+            </span>
           </p>
         </header>
       )}
@@ -104,7 +107,10 @@ export default function AccountDetailPage() {
         <section aria-label="Movimientos de la cuenta" className="space-y-2">
           <SectionHeader
             title={`Movimientos${movements.status === 'ready' ? ` (${movementList.length})` : ''}`}
-            action={{ to: `/transactions?cuenta=${encodeURIComponent(id)}`, label: 'Ver en Movimientos' }}
+            action={{
+              to: `/transactions?cuenta=${encodeURIComponent(id)}`,
+              label: 'Ver en Movimientos',
+            }}
           />
           {movements.status === 'loading' ? (
             <SkeletonRows rows={5} />
@@ -138,7 +144,9 @@ export default function AccountDetailPage() {
                     <th className={`${tableHead} w-24`}>Fecha</th>
                     <th className={tableHead}>Descripción</th>
                     <th className={`${tableHead} w-32`}>Categoría</th>
-                    <th className={`${tableHead.replace('text-left', 'text-right')} w-32`}>Monto</th>
+                    <th className={`${tableHead.replace('text-left', 'text-right')} w-32`}>
+                      Monto
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -175,7 +183,11 @@ export default function AccountDetailPage() {
                         <td className="truncate px-3 py-2 text-ink-2">{mv.categoryName || '—'}</td>
                         <td
                           className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${
-                            mv.AmountMinor > 0 ? 'text-pos' : mv.AmountMinor < 0 ? 'text-neg' : 'text-ink'
+                            mv.AmountMinor > 0
+                              ? 'text-pos'
+                              : mv.AmountMinor < 0
+                                ? 'text-neg'
+                                : 'text-ink'
                           }`}
                         >
                           {formatSignedMoney(mv.AmountMinor)}
@@ -242,7 +254,7 @@ export default function AccountDetailPage() {
 
       <DetailDrawer
         movement={selected}
-        accountName={selected ? accountName ?? selected.AccountID : null}
+        accountName={selected ? (accountName ?? selected.AccountID) : null}
         onClose={() => setSelected(null)}
       />
     </div>

@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 
 import { purgeAllData } from '../api/admin';
-import { createCategory, deleteCategory as deleteCategoryApi, getCategories } from '../api/categories';
+import {
+  createCategory,
+  deleteCategory as deleteCategoryApi,
+  getCategories,
+} from '../api/categories';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { SectionHeader } from '../components/SectionHeader';
 import { check } from '@tauri-apps/plugin-updater';
@@ -30,11 +34,11 @@ export default function SettingsPage() {
 
   useEffect(() => {
     getCategories()
-      .then(data => {
-        const norm = (data || []).map(c => ({
+      .then((data) => {
+        const norm = (data || []).map((c) => ({
           id: c.ID,
           name: c.Name,
-          type: (c.CategoryType ?? '').toUpperCase()
+          type: (c.CategoryType ?? '').toUpperCase(),
         }));
         setCategories(norm);
       })
@@ -46,10 +50,10 @@ export default function SettingsPage() {
     const id = 'cat_' + Date.now();
     try {
       const cat = await createCategory(id, newCat.name.trim(), newCat.type);
-      setCategories(c => [...c, cat]);
+      setCategories((c) => [...c, cat]);
       setNewCat({ name: '', type: 'EXPENSE' });
       // Auto-refresh to ensure persistence
-      setTimeout(()=> window.location.reload(), 300);
+      setTimeout(() => window.location.reload(), 300);
     } catch {
       // A failed create leaves the list untouched, exactly as before.
     }
@@ -58,7 +62,7 @@ export default function SettingsPage() {
   const deleteCategory = async (id: string) => {
     try {
       await deleteCategoryApi(id);
-      setCategories(c => c.filter(x => x.id !== id));
+      setCategories((c) => c.filter((x) => x.id !== id));
       // The backend parks the affected movements in the unified review queue;
       // the UI only refreshes the list.
     } catch {
@@ -109,12 +113,16 @@ export default function SettingsPage() {
     setUpdateProgress(`Descargando versión ${updateAvailable.version}...`);
     try {
       // El plugin permite callback de progreso
-      await updateAvailable.downloadAndInstall((event: { data?: { progress?: { percent?: number } } }) => {
-        const percent = event?.data?.progress?.percent ?? 0;
-        if (percent) {
-          setUpdateProgress(`Descargando ${updateAvailable.version}... ${Math.round(percent * 100)}%`);
-        }
-      });
+      await updateAvailable.downloadAndInstall(
+        (event: { data?: { progress?: { percent?: number } } }) => {
+          const percent = event?.data?.progress?.percent ?? 0;
+          if (percent) {
+            setUpdateProgress(
+              `Descargando ${updateAvailable.version}... ${Math.round(percent * 100)}%`,
+            );
+          }
+        },
+      );
       setUpdateProgress('Instalación completada. Reiniciando...');
     } catch (e: any) {
       setUpdateError(e?.message || 'Falló la instalación de la actualización.');
@@ -133,40 +141,72 @@ export default function SettingsPage() {
         <SectionHeader title="Categorías" />
         <div className="rounded-[12px] border border-line bg-surface p-5 space-y-4">
           <div className="flex gap-2">
-            <input value={newCat.name} onChange={e=>setNewCat({ ...newCat, name:e.target.value })} placeholder="Nombre categoría" className="flex-1 bg-bg border border-line rounded px-2 py-1 text-ink" />
-            <select value={newCat.type} onChange={e=>setNewCat({ ...newCat, type:e.target.value })} className="bg-bg border border-line rounded px-2 py-1 text-ink">
+            <input
+              value={newCat.name}
+              onChange={(e) => setNewCat({ ...newCat, name: e.target.value })}
+              placeholder="Nombre categoría"
+              className="flex-1 bg-bg border border-line rounded px-2 py-1 text-ink"
+            />
+            <select
+              value={newCat.type}
+              onChange={(e) => setNewCat({ ...newCat, type: e.target.value })}
+              className="bg-bg border border-line rounded px-2 py-1 text-ink"
+            >
               <option value="EXPENSE">Egreso</option>
               <option value="INCOME">Ingreso</option>
             </select>
-            <button onClick={addCategory} className="px-3 py-1 rounded bg-accent-strong text-white">Agregar</button>
+            <button onClick={addCategory} className="px-3 py-1 rounded bg-accent-strong text-white">
+              Agregar
+            </button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-sm font-medium text-ink-2 mb-2">Categorías de Ingresos</h3>
               <ul className="space-y-2">
-                {categories.filter(c=>c.type==='INCOME').map(c => (
-                  <li key={c.id} className="flex items-center justify-between border border-line rounded px-3 py-2">
-                    <span>{c.name}</span>
-                    <button onClick={()=>deleteCategory(c.id)} className="text-neg text-sm">Eliminar</button>
-                  </li>
-                ))}
-                {categories.filter(c=>c.type==='INCOME').length===0 && <li className="text-meta text-ink-3 text-sm">Sin categorías</li>}
+                {categories
+                  .filter((c) => c.type === 'INCOME')
+                  .map((c) => (
+                    <li
+                      key={c.id}
+                      className="flex items-center justify-between border border-line rounded px-3 py-2"
+                    >
+                      <span>{c.name}</span>
+                      <button onClick={() => deleteCategory(c.id)} className="text-neg text-sm">
+                        Eliminar
+                      </button>
+                    </li>
+                  ))}
+                {categories.filter((c) => c.type === 'INCOME').length === 0 && (
+                  <li className="text-meta text-ink-3 text-sm">Sin categorías</li>
+                )}
               </ul>
             </div>
             <div>
               <h3 className="text-sm font-medium text-ink-2 mb-2">Categorías de Egresos</h3>
               <ul className="space-y-2">
-                {categories.filter(c=>c.type==='EXPENSE').map(c => (
-                  <li key={c.id} className="flex items-center justify-between border border-line rounded px-3 py-2">
-                    <span>{c.name}</span>
-                    <button onClick={()=>deleteCategory(c.id)} className="text-neg text-sm">Eliminar</button>
-                  </li>
-                ))}
-                {categories.filter(c=>c.type==='EXPENSE').length===0 && <li className="text-meta text-ink-3 text-sm">Sin categorías</li>}
+                {categories
+                  .filter((c) => c.type === 'EXPENSE')
+                  .map((c) => (
+                    <li
+                      key={c.id}
+                      className="flex items-center justify-between border border-line rounded px-3 py-2"
+                    >
+                      <span>{c.name}</span>
+                      <button onClick={() => deleteCategory(c.id)} className="text-neg text-sm">
+                        Eliminar
+                      </button>
+                    </li>
+                  ))}
+                {categories.filter((c) => c.type === 'EXPENSE').length === 0 && (
+                  <li className="text-meta text-ink-3 text-sm">Sin categorías</li>
+                )}
               </ul>
             </div>
           </div>
-          <p className="text-meta text-ink-3">Si una categoría es editada/eliminada y tiene movimientos asociados, esos movimientos pasarán a Revisión.</p>
+          <p className="text-meta text-ink-3">
+            Si una categoría es editada/eliminada y tiene movimientos asociados, esos movimientos
+            pasarán a Revisión.
+          </p>
         </div>
       </section>
 
@@ -174,9 +214,9 @@ export default function SettingsPage() {
         <SectionHeader title="Datos" />
         <div className="rounded-[12px] border border-line bg-surface p-5">
           <p className="text-body text-ink-2">
-            Borrar todos los datos elimina de forma permanente las cuentas,
-            documentos, movimientos, eventos, relaciones y cuotas registradas
-            en FinanceApp. Esta acción no se puede deshacer.
+            Borrar todos los datos elimina de forma permanente las cuentas, documentos, movimientos,
+            eventos, relaciones y cuotas registradas en FinanceApp. Esta acción no se puede
+            deshacer.
           </p>
           <button
             onClick={() => {
@@ -214,10 +254,14 @@ export default function SettingsPage() {
             {checkingUpdate ? 'Buscando...' : 'Buscar Actualizaciones'}
           </button>
           {updateProgress && (
-            <p className="text-body text-ink-2" role="status">{updateProgress}</p>
+            <p className="text-body text-ink-2" role="status">
+              {updateProgress}
+            </p>
           )}
           {updateError && (
-            <p className="text-body text-neg" role="alert">{updateError}</p>
+            <p className="text-body text-neg" role="alert">
+              {updateError}
+            </p>
           )}
         </div>
       </section>

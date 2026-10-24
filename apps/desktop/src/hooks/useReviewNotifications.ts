@@ -7,12 +7,15 @@ import { payloadOf } from '../lib/reviewPayload';
    (every trigger, not client-side storage), and a mutation can push one
    more line (a duplicate parked by the add-movement form). */
 
-export function useReviewNotifications(): { notifications: string[]; notify: (text: string) => void } {
+export function useReviewNotifications(): {
+  notifications: string[];
+  notify: (text: string) => void;
+} {
   const [notifications, setNotifications] = useState<string[]>([]);
 
   useEffect(() => {
     getReviewEntries()
-      .then(items => {
+      .then((items) => {
         const texts = (items || []).map((it: ReviewItem) => {
           const p = payloadOf(it);
           if (it.Kind === 'CATEGORY') return `Movimiento sin categoría: revisá en Revisión`;
@@ -24,7 +27,7 @@ export function useReviewNotifications(): { notifications: string[]; notify: (te
       .catch(() => {});
   }, []);
 
-  const notify = (text: string) => setNotifications(n => [...n, text]);
+  const notify = (text: string) => setNotifications((n) => [...n, text]);
 
   return { notifications, notify };
 }

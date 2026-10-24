@@ -6,7 +6,11 @@ export async function getCategories(): Promise<Category[]> {
 }
 
 // The id is generated on the client (same scheme as the accounts).
-export async function createCategory(id: string, name: string, categoryType: string): Promise<Category> {
+export async function createCategory(
+  id: string,
+  name: string,
+  categoryType: string,
+): Promise<Category> {
   return apiPost<Category>('/categories', { id, name, category_type: categoryType });
 }
 

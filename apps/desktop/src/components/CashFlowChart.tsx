@@ -35,8 +35,7 @@ export function CashFlowChart({ points }: CashFlowChartProps) {
   const yMax = rawMax + pad;
 
   const xAt = (i: number) => PAD_X + ((times[i] - t0) / span) * (W - 2 * PAD_X);
-  const yAt = (net: number) =>
-    H - PAD_Y - ((net - yMin) / (yMax - yMin || 1)) * (H - 2 * PAD_Y);
+  const yAt = (net: number) => H - PAD_Y - ((net - yMin) / (yMax - yMin || 1)) * (H - 2 * PAD_Y);
   const yZero = yAt(0);
 
   const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(i)},${yAt(p.net)}`).join(' ');
@@ -59,8 +58,7 @@ export function CashFlowChart({ points }: CashFlowChartProps) {
   };
 
   const hoveredPoint = hovered != null ? points[hovered] : null;
-  const hoverLeftPct =
-    hovered != null ? (xAt(hovered) / W) * 100 : 0;
+  const hoverLeftPct = hovered != null ? (xAt(hovered) / W) * 100 : 0;
   const flip = hoverLeftPct > 62;
 
   const dateLabels = [
@@ -85,7 +83,13 @@ export function CashFlowChart({ points }: CashFlowChartProps) {
           {/* area */}
           <path d={areaPath} fill="rgb(124 58 237 / 0.14)" />
           {/* line */}
-          <path d={linePath} fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinejoin="round" />
+          <path
+            d={linePath}
+            fill="none"
+            stroke="#a78bfa"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
           {/* hover guide + dot */}
           {hovered != null && (
             <>
@@ -117,15 +121,21 @@ export function CashFlowChart({ points }: CashFlowChartProps) {
             </p>
             <p className="mt-1 flex justify-between gap-4 text-ink-2">
               <span>Ingresos</span>
-              <span className="tabular-nums text-pos">{formatSignedMoney(hoveredPoint.inflow)}</span>
+              <span className="tabular-nums text-pos">
+                {formatSignedMoney(hoveredPoint.inflow)}
+              </span>
             </p>
             <p className="flex justify-between gap-4 text-ink-2">
               <span>Egresos</span>
-              <span className="tabular-nums text-neg">-{formatSignedMoney(hoveredPoint.outflow).replace('+', '')}</span>
+              <span className="tabular-nums text-neg">
+                -{formatSignedMoney(hoveredPoint.outflow).replace('+', '')}
+              </span>
             </p>
             <p className="flex justify-between gap-4 text-ink">
               <span>Neto</span>
-              <span className="tabular-nums font-medium">{formatSignedMoney(hoveredPoint.net)}</span>
+              <span className="tabular-nums font-medium">
+                {formatSignedMoney(hoveredPoint.net)}
+              </span>
             </p>
           </div>
         )}

@@ -17,7 +17,8 @@ import type { Document } from '../types/document';
    (distinct from the upload date) and the state. No "Tipo" column: every
    supported document is a PDF, the format carries no information. */
 
-const tableHead = 'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
+const tableHead =
+  'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
 
 const primaryButton =
   'inline-flex h-8 items-center rounded-[8px] bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:hover:bg-accent-strong';
@@ -67,7 +68,9 @@ export default function DocumentsPage() {
           <div className="mb-6 flex items-baseline justify-between gap-4">
             <div>
               <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">Documentos</h1>
-              <p className="text-body text-ink-2">{documents.data?.length ?? 0} documentos registrados.</p>
+              <p className="text-body text-ink-2">
+                {documents.data?.length ?? 0} documentos registrados.
+              </p>
             </div>
             <button onClick={() => setImportOpen(true)} className={primaryButton}>
               Importar documento
@@ -110,12 +113,21 @@ export default function DocumentsPage() {
                         }`}
                       >
                         {isSelected && (
-                          <span className="absolute bottom-0 left-0 top-0 w-[2px] bg-accent" aria-hidden="true" />
+                          <span
+                            className="absolute bottom-0 left-0 top-0 w-[2px] bg-accent"
+                            aria-hidden="true"
+                          />
                         )}
-                        <td className="w-full max-w-0 truncate px-3 py-2 text-ink" title={doc.DocumentName ?? 'Documento'}>
+                        <td
+                          className="w-full max-w-0 truncate px-3 py-2 text-ink"
+                          title={doc.DocumentName ?? 'Documento'}
+                        >
                           {doc.DocumentName ?? 'Documento'}
                         </td>
-                        <td className="w-full max-w-0 truncate px-3 py-2 text-ink-2" title={accountNames.get(doc.AccountID ?? '') ?? undefined}>
+                        <td
+                          className="w-full max-w-0 truncate px-3 py-2 text-ink-2"
+                          title={accountNames.get(doc.AccountID ?? '') ?? undefined}
+                        >
                           {accountNames.get(doc.AccountID ?? '') ?? '—'}
                         </td>
                         <td className="whitespace-nowrap px-3 py-2 text-ink-2">
@@ -150,7 +162,7 @@ export default function DocumentsPage() {
 
       <DocumentDrawer
         document={selected}
-        accountName={selected ? accountNames.get(selected.AccountID ?? '') ?? null : null}
+        accountName={selected ? (accountNames.get(selected.AccountID ?? '') ?? null) : null}
         onClose={() => setSelected(null)}
       />
     </div>

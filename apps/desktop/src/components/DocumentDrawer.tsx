@@ -88,9 +88,7 @@ export function DocumentDrawer({ document: doc, accountName, onClose }: Document
             </KV>
             <KV label="Hash">
               {doc.FileHash ? (
-                <span className="font-mono text-meta text-ink-3">
-                  {doc.FileHash.slice(0, 13)}…
-                </span>
+                <span className="font-mono text-meta text-ink-3">{doc.FileHash.slice(0, 13)}…</span>
               ) : (
                 '—'
               )}

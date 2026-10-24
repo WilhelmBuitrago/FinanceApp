@@ -65,14 +65,14 @@ export async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Prom
 
 export function apiGet<T>(path: string): Promise<T> {
   return fetchJson<T>(`${BASE_URL}${path}`, {
-    headers: { 'Accept': 'application/json' },
+    headers: { Accept: 'application/json' },
   });
 }
 
 export function apiPost<T>(path: string, body: unknown): Promise<T> {
   return fetchJson<T>(`${BASE_URL}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(body),
   });
 }
@@ -80,7 +80,7 @@ export function apiPost<T>(path: string, body: unknown): Promise<T> {
 export function apiPut<T>(path: string, body: unknown): Promise<T> {
   return fetchJson<T>(`${BASE_URL}${path}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(body),
   });
 }
@@ -95,11 +95,14 @@ export function apiPostForm<T>(path: string, form: FormData): Promise<T> {
 export function apiDelete(path: string): Promise<void> {
   return fetchJson<void>(`${BASE_URL}${path}`, {
     method: 'DELETE',
-    headers: { 'Accept': 'application/json' },
+    headers: { Accept: 'application/json' },
   });
 }
 
-export function apiGetWithParams<T>(path: string, params?: Record<string, string | number | undefined>): Promise<T> {
+export function apiGetWithParams<T>(
+  path: string,
+  params?: Record<string, string | number | undefined>,
+): Promise<T> {
   const url = new URL(`${BASE_URL}${path}`);
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
@@ -107,6 +110,6 @@ export function apiGetWithParams<T>(path: string, params?: Record<string, string
     });
   }
   return fetchJson<T>(url.toString(), {
-    headers: { 'Accept': 'application/json' },
+    headers: { Accept: 'application/json' },
   });
 }

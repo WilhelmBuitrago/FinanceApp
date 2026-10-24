@@ -32,7 +32,11 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadResult, setUploadResult] = useState<{document_id:string; job_id:string; processing_id?:string}|null>(null);
+  const [uploadResult, setUploadResult] = useState<{
+    document_id: string;
+    job_id: string;
+    processing_id?: string;
+  } | null>(null);
   const [jobState, setJobState] = useState<'RUNNING' | 'SUCCESS' | 'FAILED' | null>(null);
   const [reviewCount, setReviewCount] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -55,21 +59,32 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
           const items = await getReviewEntries().catch(() => [] as ReviewItem[]);
           if (cancelled) return;
           const mine = (items || []).filter((it: ReviewItem) => {
-            try { return JSON.parse(it.PayloadJson || '{}').document_id === uploadResult.document_id; } catch { return false; }
+            try {
+              return JSON.parse(it.PayloadJson || '{}').document_id === uploadResult.document_id;
+            } catch {
+              return false;
+            }
           });
           setReviewCount(mine.length);
           window.dispatchEvent(new Event('review-queue-changed'));
           onImported();
           return;
         }
-      } catch { /* job still processing or transient error: retry */ }
+      } catch {
+        /* job still processing or transient error: retry */
+      }
       if (cancelled) return;
       attempts += 1;
-      if (attempts >= 20) { setJobState('FAILED'); return; }
+      if (attempts >= 20) {
+        setJobState('FAILED');
+        return;
+      }
       setTimeout(tick, 1500);
     };
     tick();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [uploadResult]);
 
   const submit = async () => {
@@ -198,16 +213,30 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
                   aria-dropeffect="execute"
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 rounded-md bg-raised p-2 text-ink-3 group-[.is-dragging]:text-accent`}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
+                    <div
+                      className={`mt-0.5 rounded-md bg-raised p-2 text-ink-3 group-[.is-dragging]:text-accent`}
+                    >
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
                       </svg>
                     </div>
                     <div className="min-w-0 flex-1">
                       {file ? (
                         <>
-                          <p className="text-body text-ink font-medium truncate" title={file.name}>{file.name}</p>
+                          <p className="text-body text-ink font-medium truncate" title={file.name}>
+                            {file.name}
+                          </p>
                           <p className="text-meta text-ink-3">{(file.size / 1024).toFixed(0)} KB</p>
                         </>
                       ) : (
@@ -234,7 +263,10 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
 
             <div aria-live="polite" aria-atomic="true" className="space-y-3">
               {error && (
-                <div className="rounded-tk border border-neg/30 bg-neg/10 px-3 py-2 text-body text-neg" role="alert">
+                <div
+                  className="rounded-tk border border-neg/30 bg-neg/10 px-3 py-2 text-body text-neg"
+                  role="alert"
+                >
                   <p className="font-medium">No se pudo importar</p>
                   <p className="text-meta">{error}</p>
                 </div>
@@ -243,24 +275,43 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
                 <div className="rounded-tk border border-line bg-raised px-4 py-3 space-y-3">
                   <div className="flex items-start gap-3">
                     <span className="mt-0.5 text-pos">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <polyline points="20 6 9 17 4 12"/>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </span>
                     <div>
                       <p className="text-body font-medium text-ink">Documento recibido</p>
-                      <p className="text-meta text-ink-3">El extracto se ha enviado a la cuenta seleccionada. Puedes seguir su estado en Documentos.</p>
+                      <p className="text-meta text-ink-3">
+                        El extracto se ha enviado a la cuenta seleccionada. Puedes seguir su estado
+                        en Documentos.
+                      </p>
                     </div>
                   </div>
                   <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-meta">
                     <dt className="text-ink-3">Documento</dt>
-                    <dd className="text-ink"><CopyId id={uploadResult.document_id} /></dd>
+                    <dd className="text-ink">
+                      <CopyId id={uploadResult.document_id} />
+                    </dd>
                     <dt className="text-ink-3">Trabajo</dt>
-                    <dd className="text-ink"><CopyId id={uploadResult.job_id} /></dd>
+                    <dd className="text-ink">
+                      <CopyId id={uploadResult.job_id} />
+                    </dd>
                     {uploadResult.processing_id && (
                       <>
                         <dt className="text-ink-3">Procesamiento</dt>
-                        <dd className="text-ink"><CopyId id={uploadResult.processing_id} /></dd>
+                        <dd className="text-ink">
+                          <CopyId id={uploadResult.processing_id} />
+                        </dd>
                       </>
                     )}
                   </dl>
@@ -269,18 +320,24 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
                     <p className="text-meta text-ink-3">Procesando el extracto…</p>
                   )}
                   {jobState === 'FAILED' && (
-                    <p className="text-body text-neg">El procesamiento falló.Revisá el documento en Documentos.</p>
+                    <p className="text-body text-neg">
+                      El procesamiento falló.Revisá el documento en Documentos.
+                    </p>
                   )}
-                  {jobState === 'SUCCESS' && reviewCount !== null && (
-                    reviewCount > 0 ? (
+                  {jobState === 'SUCCESS' &&
+                    reviewCount !== null &&
+                    (reviewCount > 0 ? (
                       <p className="text-body text-ink">
                         {reviewCount} movimiento(s) requieren verificación.{' '}
-                        <a href="/review" className="text-accent-strong underline">Ir a Revisión</a>
+                        <a href="/review" className="text-accent-strong underline">
+                          Ir a Revisión
+                        </a>
                       </p>
                     ) : (
-                      <p className="text-body text-ink-2">Extracto importado sin ítems pendientes.</p>
-                    )
-                  )}
+                      <p className="text-body text-ink-2">
+                        Extracto importado sin ítems pendientes.
+                      </p>
+                    ))}
                 </div>
               )}
             </div>
@@ -297,7 +354,10 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
                 </button>
               ) : (
                 <button
-                  onClick={() => { onImported(); onClose(); }}
+                  onClick={() => {
+                    onImported();
+                    onClose();
+                  }}
                   className="inline-flex h-8 items-center justify-center rounded-tk bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   Ver documentos
@@ -305,7 +365,11 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
               )}
               {(error || uploadResult) && (
                 <button
-                  onClick={() => { setError(null); setUploadResult(null); setFile(null); }}
+                  onClick={() => {
+                    setError(null);
+                    setUploadResult(null);
+                    setFile(null);
+                  }}
                   className="inline-flex h-8 items-center justify-center rounded-tk border border-line px-3 text-body font-medium text-ink transition-colors duration-[120ms] hover:bg-interactive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   {uploadResult ? 'Importar otro' : 'Reiniciar'}

@@ -7,11 +7,7 @@
 
 const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-function formatCompact(
-  date: Date,
-  locale: string,
-  options: Intl.DateTimeFormatOptions,
-): string {
+function formatCompact(date: Date, locale: string, options: Intl.DateTimeFormatOptions): string {
   const parts = new Intl.DateTimeFormat(locale, options).formatToParts(date);
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
   return `${get('day')} ${get('month')} ${get('year')}`.trim();

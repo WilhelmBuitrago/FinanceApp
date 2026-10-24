@@ -31,8 +31,10 @@ import { SkeletonRows } from '../components/ui/SkeletonRows';
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const ATTENTION_STATUSES = new Set(['REVIEW_REQUIRED', 'FAILED']);
 
-const tableHead = 'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
-const tableHeadRight = 'px-3 py-1.5 text-right font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
+const tableHead =
+  'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
+const tableHeadRight =
+  'px-3 py-1.5 text-right font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
 
 const primaryButton =
   'inline-flex h-8 items-center rounded-[8px] bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
@@ -78,7 +80,14 @@ export default function DashboardPage() {
       const acc = mv.AccountID as string;
       map.set(acc, (map.get(acc) ?? 0) + amt);
     }
-    return { totalNet: total, perAccount: Array.from(map.entries()).map(([id, net]) => ({ id, name: accountNames.get(id) ?? id, net })) };
+    return {
+      totalNet: total,
+      perAccount: Array.from(map.entries()).map(([id, net]) => ({
+        id,
+        name: accountNames.get(id) ?? id,
+        net,
+      })),
+    };
   }, [movements.data, accountNames]);
 
   /* Backend points sorted for the chart. */
@@ -122,32 +131,70 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div className="flex items-baseline justify-between gap-4">
         <div>
-          <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">
-            {greeting()}
-          </h1>
+          <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">{greeting()}</h1>
           <p className="text-meta text-ink-3">{formatDate(todayIso())}</p>
         </div>
         {firstUse ? null : (
           <div className="flex items-center gap-2">
             <div className="relative">
-              <button className="relative p-2 rounded border border-line bg-surface" onClick={() => setNotificationsOpen(v=>!v)} title="Notificaciones">🔔{notifications.length>0 && <span className="absolute -top-1 -right-1 bg-neg text-white text-xs rounded-full px-1">{notifications.length}</span>}</button>
+              <button
+                className="relative p-2 rounded border border-line bg-surface"
+                onClick={() => setNotificationsOpen((v) => !v)}
+                title="Notificaciones"
+              >
+                🔔
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-neg text-white text-xs rounded-full px-1">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
               {notificationsOpen && (
                 <div className="absolute right-0 top-full mt-2 w-80 rounded-lg border border-line bg-surface shadow-xl p-2 z-[9999]">
                   <p className="text-sm font-medium px-2 py-1">Notificaciones</p>
-                  {notifications.length===0 ? <p className="text-sm text-ink-3 px-2 py-1">Sin notificaciones</p> : notifications.map((n,i)=>(
-                    <div key={i} className="px-2 py-1 text-sm border-b border-line last:border-0 cursor-pointer hover:bg-raised" onClick={()=>{ setNotificationsOpen(false); window.location.href='/review'; }}>{n}</div>
-                  ))}
+                  {notifications.length === 0 ? (
+                    <p className="text-sm text-ink-3 px-2 py-1">Sin notificaciones</p>
+                  ) : (
+                    notifications.map((n, i) => (
+                      <div
+                        key={i}
+                        className="px-2 py-1 text-sm border-b border-line last:border-0 cursor-pointer hover:bg-raised"
+                        onClick={() => {
+                          setNotificationsOpen(false);
+                          window.location.href = '/review';
+                        }}
+                      >
+                        {n}
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </div>
             <div className="relative">
-              <button className={primaryButton} onClick={() => setMenuOpen(v => !v)}>+</button>
+              <button className={primaryButton} onClick={() => setMenuOpen((v) => !v)}>
+                +
+              </button>
               {menuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-line bg-surface shadow-xl p-1 z-[9999]">
-                <Link to="/documents" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-md hover:bg-raised text-sm">Importar documento</Link>
-                <button onClick={() => { setMenuOpen(false); setAddMovementOpen(true); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-raised text-sm">Agregar movimiento</button>
-              </div>
-            )}
+                <div className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-line bg-surface shadow-xl p-1 z-[9999]">
+                  <Link
+                    to="/documents"
+                    onClick={() => setMenuOpen(false)}
+                    className="block px-3 py-2 rounded-md hover:bg-raised text-sm"
+                  >
+                    Importar documento
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setAddMovementOpen(true);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-md hover:bg-raised text-sm"
+                  >
+                    Agregar movimiento
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -157,12 +204,16 @@ export default function DashboardPage() {
         <section aria-label="Neto total">
           <div className="rounded-[12px] border border-line bg-surface p-5">
             <p className="text-meta text-ink-3">Neto total</p>
-            <p className="text-[1.75rem] font-semibold tracking-tight text-ink">{formatSignedMoney(totalNet)}</p>
+            <p className="text-[1.75rem] font-semibold tracking-tight text-ink">
+              {formatSignedMoney(totalNet)}
+            </p>
             <div className="mt-4 space-y-2">
-              {perAccount.map(a => (
+              {perAccount.map((a) => (
                 <div key={a.id} className="flex items-center justify-between text-body">
                   <span className="text-ink-2">{a.name}</span>
-                  <span className={a.net >= 0 ? 'text-pos' : 'text-neg'}>{formatSignedMoney(a.net)}</span>
+                  <span className={a.net >= 0 ? 'text-pos' : 'text-neg'}>
+                    {formatSignedMoney(a.net)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -185,17 +236,22 @@ export default function DashboardPage() {
           {/* 1. Financial summary — real 30-day sums over backend aggregates */}
           <section aria-label="Situación financiera">
             {cashFlow.loading ? (
-              <div className="h-14 w-full max-w-2xl animate-pulse rounded-[8px] bg-interactive" aria-hidden="true" />
+              <div
+                className="h-14 w-full max-w-2xl animate-pulse rounded-[8px] bg-interactive"
+                aria-hidden="true"
+              />
             ) : cashFlow.error ? (
               <p className="text-body text-ink-2">
                 No se pudo cargar la situación financiera desde el servidor.
               </p>
             ) : last30 && last30.count > 0 ? (
-              <SummaryStrip income={last30.income} expense={-last30.expense} periodLabel="30 días" />
+              <SummaryStrip
+                income={last30.income}
+                expense={-last30.expense}
+                periodLabel="30 días"
+              />
             ) : (
-              <p className="text-body text-ink-2">
-                Sin movimientos en los últimos 30 días.
-              </p>
+              <p className="text-body text-ink-2">Sin movimientos en los últimos 30 días.</p>
             )}
           </section>
 
@@ -203,7 +259,10 @@ export default function DashboardPage() {
           <section aria-label="Flujo de dinero" className="space-y-2">
             <SectionHeader title="Flujo de dinero" />
             {cashFlow.loading ? (
-              <div className="h-48 w-full animate-pulse rounded-[12px] border border-line bg-surface" aria-hidden="true" />
+              <div
+                className="h-48 w-full animate-pulse rounded-[12px] border border-line bg-surface"
+                aria-hidden="true"
+              />
             ) : cashFlow.error ? (
               <EmptyState
                 title="No se pudo cargar el flujo"
@@ -228,11 +287,16 @@ export default function DashboardPage() {
             <SectionHeader title="Distribución" />
             <div className="grid gap-6 md:grid-cols-2">
               {incomeDist.loading || expenseDist.loading ? (
-                <div className="h-40 w-full animate-pulse rounded-[12px] border border-line bg-surface" aria-hidden="true" />
+                <div
+                  className="h-40 w-full animate-pulse rounded-[12px] border border-line bg-surface"
+                  aria-hidden="true"
+                />
               ) : (
                 <>
                   <ChartCard title="Ingresos">
-                    {!incomeDist.loading && !incomeDist.error && (incomeDist.data?.length ?? 0) > 0 ? (
+                    {!incomeDist.loading &&
+                    !incomeDist.error &&
+                    (incomeDist.data?.length ?? 0) > 0 ? (
                       <DonutChart slices={incomeDist.data ?? []} />
                     ) : (
                       <EmptyState
@@ -246,7 +310,9 @@ export default function DashboardPage() {
                     )}
                   </ChartCard>
                   <ChartCard title="Egresos">
-                    {!expenseDist.loading && !expenseDist.error && (expenseDist.data?.length ?? 0) > 0 ? (
+                    {!expenseDist.loading &&
+                    !expenseDist.error &&
+                    (expenseDist.data?.length ?? 0) > 0 ? (
                       <DonutChart slices={expenseDist.data ?? []} />
                     ) : (
                       <EmptyState
@@ -295,16 +361,26 @@ export default function DashboardPage() {
                         <td className="whitespace-nowrap px-3 py-2 text-meta text-ink-3">
                           {formatDate(mv.MovementDate)}
                         </td>
-                        <td className="w-full max-w-0 truncate px-3 py-2 text-ink" title={mv.Description ?? undefined}>
+                        <td
+                          className="w-full max-w-0 truncate px-3 py-2 text-ink"
+                          title={mv.Description ?? undefined}
+                        >
                           {mv.Description ?? '—'}
                         </td>
                         <td className="truncate px-3 py-2 text-ink-2">{mv.categoryName || '—'}</td>
-                        <td className="truncate px-3 py-2 text-ink-2" title={accountNames.get(mv.AccountID) ?? undefined}>
+                        <td
+                          className="truncate px-3 py-2 text-ink-2"
+                          title={accountNames.get(mv.AccountID) ?? undefined}
+                        >
                           {accountNames.get(mv.AccountID) ?? '—'}
                         </td>
                         <td
                           className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${
-                            mv.AmountMinor > 0 ? 'text-pos' : mv.AmountMinor < 0 ? 'text-neg' : 'text-ink'
+                            mv.AmountMinor > 0
+                              ? 'text-pos'
+                              : mv.AmountMinor < 0
+                                ? 'text-neg'
+                                : 'text-ink'
                           }`}
                         >
                           {formatSignedMoney(mv.AmountMinor)}
@@ -320,7 +396,10 @@ export default function DashboardPage() {
           {/* 5. Requiere atención — only when something needs it */}
           {attentionDocs.length > 0 && (
             <section aria-label="Requiere atención" className="space-y-2">
-              <SectionHeader title="Requiere atención" action={{ to: '/documents', label: 'Ver documentos' }} />
+              <SectionHeader
+                title="Requiere atención"
+                action={{ to: '/documents', label: 'Ver documentos' }}
+              />
               <div className="overflow-hidden rounded-[12px] border border-line bg-surface">
                 {attentionDocs.slice(0, 3).map((doc) => (
                   <div
@@ -330,7 +409,10 @@ export default function DashboardPage() {
                     <div className="min-w-0">
                       <p className="truncate text-ink">{doc.DocumentName ?? 'Documento'}</p>
                       <p className="truncate text-meta text-ink-3">
-                        {[accountNames.get(doc.AccountID ?? ''), formatPeriod(doc.PeriodStart, doc.PeriodEnd)]
+                        {[
+                          accountNames.get(doc.AccountID ?? ''),
+                          formatPeriod(doc.PeriodStart, doc.PeriodEnd),
+                        ]
                           .filter(Boolean)
                           .join(' · ')}
                       </p>

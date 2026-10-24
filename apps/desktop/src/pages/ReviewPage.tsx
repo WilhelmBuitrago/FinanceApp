@@ -37,7 +37,9 @@ export default function ReviewPage() {
         <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">Revisión</h1>
         <div className="rounded-[12px] border border-dashed border-line bg-surface/50 p-12 text-center">
           <p className="text-body text-ink-2">No hay ítems pendientes de revisión.</p>
-          <p className="mt-1 text-meta text-ink-3">Cuando un documento, un duplicado o una categoría requiera atención aparecerá aquí.</p>
+          <p className="mt-1 text-meta text-ink-3">
+            Cuando un documento, un duplicado o una categoría requiera atención aparecerá aquí.
+          </p>
         </div>
       </div>
     );
@@ -57,7 +59,7 @@ export default function ReviewPage() {
               payload={p}
               categories={categories}
               selectedId={selectedCat[item.ID] || ''}
-              onSelectChange={(value) => setSelectedCat(s => ({ ...s, [item.ID]: value }))}
+              onSelectChange={(value) => setSelectedCat((s) => ({ ...s, [item.ID]: value }))}
               onAssign={() => resolveCategory(item, selectedCat[item.ID] || null)}
               onDiscard={() => discard(item)}
             />
@@ -93,7 +95,9 @@ export default function ReviewPage() {
           />
         );
       })}
-      <Link to="/" className="px-3 py-1 rounded border inline-block">Volver</Link>
+      <Link to="/" className="px-3 py-1 rounded border inline-block">
+        Volver
+      </Link>
     </div>
   );
 }

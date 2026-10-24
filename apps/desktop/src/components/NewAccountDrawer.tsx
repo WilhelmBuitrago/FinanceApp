@@ -141,9 +141,7 @@ export function NewAccountDrawer({ onClose, onCreated }: NewAccountDrawerProps) 
                         <span className="block text-body font-medium text-ink">
                           {PRODUCT_LABELS[type] ?? type}
                         </span>
-                        <span className="block text-meta text-ink-3">
-                          {accountTypeLabel(type)}
-                        </span>
+                        <span className="block text-meta text-ink-3">{accountTypeLabel(type)}</span>
                       </span>
                     </button>
                   );

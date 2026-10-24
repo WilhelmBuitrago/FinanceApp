@@ -10,9 +10,12 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
 ## Estructura
 
 - [`index.html`](./index.html) — entrada HTML de Vite.
-- [`package.json`](./package.json) — dependencias y scripts (`dev`, `build`, `preview`).
+- [`package.json`](./package.json) — dependencias y scripts (`dev`, `build`, `preview`, `lint`, `test`).
 - [`package-lock.json`](./package-lock.json) — dependencias fijadas.
 - [`postcss.config.js`](./postcss.config.js) — pipeline PostCSS con Tailwind 4.
+- [`eslint.config.mjs`](./eslint.config.mjs) — configuración de ESLint (flat).
+- [`vitest.config.ts`](./vitest.config.ts) — configuración de tests (jsdom).
+- [`.prettierrc.json`](./.prettierrc.json) / [`.prettierignore`](./.prettierignore) — estilo de formato.
 - **`src/`** — frontend React (TypeScript).
   - [`main.tsx`](./src/main.tsx) — arranque de React y montaje del router.
   - [`index.css`](./src/index.css) — estilos base y directivas de Tailwind.
@@ -80,6 +83,8 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`accountType.ts`](./src/lib/accountType.ts) — etiquetas de tipo de cuenta.
     - [`eventType.ts`](./src/lib/eventType.ts) — etiquetas de tipo de evento.
     - [`reviewPayload.ts`](./src/lib/reviewPayload.ts) — parseo defensivo del payload de un ítem en revisión.
+    - [`version.ts`](./src/lib/version.ts) — versión del componente (lee `package.json`).
+  - **`test/`** — setup de Vitest (`@testing-library/jest-dom`); los tests viven al lado de cada módulo (`*.test.ts` / `*.test.tsx`).
   - **`types/`** — contratos TypeScript del backend, un archivo por entidad.
     - [`account.ts`](./src/types/account.ts) — cuenta.
     - [`api.ts`](./src/types/api.ts) — errores de API y estado de consulta.
@@ -113,10 +118,17 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
 
 ## Estado
 
-- Versión del paquete: **0.1.0**. Stack: Tauri 2, React 18, Vite 8, TypeScript 5,
+- Versión del paquete: **0.1.1**. Stack: Tauri 2, React 18, Vite 8, TypeScript 5,
   Tailwind 4, react-router-dom 7.
-- `npm run build` **verde** (2026-10-24): `tsc --noEmit && vite build` en ~11 s,
-  sin errores ni warnings.
+- `npm run build` **verde** (2026-10-24): `tsc --noEmit && vite build`, sin
+  errores ni warnings. Regla dura (AGENTS.md): el build del front es siempre
+  `npm run build`, nunca `vite build` pelado.
+- `npm run lint` **verde**: 0 errores. 28 warnings son deuda documentada en
+  `eslint.config.mjs` (los `any` del payload de revisión y las reglas de la
+  era React Compiler: `set-state-in-effect`, `purity`).
+- `npm test` **verde**: 16 tests en 5 archivos (payload de revisión, contrato
+  del cliente HTTP, `useListQuery`, la card de CATEGORY, la versión).
+- `npx prettier --check .` **verde** (CRLF del repo normalizado a LF).
 - La publicación (MSI) la dispara el workflow `windows-tauri.yml` al empujar un
   tag de versión; con el interruptor del usuario, nunca de forma automática
   desde acá.

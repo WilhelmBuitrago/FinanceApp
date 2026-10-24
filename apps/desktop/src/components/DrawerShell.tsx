@@ -44,7 +44,16 @@ export function DrawerCloseButton({ onClose }: { onClose: () => void }) {
       aria-label="Cerrar panel"
       className="flex h-8 w-8 items-center justify-center rounded-tk text-ink-3 transition-colors duration-[120ms] hover:bg-interactive hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" aria-hidden="true">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="square"
+        aria-hidden="true"
+      >
         <path d="M6 6l12 12M18 6 6 18" />
       </svg>
     </button>

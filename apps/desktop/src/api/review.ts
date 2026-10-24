@@ -36,7 +36,10 @@ export async function resolveReviewMovement(
 // Resolving a CATEGORY item only moves the category on the financial
 // event. null leaves the movement uncategorized: a valid state, never a
 // forced review item.
-export async function resolveReviewCategory(id: string, categoryId: string | null): Promise<Movement> {
+export async function resolveReviewCategory(
+  id: string,
+  categoryId: string | null,
+): Promise<Movement> {
   return apiPost<Movement>(`/review/entries/${id}/resolve`, { category_id: categoryId });
 }
 

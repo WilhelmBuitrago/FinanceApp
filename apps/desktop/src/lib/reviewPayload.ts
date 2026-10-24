@@ -5,5 +5,9 @@ import type { ReviewItem } from '../api/review';
    purpose: a payload we cannot read must not break the queue. */
 
 export function payloadOf(item: ReviewItem): any {
-  try { return JSON.parse(item.PayloadJson || '{}'); } catch { return {}; }
+  try {
+    return JSON.parse(item.PayloadJson || '{}');
+  } catch {
+    return {};
+  }
 }

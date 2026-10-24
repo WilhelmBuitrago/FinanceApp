@@ -24,7 +24,8 @@ const MOVEMENT_STATUS_LABELS: Record<string, string> = {
   REVERSED: 'Revertidos',
 };
 
-const tableHead = 'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
+const tableHead =
+  'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
@@ -85,7 +86,8 @@ export default function TransactionsPage() {
   const accountOptions = useMemo(() => {
     const map = new Map<string, string>();
     for (const mv of movements.data ?? []) {
-      if (!map.has(mv.AccountID)) map.set(mv.AccountID, accountNames.get(mv.AccountID) ?? mv.AccountID);
+      if (!map.has(mv.AccountID))
+        map.set(mv.AccountID, accountNames.get(mv.AccountID) ?? mv.AccountID);
     }
     return [...map.entries()].map(([id, label]) => ({ id, label }));
   }, [movements.data, accountNames]);
@@ -275,18 +277,25 @@ export default function TransactionsPage() {
                     }`}
                   >
                     {isSelected && (
-                      <span className="absolute bottom-0 left-0 top-0 w-[2px] bg-accent" aria-hidden="true" />
+                      <span
+                        className="absolute bottom-0 left-0 top-0 w-[2px] bg-accent"
+                        aria-hidden="true"
+                      />
                     )}
                     <td className="whitespace-nowrap px-3 py-2 text-meta text-ink-3">
                       {formatDate(mv.MovementDate)}
                     </td>
-                    <td className="w-full max-w-0 truncate px-3 py-2 text-ink" title={mv.Description ?? undefined}>
+                    <td
+                      className="w-full max-w-0 truncate px-3 py-2 text-ink"
+                      title={mv.Description ?? undefined}
+                    >
                       {mv.Description ?? '—'}
                     </td>
-                    <td className="truncate px-3 py-2 text-ink-2">
-                      {mv.categoryName || '—'}
-                    </td>
-                    <td className="truncate px-3 py-2 text-ink-2" title={accountNames.get(mv.AccountID) ?? undefined}>
+                    <td className="truncate px-3 py-2 text-ink-2">{mv.categoryName || '—'}</td>
+                    <td
+                      className="truncate px-3 py-2 text-ink-2"
+                      title={accountNames.get(mv.AccountID) ?? undefined}
+                    >
                       {accountNames.get(mv.AccountID) ?? '—'}
                     </td>
                     {showEstado && (
@@ -296,7 +305,11 @@ export default function TransactionsPage() {
                     )}
                     <td
                       className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${
-                        mv.AmountMinor > 0 ? 'text-pos' : mv.AmountMinor < 0 ? 'text-neg' : 'text-ink'
+                        mv.AmountMinor > 0
+                          ? 'text-pos'
+                          : mv.AmountMinor < 0
+                            ? 'text-neg'
+                            : 'text-ink'
                       }`}
                     >
                       {formatSignedMoney(mv.AmountMinor)}
@@ -311,7 +324,7 @@ export default function TransactionsPage() {
 
       <DetailDrawer
         movement={selected}
-        accountName={selected ? accountNames.get(selected.AccountID) ?? null : null}
+        accountName={selected ? (accountNames.get(selected.AccountID) ?? null) : null}
         onClose={() => setSelected(null)}
       />
     </div>

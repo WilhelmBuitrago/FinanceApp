@@ -10,6 +10,7 @@ import {
   IconWallet,
 } from '../../components/icons';
 import { getReviewEntries } from '../../api/review';
+import { APP_VERSION } from '../../lib/version';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -41,7 +42,7 @@ function useReviewCount(): number {
   useEffect(() => {
     const load = () =>
       getReviewEntries()
-        .then(d => setCount((d || []).length))
+        .then((d) => setCount((d || []).length))
         .catch(() => {});
     load();
     window.addEventListener('review-queue-changed', load);
@@ -50,7 +51,13 @@ function useReviewCount(): number {
   return count;
 }
 
-function NavItem({ to, label, Icon, collapsed, badge }: NavItemDef & { collapsed: boolean; badge?: number }) {
+function NavItem({
+  to,
+  label,
+  Icon,
+  collapsed,
+  badge,
+}: NavItemDef & { collapsed: boolean; badge?: number }) {
   const showBadge = !!badge && badge > 0;
   return (
     <NavLink
@@ -66,13 +73,20 @@ function NavItem({ to, label, Icon, collapsed, badge }: NavItemDef & { collapsed
       {({ isActive }) => (
         <>
           {isActive && (
-            <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-accent" aria-hidden="true" />
+            <span
+              className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-accent"
+              aria-hidden="true"
+            />
           )}
           <Icon className={isActive ? 'shrink-0 text-accent' : 'shrink-0 text-ink-3'} />
           <span className={`truncate ${collapsed ? 'sr-only' : ''}`}>{label}</span>
           {showBadge && (
             <span
-              className={collapsed ? 'absolute top-1 right-1 h-2 w-2 rounded-full bg-accent-strong' : 'ml-auto min-w-5 rounded-full bg-accent-strong px-1.5 py-0.5 text-center text-meta font-mono text-white'}
+              className={
+                collapsed
+                  ? 'absolute top-1 right-1 h-2 w-2 rounded-full bg-accent-strong'
+                  : 'ml-auto min-w-5 rounded-full bg-accent-strong px-1.5 py-0.5 text-center text-meta font-mono text-white'
+              }
               aria-label={`${badge} ítems pendientes de revisión`}
             >
               {!collapsed && badge}
@@ -118,7 +132,12 @@ export default function Sidebar({ collapsed }: SidebarProps) {
         <GroupLabel label="Sistema" collapsed={collapsed} />
         <div className="flex flex-col gap-0.5">
           {systemNav.map((item) => (
-            <NavItem key={item.to} {...item} collapsed={collapsed} badge={item.to === '/review' ? reviewCount : undefined} />
+            <NavItem
+              key={item.to}
+              {...item}
+              collapsed={collapsed}
+              badge={item.to === '/review' ? reviewCount : undefined}
+            />
           ))}
         </div>
         <GroupLabel label="Herramientas" collapsed={collapsed} />
@@ -131,7 +150,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
 
       {/* Version — real metadata, not decoration */}
       <div className="mt-auto px-4 pb-4">
-        {!collapsed && <span className="text-meta font-mono text-ink-3">v0.1.0</span>}
+        {!collapsed && <span className="text-meta font-mono text-ink-3">v{APP_VERSION}</span>}
       </div>
     </aside>
   );
