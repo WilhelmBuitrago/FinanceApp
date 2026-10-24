@@ -1,9 +1,9 @@
 """CLI to run Nu Account parser benchmark."""
 
-import os
-import json
-import sys
 import argparse
+import json
+import os
+import sys
 from pathlib import Path
 
 # Run from any working directory: the processor packages live at the root.

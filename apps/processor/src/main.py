@@ -1,8 +1,8 @@
+import logging
 import os
 import sys
 import uuid
 import warnings
-import logging
 from pathlib import Path
 
 os.environ['PYTHONWARNINGS'] = 'ignore'
@@ -12,9 +12,9 @@ log = logging.getLogger('processor')
 # Normalize path and add processor root to sys.path
 processor_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(processor_root))
+from extraction.artifacts import write_artifacts
 from extraction.capture import inspect_and_extract
 from extraction.extractor import extract_native_text
-from extraction.artifacts import write_artifacts
 from parser.nu_account import NuAccountParser
 from validation.validator import NuAccountValidator
 
@@ -55,7 +55,7 @@ def parse_with_retry(pdf_path, artifacts_base, processing_id, inspection, extrac
 def process_pdf(pdf_path):
     processing_id = str(uuid.uuid4())
     log.info(f"process_pdf start pdf={pdf_path} processing_id={processing_id}")
-    log.info(f"inspection+extraction start (single pass)")
+    log.info("inspection+extraction start (single pass)")
     inspection, extraction = inspect_and_extract(pdf_path)
     log.info(f"inspection done sha256={inspection['file']['sha256']}")
     artifacts_base = os.environ.get('ARTIFACTS_PATH')
@@ -69,10 +69,10 @@ def process_pdf(pdf_path):
 
     # Parsing & validation for Nu account statements. The silent retry
     # (Layer 0) lives inside: the user only sees the outcome.
-    log.info(f"parser start")
-    parsed_doc = parse_with_retry(dstPath, artifacts_base, processing_id, inspection)
+    log.info("parser start")
+    parsed_doc = parse_with_retry(pdf_path, artifacts_base, processing_id, inspection)
     log.info(f"parser done movements={len(parsed_doc.movements)}")
-    log.info(f"validation start")
+    log.info("validation start")
     validator = NuAccountValidator()
     validation_result = validator.validate(parsed_doc)
     log.info(f"validation done valid={validation_result.get('valid')}")
@@ -107,7 +107,7 @@ def process_pdf(pdf_path):
     import json
     with open(os.path.join(artifact_dir, "manifest.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
-    log.info(f"manifest written")
+    log.info("manifest written")
     # Save parsed document for later use
     with open(os.path.join(artifact_dir, "parsed.json"), "w", encoding="utf-8") as f:
         json.dump({
@@ -118,12 +118,12 @@ def process_pdf(pdf_path):
             "document_review": [d.__dict__ for d in parsed_doc.document_review]
         }, f, ensure_ascii=False, indent=2)
     log.info(f"parsed.json written movements={len(parsed_doc.movements)}")
-    log.info(f"process_pdf complete")
+    log.info("process_pdf complete")
     return manifest
 
 if __name__ == "__main__":
-    import sys
     import json
+    import sys
     if len(sys.argv) < 2:
         sys.stderr.write("usage: python apps/processor/src/main.py <pdf_path>\n")
         sys.exit(1)
@@ -131,6 +131,9 @@ if __name__ == "__main__":
         m = process_pdf(sys.argv[1])
         sys.stdout.write(json.dumps(m, ensure_ascii=False))
     except Exception as e:
-        log.error(f"Processor error: {e}", exc_info=True)
+        # log.exception already logs the traceback (the exception included),
+        # so the message stays bare; the explicit stderr line keeps the
+        # contract format the backend parses from stderr.
+        log.exception("Processor error")
         sys.stderr.write(f"Processor error: {e}\n")
         sys.exit(1)

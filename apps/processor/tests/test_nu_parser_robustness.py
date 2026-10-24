@@ -150,6 +150,7 @@ def test_manifest_absent_is_tolerated():
     # The parser does not use the manifest: the pipeline must be able to
     # write it exactly once (after parsing). Parsing without it works.
     import tempfile
+
     from parser.nu_account import NuAccountParser
     base = Path(tempfile.mkdtemp(prefix="nu-nomanifest-"))
     try:
@@ -188,6 +189,7 @@ def test_extraction_page_without_number_fails_clearly():
     # An extraction page whose name carries no page number is a broken
     # artifact: the error must name the file, not be an AttributeError.
     import tempfile
+
     from parser.nu_account import NuAccountParser
     base = Path(tempfile.mkdtemp(prefix="nu-badpage-"))
     try:

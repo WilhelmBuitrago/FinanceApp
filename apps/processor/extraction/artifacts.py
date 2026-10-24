@@ -1,5 +1,5 @@
-import os
 import json
+import os
 
 
 def write_artifacts(base_dir, inspection, extraction):

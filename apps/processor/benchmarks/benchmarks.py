@@ -3,18 +3,19 @@
 import json
 import os
 import sys
-from typing import List, Dict, Any
+from typing import Any
+
 from parser.nu_account import NuAccountParser
 
 
 class BenchmarkNuParser:
-    def __init__(self, processing_ids: List[str], ground_truth_base_path: str):
+    def __init__(self, processing_ids: list[str], ground_truth_base_path: str):
         self.processing_ids = processing_ids
         self.ground_truth_base_path = ground_truth_base_path
-        self.results: List[Dict[str, Any]] = []
-        self.summary: Dict[str, Any] = {}
+        self.results: list[dict[str, Any]] = []
+        self.summary: dict[str, Any] = {}
 
-    def _load_ground_truth(self, processing_id: str) -> Dict[str, Any]:
+    def _load_ground_truth(self, processing_id: str) -> dict[str, Any]:
         path = os.path.join(self.ground_truth_base_path, "nu_account", f"{processing_id}.json")
         if not os.path.exists(path):
             return {"processing_id": processing_id, "expected_movements_count": 0, "sample_movements": []}
@@ -61,7 +62,7 @@ class BenchmarkNuParser:
                 doc = parser.parse()
                 parsed_movements = doc.movements
                 parsed_count = len(parsed_movements)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 — a failed parse is a data point, not a stop: the benchmark keeps measuring
                 parsed_movements = []
                 parsed_count = 0
                 # Report to stderr and keep measuring the other documents.

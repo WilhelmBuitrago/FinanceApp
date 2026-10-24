@@ -55,6 +55,10 @@ Versión del componente: **0.1.1**; versión de contrato de artefactos: **1**
     reintento silencioso cuando el período no se lee.
   - [`test_extraction_capture.py`](./tests/test_extraction_capture.py) — pasada
     única de inspección + extracción.
+  - [`test_nu_pipeline_smoke.py`](./tests/test_nu_pipeline_smoke.py) — smoke de
+    `process_pdf` de punta a punta (solo se stubea la lectura del PDF): existe
+    porque un `NameError` en la orquestación sobrevivió a los tests por etapa y
+    a `py_compile`.
 - [`requirements-lock.txt`](./requirements-lock.txt) — dependencias fijadas;
   es la fuente de verdad de versiones.
 
@@ -87,7 +91,10 @@ usen. Si algún día se decide prescindir de ellas, hay que quitarlas del lock
   completa.
 - Las suites de `tests/` **corren y pasan** con ese intérprete
   (`<python.exe> tests/<archivo>.py`; no hace falta pytest porque los archivos
-  tienen bloque `__main__`).
+  tienen bloque `__main__`): **7 suites**.
+- Batería de verificación del componente (AGENTS.md §7), toda verde al
+  2026-10-24: `compileall` (compila), `tabnanny` (indentación consistente),
+  `ruff check` (0 hallazgos; ruff instalado en el env) y las 7 suites.
 - Los tests de parser (`test_nu_parser.py`) **hacen skip** si no encuentran el
   artefacto local en `data/artifacts/`: son integración contra datos reales
   que solo existen en la máquina de mantenimiento.

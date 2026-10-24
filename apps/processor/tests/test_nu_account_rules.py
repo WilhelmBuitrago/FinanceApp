@@ -10,7 +10,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from normalization.nu_normalizer import normalize_date, normalize_amount
+from normalization.nu_normalizer import normalize_amount, normalize_date
 from parser.nu_account import NuAccountParser, ParsedMovement, ReviewItem
 
 

@@ -153,8 +153,8 @@ batteries green.
 - **Processor** (always the env interpreter, never bare `python`):
   `<python.exe> -m compileall -q apps/processor` (everything compiles),
   `<python.exe> -m tabnanny -q apps/processor` (consistent indentation),
-  and the six suites `<python.exe> tests/<file>.py`. Full PEP8 linting
-  (ruff/flake8/black) is NOT installed in the env: installing it is a
-  maintainer decision, not an agent action.
+  `<python.exe> -m ruff check apps/processor` (lint, 0 findings — ruff is
+  installed in the env since 2026-10-24), and the seven suites
+  `<python.exe> tests/<file>.py`.
 - **Desktop** (from `apps/desktop/`): `npm run build` (the type gate),
   `npm run lint` (0 problems), `npm test`, `npm run format:check`.

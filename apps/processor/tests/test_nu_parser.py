@@ -2,10 +2,11 @@
 
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from normalization.nu_normalizer import normalize_amount, normalize_date
 from parser.nu_account import NuAccountParser
-from normalization.nu_normalizer import normalize_date, normalize_amount
 
 TEST_ARTIFACT_ID = 'cfa4f1ae-60da-45ee-b623-4887579661b8'
 
@@ -58,7 +59,7 @@ def test_continuity_across_pages():
         return
     parser = NuAccountParser(TEST_ARTIFACT_ID)
     doc = parser.parse()
-    pages = set(m.page_number for m in doc.movements)
+    pages = {m.page_number for m in doc.movements}
     # Should have movements across multiple pages
     assert len(pages) >= 2
     # Sequence should be continuous
@@ -86,9 +87,8 @@ def test_independence():
     # Find duplicate date/description with different amount
     # At least two movements with same date and description pattern should exist independently
     # Check that sequence increments for each
-    dates = [m.date_original for m in doc.movements]
     # Just ensure no deduplication: count > unique set
-    unique = set((m.date_original, m.description_original, m.amount_original) for m in doc.movements)
+    unique = {(m.date_original, m.description_original, m.amount_original) for m in doc.movements}
     assert len(doc.movements) == len(unique)
     print('independence ok')
 

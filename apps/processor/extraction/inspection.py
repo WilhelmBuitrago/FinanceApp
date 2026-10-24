@@ -1,5 +1,6 @@
 import hashlib
 import os
+
 from extraction._fitz import _get_fitz
 
 

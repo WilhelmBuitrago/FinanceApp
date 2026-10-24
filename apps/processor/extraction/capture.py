@@ -8,8 +8,8 @@ callers that need only one half (the silent retry re-extracts alone).
 """
 
 from extraction._fitz import _get_fitz
-from extraction.inspection import inspect_document
 from extraction.extractor import extract_pages
+from extraction.inspection import inspect_document
 
 
 def inspect_and_extract(path):

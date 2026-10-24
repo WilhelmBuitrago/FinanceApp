@@ -1,7 +1,6 @@
 """Normalization utilities for Nu Account documents."""
 
 import re
-from datetime import datetime
 
 _MONTH_MAP = {
     'ene': '01', 'jan': '01',
@@ -92,7 +91,7 @@ def normalize_amount(amount_original: str) -> int:
     s_no_thousands = s_clean.replace('.', '')
     # Replace decimal comma with dot for parsing
     if ',' in s_no_thousands:
-        int_part, dec_part = s_no_thousands.split(',', 1)
+        int_part, _dec_part = s_no_thousands.split(',', 1)
         # Keep only integer pesos, ignore cents
         value = int(int_part) if int_part else 0
     else:
