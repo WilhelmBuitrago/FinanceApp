@@ -13,6 +13,13 @@ type InstallmentPlanRepository struct {
 	db *DB
 }
 
+// InstallmentPlanRepository is SCAFFOLDING for the planned credit-card
+// feature (purchases paid in installments, with their capital/interest
+// breakdown). It is not wired to any handler or service yet: no route
+// reads or writes installment plans. Its tests keep the schema and the
+// generated queries honest until the feature lands and connects here.
+// When that happens, this comment goes away with the wiring.
+
 func NewInstallmentPlanRepository(db *DB) *InstallmentPlanRepository {
 	return &InstallmentPlanRepository{db: db}
 }

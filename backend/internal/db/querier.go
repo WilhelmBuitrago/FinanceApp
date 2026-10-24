@@ -30,7 +30,6 @@ type Querier interface {
 	GetDocument(ctx context.Context, id string) (Document, error)
 	GetFinancialEvent(ctx context.Context, id string) (FinancialEvent, error)
 	GetImportJob(ctx context.Context, id string) (ImportJob, error)
-	GetInstallment(ctx context.Context, id string) (Installment, error)
 	GetInstallmentPlan(ctx context.Context, id string) (InstallmentPlan, error)
 	GetMovement(ctx context.Context, id string) (Movement, error)
 	GetReviewItem(ctx context.Context, id string) (ReviewItem, error)

@@ -85,32 +85,6 @@ func (q *Queries) CreateInstallment(ctx context.Context, arg CreateInstallmentPa
 	return i, err
 }
 
-const getInstallment = `-- name: GetInstallment :one
-SELECT id, installment_plan_id, installment_number, total_installments, expected_amount_minor, capital_amount_minor, interest_amount_minor, status, expected_date, documented_date, movement_id, metadata_json, created_at, updated_at FROM installments WHERE id = ?
-`
-
-func (q *Queries) GetInstallment(ctx context.Context, id string) (Installment, error) {
-	row := q.db.QueryRowContext(ctx, getInstallment, id)
-	var i Installment
-	err := row.Scan(
-		&i.ID,
-		&i.InstallmentPlanID,
-		&i.InstallmentNumber,
-		&i.TotalInstallments,
-		&i.ExpectedAmountMinor,
-		&i.CapitalAmountMinor,
-		&i.InterestAmountMinor,
-		&i.Status,
-		&i.ExpectedDate,
-		&i.DocumentedDate,
-		&i.MovementID,
-		&i.MetadataJson,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
 const listInstallmentsByPlan = `-- name: ListInstallmentsByPlan :many
 SELECT id, installment_plan_id, installment_number, total_installments, expected_amount_minor, capital_amount_minor, interest_amount_minor, status, expected_date, documented_date, movement_id, metadata_json, created_at, updated_at FROM installments WHERE installment_plan_id = ? ORDER BY installment_number
 `

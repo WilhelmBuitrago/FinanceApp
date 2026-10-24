@@ -11,6 +11,12 @@ type RelationRepository struct {
 	db *DB
 }
 
+// RelationRepository is SCAFFOLDING for the planned transfers-between-own-
+// accounts feature: it links the movement that leaves one account with the
+// event/movement that lands in the other, so both sides trace to one
+// decision. No route writes or reads relations yet. Its tests keep the
+// schema and the generated queries honest until the feature lands.
+
 func NewRelationRepository(db *DB) *RelationRepository {
 	return &RelationRepository{db: db}
 }
