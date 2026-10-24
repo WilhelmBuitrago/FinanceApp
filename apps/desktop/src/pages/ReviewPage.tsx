@@ -1,5 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { getAccounts } from '../api/accounts';
+import { getCategories } from '../api/categories';
+import { ApiError } from '../api/client';
+import {
+  discardReviewEntry,
+  getReviewEntries,
+  resolveReviewCategory,
+  resolveReviewMovement,
+  resolveReviewPeriod,
+  type ReviewItem,
+} from '../api/review';
 import { formatDate } from '../lib/formatDate';
 import { formatSignedMoney } from '../lib/formatMoney';
 
@@ -8,17 +19,6 @@ import { formatSignedMoney } from '../lib/formatMoney';
    movement the processor could not normalize). The queue lives in the backend
    (review_items), so a resolution survives restarts and every page reads the
    same source. */
-
-type ReviewItem = {
-  ID: string;
-  Kind: 'DUPLICATE' | 'CATEGORY' | 'EXTRACTION' | 'DOCUMENT_PERIOD';
-  PayloadJson?: string;
-  SourceEntryID?: string;
-  Status: string;
-  CreatedAt: string;
-};
-
-const API = 'http://localhost:8081';
 
 const MONTHS = [
   { n: 1, label: 'Enero' }, { n: 2, label: 'Febrero' }, { n: 3, label: 'Marzo' },
@@ -39,21 +39,21 @@ export default function ReviewPage() {
   const [selectedCat, setSelectedCat] = useState<Record<string, string>>({});
 
   const loadQueue = () =>
-    fetch(`${API}/review/entries`)
-      .then(r => r.json())
+    getReviewEntries()
       .then(d => setItems(d || []))
       .catch(() => setItems([]));
 
   useEffect(() => {
     loadQueue();
-    fetch(`${API}/categories`)      .then(r => r.json())
-      .then(d => setCategories((d || []).map((c: any) => ({
-        id: c.id ?? c.ID, name: c.name ?? c.Name,
-        type: (c.category_type ?? c.CategoryType ?? '').toUpperCase(),
-      }))));
-    fetch(`${API}/accounts`)
-      .then(r => r.json())
-      .then(d => setAccounts(d || []));
+    getCategories()
+      .then(d => setCategories((d || []).map(c => ({
+        id: c.ID, name: c.Name,
+        type: (c.CategoryType ?? '').toUpperCase(),
+      }))))
+      .catch(() => {});
+    getAccounts()
+      .then(d => setAccounts(d || []))
+      .catch(() => {});
   }, []);
 
   const setField = (id: string, patch: any) =>
@@ -79,19 +79,18 @@ export default function ReviewPage() {
       alert('Completá fecha, monto y cuenta para confirmar');
       return;
     }
-    const res = await fetch(`${API}/review/entries/${item.ID}/resolve`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      await resolveReviewMovement(item.ID, {
         description, amount_minor: amountMinor, date, type, account_id: accountId,
-      }),
-    });
-    if (res.ok) {
+      });
       dropItem(item.ID);
-    } else if (res.status === 409) {
-      alert('Este ítem ya fue resuelto');
-      dropItem(item.ID);
-    } else {
-      alert('Error al confirmar la corrección');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        alert('Este ítem ya fue resuelto');
+        dropItem(item.ID);
+      } else {
+        alert('Error al confirmar la corrección');
+      }
     }
   };
 
@@ -106,35 +105,40 @@ export default function ReviewPage() {
       alert('Elegí el mes y el año del estado de cuenta');
       return;
     }
-    const res = await fetch(`${API}/review/entries/${item.ID}/resolve-period`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ month, year }),
-    });
-    if (res.ok) {
+    try {
+      await resolveReviewPeriod(item.ID, month, year);
       dropItem(item.ID);
-    } else if (res.status === 409) {
-      alert('Este ítem ya fue resuelto');
-      dropItem(item.ID);
-    } else {
-      alert('Error al confirmar el período');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        alert('Este ítem ya fue resuelto');
+        dropItem(item.ID);
+      } else {
+        alert('Error al confirmar el período');
+      }
     }
   };
 
-  const resolveCategory = async (item: ReviewItem, categoryId: string | null) => {    const res = await fetch(`${API}/review/entries/${item.ID}/resolve`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category_id: categoryId }),
-    });
-    if (res.ok || res.status === 409) {
+  const resolveCategory = async (item: ReviewItem, categoryId: string | null) => {
+    try {
+      await resolveReviewCategory(item.ID, categoryId);
       dropItem(item.ID);
-    } else {
-      alert('Error al resolver la categoría');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        dropItem(item.ID);
+      } else {
+        alert('Error al resolver la categoría');
+      }
     }
   };
 
   const discard = async (item: ReviewItem) => {
-    const res = await fetch(`${API}/review/entries/${item.ID}/discard`, { method: 'POST' });
-    if (res.ok || res.status === 409) {
+    try {
+      await discardReviewEntry(item.ID);
       dropItem(item.ID);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        dropItem(item.ID);
+      }
     }
   };
 
