@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 
+import { Notice } from '../components/ui/Notice';
 import { ReviewCategoryCard } from '../components/review/ReviewCategoryCard';
 import { ReviewMovementCard } from '../components/review/ReviewMovementCard';
 import { ReviewPeriodCard } from '../components/review/ReviewPeriodCard';
@@ -25,6 +26,8 @@ export default function ReviewPage() {
     setField,
     selectedCat,
     setSelectedCat,
+    notice,
+    dismissNotice,
     resolveMovement,
     resolvePeriod,
     resolveCategory,
@@ -48,6 +51,7 @@ export default function ReviewPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">Revisión</h1>
+      <Notice message={notice} onDismiss={dismissNotice} />
       {items.map((item) => {
         const p = payloadOf(item);
         const f = form[item.ID] || {};

@@ -12,6 +12,7 @@ import {
   type ReviewItem,
 } from '../api/review';
 import { payloadOf } from '../lib/reviewPayload';
+import { REVIEW_QUEUE_CHANGED_EVENT } from '../lib/reviewEvents';
 
 /* All review-page state: the queue, the data its cards need (categories
    to assign, accounts to correct against), the per-item form, and the
@@ -24,6 +25,8 @@ export function useReviewQueue() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [form, setForm] = useState<Record<string, any>>({});
   const [selectedCat, setSelectedCat] = useState<Record<string, string>>({});
+  // Transient outcome of a resolution, shown inline (the old alert()).
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     getReviewEntries()
@@ -51,8 +54,10 @@ export function useReviewQueue() {
   // Refreshing the queue in place also tells the sidebar badge to reload.
   const dropItem = (id: string) => {
     setItems((its) => its.filter((i) => i.ID !== id));
-    window.dispatchEvent(new Event('review-queue-changed'));
+    window.dispatchEvent(new Event(REVIEW_QUEUE_CHANGED_EVENT));
   };
+
+  const dismissNotice = () => setNotice(null);
 
   const resolveMovement = async (item: ReviewItem) => {
     const p = payloadOf(item);
@@ -66,7 +71,7 @@ export function useReviewQueue() {
     const type = f.type ?? p.type ?? 'EXPENSE';
     const accountId = f.account ?? p.account_id ?? '';
     if (!date || !accountId || !type) {
-      alert('Completá fecha, monto y cuenta para confirmar');
+      setNotice('Completá fecha, monto y cuenta para confirmar');
       return;
     }
     try {
@@ -80,10 +85,10 @@ export function useReviewQueue() {
       dropItem(item.ID);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        alert('Este ítem ya fue resuelto');
+        setNotice('Este ítem ya fue resuelto');
         dropItem(item.ID);
       } else {
-        alert('Error al confirmar la corrección');
+        setNotice('Error al confirmar la corrección');
       }
     }
   };
@@ -96,7 +101,7 @@ export function useReviewQueue() {
     const month = Number(f.month);
     const year = Number(f.year);
     if (!month || !year) {
-      alert('Elegí el mes y el año del estado de cuenta');
+      setNotice('Elegí el mes y el año del estado de cuenta');
       return;
     }
     try {
@@ -104,10 +109,10 @@ export function useReviewQueue() {
       dropItem(item.ID);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        alert('Este ítem ya fue resuelto');
+        setNotice('Este ítem ya fue resuelto');
         dropItem(item.ID);
       } else {
-        alert('Error al confirmar el período');
+        setNotice('Error al confirmar el período');
       }
     }
   };
@@ -120,7 +125,7 @@ export function useReviewQueue() {
       if (err instanceof ApiError && err.status === 409) {
         dropItem(item.ID);
       } else {
-        alert('Error al resolver la categoría');
+        setNotice('Error al resolver la categoría');
       }
     }
   };
@@ -144,6 +149,8 @@ export function useReviewQueue() {
     setField,
     selectedCat,
     setSelectedCat,
+    notice,
+    dismissNotice,
     resolveMovement,
     resolvePeriod,
     resolveCategory,

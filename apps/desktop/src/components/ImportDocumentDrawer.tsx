@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { uploadDocument } from '../api/documents';
 import { getJob } from '../api/jobs';
 import { getReviewEntries, type ReviewItem } from '../api/review';
+import { REVIEW_QUEUE_CHANGED_EVENT } from '../lib/reviewEvents';
 import { ApiError } from '../api/client';
 import {
   DrawerBody,
@@ -66,7 +67,7 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
             }
           });
           setReviewCount(mine.length);
-          window.dispatchEvent(new Event('review-queue-changed'));
+          window.dispatchEvent(new Event(REVIEW_QUEUE_CHANGED_EVENT));
           onImported();
           return;
         }

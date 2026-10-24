@@ -18,6 +18,7 @@ import {
   DrawerShell,
 } from './DrawerShell';
 import { StatusBadge } from './ui/StatusBadge';
+import { ConfirmModal } from './ConfirmModal';
 import type { Category } from '../types/category';
 import type { Movement } from '../types/movement';
 
@@ -77,6 +78,11 @@ export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerPro
   const [categories, setCategories] = useState<Category[]>([]);
   const [savingCategory, setSavingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState<string | null>(null);
+  // Movement deletion: confirmed through ConfirmModal (the destructive
+  // action the repo already has), never through a native confirm().
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -172,21 +178,41 @@ export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerPro
           </dl>
           <div className="pt-2">
             <button
-              onClick={async () => {
-                if (!confirm('¿Eliminar este movimiento? Esta acción no se puede deshacer.'))
-                  return;
-                try {
-                  await deleteMovement(movement.ID);
-                  onClose();
-                  window.location.reload();
-                } catch {
-                  alert('No se pudo eliminar el movimiento');
-                }
-              }}
+              onClick={() => setConfirmingDelete(true)}
               className="rounded-tk border border-line bg-bg px-3 py-1.5 text-sm font-medium text-neg hover:bg-red-50"
             >
               Eliminar movimiento
             </button>
+            {deleteError && (
+              <p className="mt-2 text-meta text-neg" role="alert">
+                {deleteError}
+              </p>
+            )}
+            {confirmingDelete && (
+              <div className="mt-3">
+                <ConfirmModal
+                  title="Eliminar movimiento"
+                  message="¿Eliminar este movimiento? Esta acción no se puede deshacer."
+                  confirmLabel="Eliminar"
+                  busy={deleting}
+                  onCancel={() => setConfirmingDelete(false)}
+                  onConfirm={async () => {
+                    setDeleting(true);
+                    try {
+                      await deleteMovement(movement.ID);
+                      setConfirmingDelete(false);
+                      onClose();
+                      window.location.reload();
+                    } catch {
+                      setDeleteError('No se pudo eliminar el movimiento');
+                      setConfirmingDelete(false);
+                    } finally {
+                      setDeleting(false);
+                    }
+                  }}
+                />
+              </div>
+            )}
           </div>
         </section>
 

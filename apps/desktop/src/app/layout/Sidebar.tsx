@@ -10,6 +10,7 @@ import {
   IconWallet,
 } from '../../components/icons';
 import { getReviewEntries } from '../../api/review';
+import { REVIEW_QUEUE_CHANGED_EVENT } from '../../lib/reviewEvents';
 import { APP_VERSION } from '../../lib/version';
 
 interface SidebarProps {
@@ -45,8 +46,8 @@ function useReviewCount(): number {
         .then((d) => setCount((d || []).length))
         .catch(() => {});
     load();
-    window.addEventListener('review-queue-changed', load);
-    return () => window.removeEventListener('review-queue-changed', load);
+    window.addEventListener(REVIEW_QUEUE_CHANGED_EVENT, load);
+    return () => window.removeEventListener(REVIEW_QUEUE_CHANGED_EVENT, load);
   }, []);
   return count;
 }

@@ -27,6 +27,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
     fecha: '',
   });
   const [categories, setCategories] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (accounts.length > 0 && !form.cuenta) {
@@ -58,8 +59,12 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
+            setError(null);
             const amount = Number(parseFloat(form.cantidad).toFixed(2));
-            if (!amount || amount <= 0) return alert('Cantidad debe ser positiva');
+            if (!amount || amount <= 0) {
+              setError('Cantidad debe ser positiva');
+              return;
+            }
             const sign = form.tipo === 'Egreso' ? -1 : 1;
             const amountMinor = Math.round(amount * 100) * sign;
             try {
@@ -94,10 +99,15 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
                   : err instanceof Error
                     ? err.message
                     : String(err);
-              alert('Error al crear movimiento: ' + detail);
+              setError(detail);
             }
           }}
         >
+          {error && (
+            <p className="text-body text-neg" role="alert">
+              {error}
+            </p>
+          )}
           <div className="space-y-4">
             <div>
               <label className="text-sm">Cantidad *</label>
