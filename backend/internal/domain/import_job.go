@@ -1,4 +1,4 @@
-package entities
+package domain
 
 // ImportJob represents an import pipeline job for a document.
 // TODO: Move to internal/domain if entities package is consolidated.

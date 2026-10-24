@@ -10,7 +10,6 @@ import (
 	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/domain"
-	"financeapp/backend/internal/domain/entities"
 	"financeapp/backend/internal/repositories"
 )
 
@@ -57,7 +56,7 @@ func seedDocAndJob(t *testing.T, sqlDB *sql.DB, processingID string) (docID, job
 	if _, err := docRepo.Create(t.Context(), doc); err != nil {
 		t.Fatalf("seed document: %v", err)
 	}
-	job := entities.ImportJob{
+	job := domain.ImportJob{
 		ID:           "job-dp",
 		DocumentID:   doc.ID,
 		Status:       "PROCESSING",

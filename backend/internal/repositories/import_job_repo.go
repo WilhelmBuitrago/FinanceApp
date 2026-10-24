@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	"financeapp/backend/internal/db"
-	"financeapp/backend/internal/domain/entities"
+	"financeapp/backend/internal/domain"
 )
 
 type ImportJobRepo struct {
@@ -17,9 +17,9 @@ func NewImportJobRepo(db *DB) *ImportJobRepo {
 	return &ImportJobRepo{db: db}
 }
 
-func (r *ImportJobRepo) Create(ctx context.Context, job entities.ImportJob) (entities.ImportJob, error) {
+func (r *ImportJobRepo) Create(ctx context.Context, job domain.ImportJob) (domain.ImportJob, error) {
 	if r.db.Querier == nil {
-		return entities.ImportJob{}, ErrUnavailable
+		return domain.ImportJob{}, ErrUnavailable
 	}
 	dbJob, err := r.db.Querier.CreateImportJob(ctx, db.CreateImportJobParams{
 		ID:           job.ID,
@@ -29,28 +29,28 @@ func (r *ImportJobRepo) Create(ctx context.Context, job entities.ImportJob) (ent
 		ProcessingID: toNullString(job.ProcessingID),
 	})
 	if err != nil {
-		return entities.ImportJob{}, translateError(err)
+		return domain.ImportJob{}, translateError(err)
 	}
 	return mapDBImportJobToEntities(dbJob), nil
 }
 
-func (r *ImportJobRepo) GetByID(ctx context.Context, id string) (entities.ImportJob, error) {
+func (r *ImportJobRepo) GetByID(ctx context.Context, id string) (domain.ImportJob, error) {
 	if r.db.Querier == nil {
-		return entities.ImportJob{}, ErrUnavailable
+		return domain.ImportJob{}, ErrUnavailable
 	}
 	dbJob, err := r.db.Querier.GetImportJob(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return entities.ImportJob{}, ErrNotFound
+			return domain.ImportJob{}, ErrNotFound
 		}
-		return entities.ImportJob{}, translateError(err)
+		return domain.ImportJob{}, translateError(err)
 	}
 	return mapDBImportJobToEntities(dbJob), nil
 }
 
-func (r *ImportJobRepo) Update(ctx context.Context, job entities.ImportJob) (entities.ImportJob, error) {
+func (r *ImportJobRepo) Update(ctx context.Context, job domain.ImportJob) (domain.ImportJob, error) {
 	if r.db.Querier == nil {
-		return entities.ImportJob{}, ErrUnavailable
+		return domain.ImportJob{}, ErrUnavailable
 	}
 	dbJob, err := r.db.Querier.UpdateImportJob(ctx, db.UpdateImportJobParams{
 		ID:           job.ID,
@@ -61,13 +61,13 @@ func (r *ImportJobRepo) Update(ctx context.Context, job entities.ImportJob) (ent
 		ProcessingID: toNullString(job.ProcessingID),
 	})
 	if err != nil {
-		return entities.ImportJob{}, translateError(err)
+		return domain.ImportJob{}, translateError(err)
 	}
 	return mapDBImportJobToEntities(dbJob), nil
 }
 
-func mapDBImportJobToEntities(j db.ImportJob) entities.ImportJob {
-	return entities.ImportJob{
+func mapDBImportJobToEntities(j db.ImportJob) domain.ImportJob {
+	return domain.ImportJob{
 		ID:           j.ID,
 		DocumentID:   j.DocumentID,
 		Status:       j.Status,

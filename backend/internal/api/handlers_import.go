@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/domain"
-	"financeapp/backend/internal/domain/entities"
 	"financeapp/backend/internal/log"
 	"financeapp/backend/internal/repositories"
 	"fmt"
@@ -128,7 +127,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jobID := "job_" + sha[:8]
-	job := entities.ImportJob{
+	job := domain.ImportJob{
 		ID:         jobID,
 		DocumentID: docID,
 		Status:     "UPLOAD",

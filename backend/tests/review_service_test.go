@@ -12,7 +12,6 @@ import (
 	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/domain"
-	"financeapp/backend/internal/domain/entities"
 	"financeapp/backend/internal/repositories"
 
 	_ "modernc.org/sqlite"
@@ -78,7 +77,7 @@ func TestReviewService_ExtractionResolve_CreatesMovementAndResolves(t *testing.T
 	}
 	jobRepo := repositories.NewImportJobRepo(&repositories.DB{Querier: db.New(sqlDB)})
 	procID := "proc-x"
-	if _, err := jobRepo.Create(ctx, entities.ImportJob{
+	if _, err := jobRepo.Create(ctx, domain.ImportJob{
 		ID: "job-x", DocumentID: "doc-x", Status: "PROCESSING",
 		CreatedAt: now, ProcessingID: strPtr(procID),
 	}); err != nil {

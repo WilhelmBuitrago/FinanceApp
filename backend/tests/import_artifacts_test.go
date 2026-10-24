@@ -12,7 +12,6 @@ import (
 	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/domain"
-	"financeapp/backend/internal/domain/entities"
 	"financeapp/backend/internal/repositories"
 
 	_ "modernc.org/sqlite"
@@ -53,7 +52,7 @@ func TestImportService_ReadsConfiguredArtifactsPath(t *testing.T) {
 
 	jobRepo := repositories.NewImportJobRepo(&repositories.DB{Querier: db.New(sqlDB)})
 	procID := "proc-imp"
-	if _, err := jobRepo.Create(context.Background(), entities.ImportJob{
+	if _, err := jobRepo.Create(context.Background(), domain.ImportJob{
 		ID: "job-imp", DocumentID: "doc-imp", Status: "PROCESSING",
 		CreatedAt: now, ProcessingID: strPtr(procID),
 	}); err != nil {
@@ -121,7 +120,7 @@ func TestImportService_ParksProblematicMovementsForReview(t *testing.T) {
 
 	jobRepo := repositories.NewImportJobRepo(&repositories.DB{Querier: db.New(sqlDB)})
 	procID := "proc-rev"
-	if _, err := jobRepo.Create(context.Background(), entities.ImportJob{
+	if _, err := jobRepo.Create(context.Background(), domain.ImportJob{
 		ID: "job-rev", DocumentID: "doc-rev", Status: "PROCESSING",
 		CreatedAt: now, ProcessingID: strPtr(procID),
 	}); err != nil {
