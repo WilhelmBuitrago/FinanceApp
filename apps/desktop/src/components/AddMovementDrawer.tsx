@@ -110,8 +110,11 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
           )}
           <div className="space-y-4">
             <div>
-              <label className="text-sm">Cantidad *</label>
+              <label className="text-sm" htmlFor="add-movement-amount">
+                Cantidad *
+              </label>
               <input
+                id="add-movement-amount"
                 type="number"
                 min="0"
                 step="0.01"
@@ -122,8 +125,11 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               />
             </div>
             <div>
-              <label className="text-sm">Tipo *</label>
+              <label className="text-sm" htmlFor="add-movement-type">
+                Tipo *
+              </label>
               <select
+                id="add-movement-type"
                 value={form.tipo}
                 onChange={(e) => setForm({ ...form, tipo: e.target.value })}
                 className="w-full bg-surface border border-line rounded px-2 py-1 text-ink"
@@ -134,8 +140,11 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-sm">Cuenta *</label>
+              <label className="text-sm" htmlFor="add-movement-account">
+                Cuenta *
+              </label>
               <select
+                id="add-movement-account"
                 value={form.cuenta}
                 onChange={(e) => setForm({ ...form, cuenta: e.target.value })}
                 className="w-full bg-surface border border-line rounded px-2 py-1 text-ink"
@@ -148,8 +157,11 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-sm">Categoría</label>
+              <label className="text-sm" htmlFor="add-movement-category">
+                Categoría
+              </label>
               <select
+                id="add-movement-category"
                 value={form.categoria}
                 onChange={(e) => setForm({ ...form, categoria: e.target.value })}
                 className="w-full bg-surface border border-line rounded px-2 py-1 text-ink"
@@ -172,8 +184,11 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-sm">Descripción</label>
+              <label className="text-sm" htmlFor="add-movement-description">
+                Descripción
+              </label>
               <input
+                id="add-movement-description"
                 type="text"
                 value={form.descripcion}
                 onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
@@ -181,8 +196,11 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               />
             </div>
             <div>
-              <label className="text-sm">Fecha *</label>
+              <label className="text-sm" htmlFor="add-movement-date">
+                Fecha *
+              </label>
               <input
+                id="add-movement-date"
                 type="date"
                 required
                 value={form.fecha}
