@@ -18,7 +18,7 @@ from extraction.artifacts import write_artifacts
 from parser.nu_account import NuAccountParser
 from validation.validator import NuAccountValidator
 
-PROCESSOR_VERSION = "0.1.0"
+PROCESSOR_VERSION = "0.1.1"
 CONTRACT_VERSION = "1"
 
 
