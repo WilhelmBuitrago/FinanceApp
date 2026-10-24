@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { purgeAllData } from '../api/admin';
 import { invalidateCollections } from '../lib/dataBus';
+import type { Category, CategoryOption } from '../types/category';
 import {
   createCategory,
   deleteCategory as deleteCategoryApi,
@@ -9,7 +10,7 @@ import {
 } from '../api/categories';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { SectionHeader } from '../components/SectionHeader';
-import { check } from '@tauri-apps/plugin-updater';
+import { check, type DownloadEvent, type Update } from '@tauri-apps/plugin-updater';
 
 /* Configuración — data management. The purge deletes EVERYTHING (accounts,
    documents, movements, events, relations, installments, categories) via
@@ -24,19 +25,19 @@ export default function SettingsPage() {
 
   // Actualizaciones
   const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const [updateAvailable, setUpdateAvailable] = useState<any>(null);
+  const [updateAvailable, setUpdateAvailable] = useState<Update | null>(null);
   const [updateConfirming, setUpdateConfirming] = useState(false);
   const [updateProgress, setUpdateProgress] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
   // Categorías desde backend
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [newCat, setNewCat] = useState({ name: '', type: 'EXPENSE' });
 
   useEffect(() => {
     getCategories()
       .then((data) => {
-        const norm = (data || []).map((c) => ({
+        const norm = (data || []).map((c: Category) => ({
           id: c.ID,
           name: c.Name,
           type: (c.CategoryType ?? '').toUpperCase(),
@@ -51,7 +52,10 @@ export default function SettingsPage() {
     const id = 'cat_' + Date.now();
     try {
       const cat = await createCategory(id, newCat.name.trim(), newCat.type);
-      setCategories((c) => [...c, cat]);
+      setCategories((c) => [
+        ...c,
+        { id: cat.ID, name: cat.Name, type: (cat.CategoryType ?? '').toUpperCase() },
+      ]);
       setNewCat({ name: '', type: 'EXPENSE' });
       // The bus refetches the list from the server (the real persistence
       // check the old reload did) without tearing the app down.
@@ -103,8 +107,8 @@ export default function SettingsPage() {
         setUpdateProgress('FinanceApp está actualizado.');
         setTimeout(() => setUpdateProgress(null), 3000);
       }
-    } catch (e: any) {
-      setUpdateError(e?.message || 'Error verificando actualizaciones.');
+    } catch {
+      setUpdateError('Error verificando actualizaciones.');
     } finally {
       setCheckingUpdate(false);
     }
@@ -115,20 +119,26 @@ export default function SettingsPage() {
     setUpdateConfirming(false);
     setUpdateProgress(`Descargando versión ${updateAvailable.version}...`);
     try {
-      // El plugin permite callback de progreso
-      await updateAvailable.downloadAndInstall(
-        (event: { data?: { progress?: { percent?: number } } }) => {
-          const percent = event?.data?.progress?.percent ?? 0;
-          if (percent) {
-            setUpdateProgress(
-              `Descargando ${updateAvailable.version}... ${Math.round(percent * 100)}%`,
-            );
-          }
-        },
-      );
+      // El plugin permite callback de progreso (Started trae el total;
+      // Progress trae cada chunk: se acumula, no existe un percent).
+      let downloaded = 0;
+      let total = 0;
+      await updateAvailable.downloadAndInstall((event: DownloadEvent) => {
+        if (event.event === 'Started') {
+          total = event.data.contentLength ?? 0;
+        }
+        if (event.event === 'Progress') {
+          downloaded += event.data.chunkLength;
+          const label =
+            total > 0
+              ? `${Math.round((downloaded / total) * 100)}%`
+              : `${Math.round(downloaded / 1024)} KB`;
+          setUpdateProgress(`Descargando ${updateAvailable.version}... ${label}`);
+        }
+      });
       setUpdateProgress('Instalación completada. Reiniciando...');
-    } catch (e: any) {
-      setUpdateError(e?.message || 'Falló la instalación de la actualización.');
+    } catch (e) {
+      setUpdateError(e instanceof Error ? e.message : 'Falló la instalación de la actualización.');
       setUpdateProgress(null);
     }
   };

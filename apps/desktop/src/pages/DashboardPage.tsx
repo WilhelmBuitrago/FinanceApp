@@ -96,10 +96,14 @@ export default function DashboardPage() {
     [cashFlow.data],
   );
 
-  /* 30-day window over the backend's daily aggregates (visual transform). */
+  /* 30-day window over the backend's daily aggregates (visual transform).
+     The window anchors at mount through a lazy state initializer: calling
+     Date.now() inside the memo made the "last 30 days" cutoff drift with
+     every recompute, which the React purity rules reject. */
+  const [mountedAt] = useState(() => Date.now());
   const last30 = useMemo(() => {
     if (!cashFlow.data) return null;
-    const cutoff = Date.now() - THIRTY_DAYS_MS;
+    const cutoff = mountedAt - THIRTY_DAYS_MS;
     let income = 0;
     let expense = 0;
     let count = 0;
@@ -111,7 +115,7 @@ export default function DashboardPage() {
       expense += p.outflow;
     }
     return { income, expense, count };
-  }, [cashFlow.data]);
+  }, [cashFlow.data, mountedAt]);
 
   const attentionDocs = useMemo(
     () => (recentDocuments.data ?? []).filter((d) => ATTENTION_STATUSES.has(d.Status)),

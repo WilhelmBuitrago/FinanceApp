@@ -1,5 +1,7 @@
 import { formatSignedMoney } from '../../lib/formatMoney';
 import type { ReviewItem } from '../../api/review';
+import type { Account } from '../../types/account';
+import type { ReviewPayload } from '../../types/review-payload';
 
 /* DUPLICATE/EXTRACTION card: the human confirms (or edits) the movement to
    write. A DUPLICATE says "create it anyway"; an EXTRACTION carries the
@@ -7,10 +9,10 @@ import type { ReviewItem } from '../../api/review';
 
 interface Props {
   item: ReviewItem;
-  payload: any;
-  form: Record<string, any>;
-  accounts: any[];
-  onChange: (patch: any) => void;
+  payload: ReviewPayload;
+  form: Record<string, string>;
+  accounts: Account[];
+  onChange: (patch: Record<string, string>) => void;
   onSubmit: () => void;
   onDiscard: () => void;
 }
@@ -85,9 +87,9 @@ export function ReviewMovementCard({
             className="w-full border rounded px-2 py-1 bg-black text-white"
           >
             <option value="">Seleccionar cuenta…</option>
-            {accounts.map((a: any) => (
-              <option key={a.ID || a.id} value={a.ID || a.id}>
-                {a.Name || a.name}
+            {accounts.map((a) => (
+              <option key={a.ID} value={a.ID}>
+                {a.Name}
               </option>
             ))}
           </select>

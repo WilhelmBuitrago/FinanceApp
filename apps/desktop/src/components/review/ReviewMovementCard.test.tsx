@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ReviewItem } from '../../api/review';
+import type { Account } from '../../types/account';
 import { ReviewMovementCard } from './ReviewMovementCard';
 
 const payload = {
@@ -20,11 +21,21 @@ function setup(overrides: Partial<React.ComponentProps<typeof ReviewMovementCard
     Status: 'PENDING',
     CreatedAt: '2026-10-24T00:00:00Z',
   };
+  const account: Account = {
+    ID: 'acc_1',
+    UserID: 'local',
+    Name: 'Nu',
+    AccountType: 'BANK_ACCOUNT',
+    Currency: 'COP',
+    Status: 'ACTIVE',
+    CreatedAt: '2026-10-01T00:00:00Z',
+    UpdatedAt: '2026-10-01T00:00:00Z',
+  };
   const props = {
     item,
     payload,
     form: {},
-    accounts: [{ ID: 'acc_1', Name: 'Nu' }],
+    accounts: [account],
     onChange: vi.fn(),
     onSubmit: vi.fn(),
     onDiscard: vi.fn(),

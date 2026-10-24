@@ -11,8 +11,10 @@ import {
   resolveReviewPeriod,
   type ReviewItem,
 } from '../api/review';
-import { payloadOf } from '../lib/reviewPayload';
 import { invalidateCollections } from '../lib/dataBus';
+import { payloadOf } from '../lib/reviewPayload';
+import type { Account } from '../types/account';
+import type { CategoryOption } from '../types/category';
 
 /* All review-page state: the queue, the data its cards need (categories
    to assign, accounts to correct against), the per-item form, and the
@@ -21,9 +23,12 @@ import { invalidateCollections } from '../lib/dataBus';
 
 export function useReviewQueue() {
   const [items, setItems] = useState<ReviewItem[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [form, setForm] = useState<Record<string, any>>({});
+  // The cards read these already normalized: {id, name, type} and the
+  // typed account contract — no anonymous objects downstream.
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  // Per-item form: every value is a string coming from the DOM.
+  const [form, setForm] = useState<Record<string, Record<string, string>>>({});
   const [selectedCat, setSelectedCat] = useState<Record<string, string>>({});
   // Transient outcome of a resolution, shown inline (the old alert()).
   const [notice, setNotice] = useState<string | null>(null);
@@ -48,7 +53,7 @@ export function useReviewQueue() {
       .catch(() => {});
   }, []);
 
-  const setField = (id: string, patch: any) =>
+  const setField = (id: string, patch: Record<string, string>) =>
     setForm((f) => ({ ...f, [id]: { ...(f[id] || {}), ...patch } }));
 
   // The queue closed this item; every screen that reads the queue or the

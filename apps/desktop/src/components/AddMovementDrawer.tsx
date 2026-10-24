@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 
-import { ApiError } from '../api/client';
+import { ApiError, apiErrorDetail } from '../api/client';
 import { invalidateCollections } from '../lib/dataBus';
 import { createMovement } from '../api/movements';
 import { getCategories } from '../api/categories';
+import type { Category, CategoryOption } from '../types/category';
 import type { Account } from '../types/account';
 
 /* Add-movement drawer: manual capture. A zero or negative amount is
@@ -27,22 +28,20 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
     descripcion: '',
     fecha: '',
   });
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (accounts.length > 0 && !form.cuenta) {
-      setForm((f) => ({ ...f, cuenta: accounts[0].ID }));
-    }
-  }, [accounts]);
+  // The effective account: the picked one, or the first available. Derived
+  // during render instead of synced through an effect (the effect version
+  // is what react-hooks flags, and it buys nothing).
+  const effectiveCuenta = form.cuenta || accounts[0]?.ID || '';
 
   useEffect(() => {
     getCategories()
       .then((data) => {
-        const norm = (data || []).map((c) => ({
+        const norm = (data || []).map((c: Category) => ({
           id: c.ID,
           name: c.Name,
-          category_type: (c.CategoryType ?? '').toUpperCase(),
+          type: (c.CategoryType ?? '').toUpperCase(),
         }));
         setCategories(norm);
       })
@@ -77,7 +76,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
                     : form.tipo === 'Egreso'
                       ? 'EXPENSE'
                       : 'TRANSFER',
-                account_id: form.cuenta,
+                account_id: effectiveCuenta,
                 description: form.descripcion,
                 date: form.fecha,
                 category_id: form.categoria,
@@ -97,11 +96,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               }
               // Same copy as before: the raw server body when there is one.
               const detail =
-                err instanceof ApiError && typeof err.response === 'string'
-                  ? err.response
-                  : err instanceof Error
-                    ? err.message
-                    : String(err);
+                apiErrorDetail(err) ?? (err instanceof Error ? err.message : String(err));
               setError(detail);
             }
           }}
@@ -148,7 +143,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               </label>
               <select
                 id="add-movement-account"
-                value={form.cuenta}
+                value={effectiveCuenta}
                 onChange={(e) => setForm({ ...form, cuenta: e.target.value })}
                 className="w-full bg-surface border border-line rounded px-2 py-1 text-ink"
               >
@@ -177,7 +172,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
                       Egreso: 'EXPENSE',
                       Transferencia: 'TRANSFER',
                     };
-                    return c.category_type === typeMap[form.tipo];
+                    return c.type === typeMap[form.tipo];
                   })
                   .map((c) => (
                     <option key={c.id} value={c.id}>

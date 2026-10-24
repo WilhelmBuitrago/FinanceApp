@@ -60,8 +60,13 @@ export default function TransactionsPage() {
     if (value) next.set(key, value);
     else next.delete(key);
     setSearchParams(next, { replace: true });
+    // A different filter set invalidates the open drawer's row.
+    setSelected(null);
   };
-  const clearFilters = () => setSearchParams(new URLSearchParams(), { replace: true });
+  const clearFilters = () => {
+    setSearchParams(new URLSearchParams(), { replace: true });
+    setSelected(null);
+  };
 
   const movements = useMovements();
   const accounts = useAccounts();
@@ -121,11 +126,6 @@ export default function TransactionsPage() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-
-  // Close the drawer when the filters change underneath it
-  useEffect(() => {
-    setSelected(null);
-  }, [q, cuenta, estado]);
 
   const filtersActive = q !== '' || cuenta !== '' || estado !== '';
   const total = movements.data?.length ?? 0;

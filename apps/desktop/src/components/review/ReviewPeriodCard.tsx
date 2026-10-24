@@ -1,4 +1,5 @@
 import type { ReviewItem } from '../../api/review';
+import type { ReviewPayload } from '../../types/review-payload';
 
 const MONTHS = [
   { n: 1, label: 'Enero' },
@@ -22,7 +23,7 @@ const MONTHS = [
 
 interface Props {
   item: ReviewItem;
-  payload: any;
+  payload: ReviewPayload;
   monthValue: string;
   yearValue: string;
   onMonth: (value: string) => void;

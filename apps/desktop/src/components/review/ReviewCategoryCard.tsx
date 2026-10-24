@@ -1,13 +1,15 @@
 import { formatDate } from '../../lib/formatDate';
 import { formatSignedMoney } from '../../lib/formatMoney';
+import type { CategoryOption } from '../../types/category';
+import type { ReviewPayload } from '../../types/review-payload';
 
 /* CATEGORY card: a movement whose category was deleted. The human either
    assigns one of their categories or leaves the movement uncategorized —
    both are valid decisions (a missing category never forces the item). */
 
 interface Props {
-  payload: any;
-  categories: any[];
+  payload: ReviewPayload;
+  categories: CategoryOption[];
   selectedId: string;
   onSelectChange: (value: string) => void;
   onAssign: () => void;

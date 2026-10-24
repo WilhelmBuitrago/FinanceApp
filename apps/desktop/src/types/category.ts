@@ -10,3 +10,13 @@ export interface Category {
   CreatedAt: string;
   UpdatedAt: string;
 }
+
+/* The shape the UI actually consumes: the selectors filter by type and
+   the review cards read id/name, so the pages normalize once instead of
+   each reinventing an anonymous object. */
+
+export interface CategoryOption {
+  id: string;
+  name: string;
+  type: string;
+}

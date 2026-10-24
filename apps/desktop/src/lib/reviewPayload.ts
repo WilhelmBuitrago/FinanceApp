@@ -1,12 +1,13 @@
 import type { ReviewItem } from '../api/review';
+import type { ReviewPayload } from '../types/review-payload';
 
 /* Parked payloads are free-form JSON written by the backend reviewers;
    each card reads the keys its kind needs. Parsing is defensive on
    purpose: a payload we cannot read must not break the queue. */
 
-export function payloadOf(item: ReviewItem): any {
+export function payloadOf(item: ReviewItem): ReviewPayload {
   try {
-    return JSON.parse(item.PayloadJson || '{}');
+    return JSON.parse(item.PayloadJson || '{}') as ReviewPayload;
   } catch {
     return {};
   }

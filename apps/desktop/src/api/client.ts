@@ -19,6 +19,32 @@ function errorLabel(data: unknown): string {
   return '';
 }
 
+/* The most specific error text a failed call carries, for the UI to show:
+   an extracted {error} when the body has one (the backend answers
+   text/plain JSON), otherwise the raw body. Shared so every surface
+   reports the same detail for the same failure. */
+export function apiErrorDetail(err: unknown): string | undefined {
+  if (!(err instanceof ApiError)) return undefined;
+  const response = err.response;
+  if (typeof response === 'string') {
+    try {
+      const parsed: unknown = JSON.parse(response);
+      if (parsed && typeof parsed === 'object' && 'error' in parsed) {
+        const msg = (parsed as { error?: unknown }).error;
+        return typeof msg === 'string' ? msg : response;
+      }
+    } catch {
+      // Not JSON: the raw body is the best detail there is.
+    }
+    return response;
+  }
+  if (response && typeof response === 'object' && 'error' in response) {
+    const msg = (response as { error?: unknown }).error;
+    if (typeof msg === 'string') return msg;
+  }
+  return undefined;
+}
+
 export class ApiError extends Error {
   status: number;
   response?: unknown;

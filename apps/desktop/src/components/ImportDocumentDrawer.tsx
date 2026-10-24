@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { uploadDocument } from '../api/documents';
 import { getJob } from '../api/jobs';
 import { getReviewEntries, type ReviewItem } from '../api/review';
 import { invalidateCollections } from '../lib/dataBus';
-import { ApiError } from '../api/client';
+import { payloadOf } from '../lib/reviewPayload';
+import { apiErrorDetail } from '../api/client';
 import {
   DrawerBody,
   DrawerCloseButton,
@@ -29,6 +30,13 @@ interface ImportDocumentDrawerProps {
 }
 
 export function ImportDocumentDrawer({ accounts, onClose, onFinished }: ImportDocumentDrawerProps) {
+  // The polling effect runs once per upload; the close callback arrives as
+  // a fresh closure each render, so it travels through a ref instead of
+  // joining the deps (which would restart the poll on every render).
+  const onFinishedRef = useRef(onFinished);
+  useEffect(() => {
+    onFinishedRef.current = onFinished;
+  }, [onFinished]);
   const [accountId, setAccountId] = useState(accounts[0]?.ID ?? '');
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -49,8 +57,6 @@ export function ImportDocumentDrawer({ accounts, onClose, onFinished }: ImportDo
     if (!uploadResult) return;
     let cancelled = false;
     let attempts = 0;
-    setJobState('RUNNING');
-    setReviewCount(null);
     const tick = async () => {
       try {
         const job = await getJob(uploadResult.job_id);
@@ -59,19 +65,17 @@ export function ImportDocumentDrawer({ accounts, onClose, onFinished }: ImportDo
           setJobState(job.Status);
           const items = await getReviewEntries().catch(() => [] as ReviewItem[]);
           if (cancelled) return;
-          const mine = (items || []).filter((it: ReviewItem) => {
-            try {
-              return JSON.parse(it.PayloadJson || '{}').document_id === uploadResult.document_id;
-            } catch {
-              return false;
-            }
-          });
+          // The parked payload names its document: which of the queue items
+          // BELONG to this import.
+          const mine = (items || []).filter(
+            (it) => payloadOf(it).document_id === uploadResult.document_id,
+          );
           setReviewCount(mine.length);
           // An import lands documents, movements, aggregates and possibly
           // review items: every screen showing them refetches through the
           // bus (this replaces the window event the badge used to need).
           invalidateCollections('documents', 'movements', 'dashboard', 'review');
-          onFinished();
+          onFinishedRef.current();
           return;
         }
       } catch {
@@ -100,27 +104,14 @@ export function ImportDocumentDrawer({ accounts, onClose, onFinished }: ImportDo
     const entity = account?.Institution ?? undefined;
     try {
       const result = await uploadDocument(accountId, file, entity);
+      // The job starts running the moment the upload lands: set in the
+      // event handler, not synced from the effect (react-hooks flags the
+      // effect version, and it buys nothing).
       setUploadResult(result);
+      setJobState('RUNNING');
+      setReviewCount(null);
     } catch (err) {
-      let detail: string | undefined;
-      if (err instanceof ApiError) {
-        const r = err.response;
-        if (typeof r === 'object' && r && 'error' in (r as any)) {
-          detail = (r as any).error;
-        } else if (typeof r === 'string') {
-          try {
-            const parsed = JSON.parse(r);
-            if (parsed && typeof parsed === 'object' && 'error' in parsed) {
-              detail = parsed.error;
-            } else {
-              detail = r;
-            }
-          } catch {
-            detail = r;
-          }
-        }
-      }
-      setError(detail ?? 'No se pudo importar el documento.');
+      setError(apiErrorDetail(err) ?? 'No se pudo importar el documento.');
     } finally {
       setSubmitting(false);
     }
