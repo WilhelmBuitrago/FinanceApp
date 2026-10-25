@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatPeriod } from './formatPeriod';
+import { formatPeriod } from '../../lib/formatPeriod';
 
 describe('formatPeriod', () => {
   it('renders both ends of the statement period', () => {

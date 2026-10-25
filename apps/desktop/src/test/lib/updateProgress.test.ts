@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { progressLabel } from './updateProgress';
+import { progressLabel } from '../../lib/updateProgress';
 
 describe('progressLabel', () => {
   it('shows the percentage when the plugin reported a total', () => {

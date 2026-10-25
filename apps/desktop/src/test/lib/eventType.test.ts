@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { eventTypeLabel } from './eventType';
+import { eventTypeLabel } from '../../lib/eventType';
 
 describe('eventTypeLabel', () => {
   it('labels the domain event types', () => {

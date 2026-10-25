@@ -1,28 +1,28 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getAccounts } from '../api/accounts';
-import { getCategories } from '../api/categories';
-import { ApiError } from '../api/client';
+import { getAccounts } from '../../api/accounts';
+import { getCategories } from '../../api/categories';
+import { ApiError } from '../../api/client';
 import {
   discardReviewEntry,
   getReviewEntries,
   resolveReviewCategory,
   resolveReviewMovement,
   resolveReviewPeriod,
-} from '../api/review';
-import type { ReviewItem } from '../api/review';
-import { useReviewQueue } from './useReviewQueue';
+} from '../../api/review';
+import type { ReviewItem } from '../../api/review';
+import { useReviewQueue } from '../../hooks/useReviewQueue';
 
-vi.mock('../api/review', () => ({
+vi.mock('../../api/review', () => ({
   getReviewEntries: vi.fn(),
   resolveReviewMovement: vi.fn(),
   resolveReviewCategory: vi.fn(),
   resolveReviewPeriod: vi.fn(),
   discardReviewEntry: vi.fn(),
 }));
-vi.mock('../api/categories', () => ({ getCategories: vi.fn() }));
-vi.mock('../api/accounts', () => ({ getAccounts: vi.fn() }));
+vi.mock('../../api/categories', () => ({ getCategories: vi.fn() }));
+vi.mock('../../api/accounts', () => ({ getAccounts: vi.fn() }));
 
 function parkedItem(id: string, kind: string, payload: object): ReviewItem {
   return {

@@ -2,21 +2,21 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getDocument } from '../api/documents';
-import { getFinancialEvent } from '../api/financialEvents';
-import { getSourceEntry } from '../api/sourceEntries';
-import { getCategories } from '../api/categories';
-import { deleteMovement, setMovementCategory } from '../api/movements';
-import { invalidateCollections } from '../lib/dataBus';
-import { DetailDrawer } from './DetailDrawer';
-import type { Movement } from '../types/movement';
+import { getDocument } from '../../api/documents';
+import { getFinancialEvent } from '../../api/financialEvents';
+import { getSourceEntry } from '../../api/sourceEntries';
+import { getCategories } from '../../api/categories';
+import { deleteMovement, setMovementCategory } from '../../api/movements';
+import { invalidateCollections } from '../../lib/dataBus';
+import { DetailDrawer } from '../../components/DetailDrawer';
+import type { Movement } from '../../types/movement';
 
-vi.mock('../api/documents', () => ({ getDocument: vi.fn() }));
-vi.mock('../api/financialEvents', () => ({ getFinancialEvent: vi.fn() }));
-vi.mock('../api/sourceEntries', () => ({ getSourceEntry: vi.fn() }));
-vi.mock('../api/categories', () => ({ getCategories: vi.fn() }));
-vi.mock('../api/movements', () => ({ setMovementCategory: vi.fn(), deleteMovement: vi.fn() }));
-vi.mock('../lib/dataBus', () => ({
+vi.mock('../../api/documents', () => ({ getDocument: vi.fn() }));
+vi.mock('../../api/financialEvents', () => ({ getFinancialEvent: vi.fn() }));
+vi.mock('../../api/sourceEntries', () => ({ getSourceEntry: vi.fn() }));
+vi.mock('../../api/categories', () => ({ getCategories: vi.fn() }));
+vi.mock('../../api/movements', () => ({ setMovementCategory: vi.fn(), deleteMovement: vi.fn() }));
+vi.mock('../../lib/dataBus', () => ({
   invalidateCollections: vi.fn(),
   useCollectionVersion: () => '0',
 }));

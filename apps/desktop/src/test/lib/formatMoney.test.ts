@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatMoney, formatSignedMoney, signedAmountClass } from './formatMoney';
+import { formatMoney, formatSignedMoney, signedAmountClass } from '../../lib/formatMoney';
 
 describe('formatMoney', () => {
   it('renders minor units as pesos with two decimals', () => {

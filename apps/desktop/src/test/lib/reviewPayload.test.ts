@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ReviewItem } from '../api/review';
-import { payloadOf } from './reviewPayload';
+import type { ReviewItem } from '../../api/review';
+import { payloadOf } from '../../lib/reviewPayload';
 
 const item = (payload?: string): ReviewItem => ({
   ID: 'rv_1',

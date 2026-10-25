@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createCategory, deleteCategory, getCategories } from './categories';
+import { createCategory, deleteCategory, getCategories } from '../../api/categories';
 
 afterEach(() => {
   vi.unstubAllGlobals();

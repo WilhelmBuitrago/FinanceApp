@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { ReviewItem } from '../../api/review';
-import type { Account } from '../../types/account';
-import { ReviewMovementCard } from './ReviewMovementCard';
+import type { ReviewItem } from '../../../api/review';
+import type { Account } from '../../../types/account';
+import { ReviewMovementCard } from '../../../components/review/ReviewMovementCard';
 
 const payload = {
   description: 'EXTRACCION SIN MONTO',

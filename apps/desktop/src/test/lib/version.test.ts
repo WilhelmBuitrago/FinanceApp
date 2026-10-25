@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { APP_VERSION } from './version';
+import { APP_VERSION } from '../../lib/version';
 
 describe('APP_VERSION', () => {
   it('is the package.json version (0.1.1 for this component)', () => {

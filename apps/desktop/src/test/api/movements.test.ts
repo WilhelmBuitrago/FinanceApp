@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createMovement, deleteMovement, getMovements, setMovementCategory } from './movements';
+import {
+  createMovement,
+  deleteMovement,
+  getMovements,
+  setMovementCategory,
+} from '../../api/movements';
 
 afterEach(() => {
   vi.unstubAllGlobals();

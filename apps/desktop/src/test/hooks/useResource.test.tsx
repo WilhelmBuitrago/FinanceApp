@@ -1,12 +1,12 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ApiError } from '../api/client';
-import { getDocument } from '../api/documents';
-import { invalidateCollections } from '../lib/dataBus';
-import { useResource } from './useResource';
+import { ApiError } from '../../api/client';
+import { getDocument } from '../../api/documents';
+import { invalidateCollections } from '../../lib/dataBus';
+import { useResource } from '../../hooks/useResource';
 
-vi.mock('../api/documents', () => ({ getDocument: vi.fn() }));
+vi.mock('../../api/documents', () => ({ getDocument: vi.fn() }));
 
 beforeEach(() => {
   vi.clearAllMocks();

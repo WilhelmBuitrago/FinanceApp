@@ -1,16 +1,16 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createMovement } from '../api/movements';
-import { getCategories } from '../api/categories';
-import { ApiError } from '../api/client';
-import { invalidateCollections } from '../lib/dataBus';
-import { AddMovementDrawer } from './AddMovementDrawer';
-import type { Account } from '../types/account';
+import { createMovement } from '../../api/movements';
+import { getCategories } from '../../api/categories';
+import { ApiError } from '../../api/client';
+import { invalidateCollections } from '../../lib/dataBus';
+import { AddMovementDrawer } from '../../components/AddMovementDrawer';
+import type { Account } from '../../types/account';
 
-vi.mock('../api/movements', () => ({ createMovement: vi.fn() }));
-vi.mock('../api/categories', () => ({ getCategories: vi.fn() }));
-vi.mock('../lib/dataBus', () => ({
+vi.mock('../../api/movements', () => ({ createMovement: vi.fn() }));
+vi.mock('../../api/categories', () => ({ getCategories: vi.fn() }));
+vi.mock('../../lib/dataBus', () => ({
   invalidateCollections: vi.fn(),
   useCollectionVersion: vi.fn(() => '0'),
 }));

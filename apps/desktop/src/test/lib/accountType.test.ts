@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { accountTypeLabel } from './accountType';
+import { accountTypeLabel } from '../../lib/accountType';
 
 describe('accountTypeLabel', () => {
   it('labels the closed set of account types', () => {

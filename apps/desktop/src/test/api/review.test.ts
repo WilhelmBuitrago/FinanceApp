@@ -6,7 +6,7 @@ import {
   resolveReviewCategory,
   resolveReviewMovement,
   resolveReviewPeriod,
-} from './review';
+} from '../../api/review';
 
 afterEach(() => {
   vi.unstubAllGlobals();

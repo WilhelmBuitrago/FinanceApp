@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { ReviewItem } from '../../api/review';
-import { ReviewPeriodCard } from './ReviewPeriodCard';
+import type { ReviewItem } from '../../../api/review';
+import { ReviewPeriodCard } from '../../../components/review/ReviewPeriodCard';
 
 const item: ReviewItem = {
   ID: 'rv_1',

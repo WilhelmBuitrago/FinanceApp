@@ -2,11 +2,11 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { act } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getReviewEntries } from '../api/review';
-import { invalidateCollections } from '../lib/dataBus';
-import { useReviewNotifications } from './useReviewNotifications';
+import { getReviewEntries } from '../../api/review';
+import { invalidateCollections } from '../../lib/dataBus';
+import { useReviewNotifications } from '../../hooks/useReviewNotifications';
 
-vi.mock('../api/review', () => ({ getReviewEntries: vi.fn() }));
+vi.mock('../../api/review', () => ({ getReviewEntries: vi.fn() }));
 
 const item = (kind: string, payload: object) => ({
   ID: `rv_${kind}`,

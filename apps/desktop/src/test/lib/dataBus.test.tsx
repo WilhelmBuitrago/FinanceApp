@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { invalidateCollections, useCollectionVersion } from './dataBus';
+import { invalidateCollections, useCollectionVersion } from '../../lib/dataBus';
 
 /* The bus is shared module state: every assertion compares before/after,
    never absolute values, because versions accumulate across tests. */

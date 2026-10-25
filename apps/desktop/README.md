@@ -111,7 +111,11 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`dataBus.ts`](./src/lib/dataBus.ts) — bus de invalidación compartido (colecciones versionadas; `useSyncExternalStore`).
     - [`version.ts`](./src/lib/version.ts) — versión del componente (lee `package.json`).
     - [`updateProgress.ts`](./src/lib/updateProgress.ts) — etiqueta de progreso del updater (porcentaje o KB).
-  - **`test/`** — setup de Vitest ([`setup.ts`](./src/test/setup.ts), `@testing-library/jest-dom`); los tests viven al lado de cada módulo (`*.test.ts` / `*.test.tsx`).
+  - **`test/`** — todos los tests del componente, con estructura espejada
+    (`test/lib/`, `test/api/`, `test/hooks/`, `test/components/`,
+    `test/components/review/`, `test/pages/`). El setup de Vitest vive en
+    [`setup.ts`](./src/test/setup.ts); `vitest.config.ts` los descubre con
+    `src/**/*.test.{ts,tsx}`.
   - **`types/`** — contratos TypeScript del backend y de la UI, un archivo por
     concepto.
     - [`account.ts`](./src/types/account.ts) — cuenta.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDate } from './formatDate';
+import { formatDate } from '../../lib/formatDate';
 
 describe('formatDate', () => {
   it('renders an em dash for absent dates', () => {

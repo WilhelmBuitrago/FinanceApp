@@ -1,8 +1,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { invalidateCollections } from '../lib/dataBus';
-import { useListQuery } from './useListQuery';
+import { invalidateCollections } from '../../lib/dataBus';
+import { useListQuery } from '../../hooks/useListQuery';
 
 describe('useListQuery', () => {
   it('moves from loading to ready with data and the empty flag', async () => {
