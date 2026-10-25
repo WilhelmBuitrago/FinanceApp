@@ -15,7 +15,7 @@
 
 - Backend: `go test ./...` (en `backend/`, pruebas en `backend/tests/`).
 - Procesador: `python -m pytest` (en `apps/processor`).
-- Desktop: suite de UI a definir en v0.1.1.
+- Desktop: suite de UI vigente desde la v0.1.1 (99 tests, espejados en `src/test/`).
 
 ## CI y releases
 

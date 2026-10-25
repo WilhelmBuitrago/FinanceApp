@@ -32,5 +32,7 @@ desarrollador lee antes de tocar código.
     `AGENTS.md` sección 6.
   - Los tests del processor quedan marcados como **no verificados**: sin
     intérprete de Python en la máquina de mantenimiento no se pueden observar.
-- Versión pública del producto: **v0.1.0** (Windows MSI). En desarrollo:
-  **v0.1.1** — optimización y buenas prácticas de proyecto.
+- Versión pública del producto: **v0.1.0** (último release publicado, Windows
+  MSI). **v0.1.1** — completa en `developer`, pendiente de publicación
+  (optimización y buenas prácticas sobre los tres componentes). Detalle en
+  [CHANGELOG.md](../CHANGELOG.md).

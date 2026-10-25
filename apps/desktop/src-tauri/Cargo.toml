@@ -1,6 +1,6 @@
 [package]
 name = "financeapp-tauri"
-version = "0.1.0"
+version = "0.1.1"
 description = "FinanceApp Desktop"
 authors = ["FinanceApp"]
 edition = "2021"

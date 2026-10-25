@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/WilhelmBuitrago/FinanceApp/actions/workflows/ci.yml/badge.svg)](https://github.com/WilhelmBuitrago/FinanceApp/actions/workflows/ci.yml)
 [![Build Windows MSI](https://github.com/WilhelmBuitrago/FinanceApp/actions/workflows/windows-tauri.yml/badge.svg)](https://github.com/WilhelmBuitrago/FinanceApp/actions/workflows/windows-tauri.yml)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)](https://github.com/WilhelmBuitrago/FinanceApp/releases)
+[![Version](https://img.shields.io/badge/version-0.1.1-blue)](https://github.com/WilhelmBuitrago/FinanceApp/releases)
 [![Download](https://img.shields.io/badge/download-Windows%20MSI-0078D6?logo=windows&logoColor=white)](https://github.com/WilhelmBuitrago/FinanceApp/releases/latest)
 [![License](https://img.shields.io/badge/license-proprietary-critical)](LICENSE)
 
@@ -92,8 +92,12 @@ Las versiones se publican como releases de GitHub con instalador MSI para
 Windows x64. La última versión está en
 [Releases](https://github.com/WilhelmBuitrago/FinanceApp/releases/latest).
 
-- **v0.1.0** — versión actual publicada.
-- **v0.1.1** — en desarrollo: optimización y buenas prácticas de proyecto.
+- **v0.1.1** — versión actual del código: ronda de endurecimiento a producción
+  sobre backend, processor y desktop. Completa en `developer`, pendiente de
+  publicar (el tag y el release los dispara el mantenedor).
+- **v0.1.0** — último release público (Windows MSI).
+
+El detalle de cambios, versión por versión, está en [CHANGELOG.md](CHANGELOG.md).
 
 ## Licencia
 
