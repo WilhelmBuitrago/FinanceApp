@@ -9,11 +9,12 @@ import {
   useRecentDocuments,
   useRecentMovements,
 } from '../hooks/useDashboard';
+import { useAccountNames } from '../hooks/useAccountNames';
 import { AddMovementDrawer } from '../components/AddMovementDrawer';
 import { useReviewNotifications } from '../hooks/useReviewNotifications';
 import { formatDate } from '../lib/formatDate';
 import { formatPeriod } from '../lib/formatPeriod';
-import { formatSignedMoney } from '../lib/formatMoney';
+import { formatSignedMoney, signedAmountClass } from '../lib/formatMoney';
 import { CashFlowChart } from '../components/CashFlowChart';
 import { ChartCard } from '../components/ChartCard';
 import { DonutChart } from '../components/DonutChart';
@@ -22,6 +23,8 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { SummaryStrip } from '../components/SummaryStrip';
 import { EmptyState } from '../components/ui/EmptyState';
 import { SkeletonRows } from '../components/ui/SkeletonRows';
+import { primaryButton } from '../components/ui/buttons';
+import { tableHead, tableHeadRight } from '../components/ui/table';
 
 /* Overview — the financial dashboard. Every figure comes from the backend's
    aggregates (S12 §34): cash flow points, distributions, recent lists.
@@ -30,14 +33,6 @@ import { SkeletonRows } from '../components/ui/SkeletonRows';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const ATTENTION_STATUSES = new Set(['REVIEW_REQUIRED', 'FAILED']);
-
-const tableHead =
-  'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
-const tableHeadRight =
-  'px-3 py-1.5 text-right font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
-
-const primaryButton =
-  'inline-flex h-8 items-center rounded-[8px] bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -64,11 +59,7 @@ export default function DashboardPage() {
   const recentDocuments = useRecentDocuments();
   const movements = useMovements();
 
-  const accountNames = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const account of accounts.data ?? []) map.set(account.ID, account.Name);
-    return map;
-  }, [accounts.data]);
+  const accountNames = useAccountNames(accounts);
 
   const { totalNet, perAccount } = useMemo(() => {
     const map = new Map<string, number>();
@@ -379,13 +370,7 @@ export default function DashboardPage() {
                           {accountNames.get(mv.AccountID) ?? '—'}
                         </td>
                         <td
-                          className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${
-                            mv.AmountMinor > 0
-                              ? 'text-pos'
-                              : mv.AmountMinor < 0
-                                ? 'text-neg'
-                                : 'text-ink'
-                          }`}
+                          className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${signedAmountClass(mv.AmountMinor)}`}
                         >
                           {formatSignedMoney(mv.AmountMinor)}
                         </td>

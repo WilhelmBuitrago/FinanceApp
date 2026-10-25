@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatMoney, formatSignedMoney } from './formatMoney';
+import { formatMoney, formatSignedMoney, signedAmountClass } from './formatMoney';
 
 describe('formatMoney', () => {
   it('renders minor units as pesos with two decimals', () => {
@@ -20,5 +20,13 @@ describe('formatSignedMoney', () => {
     expect(formatSignedMoney(4100000)).toBe('+$41.000,00');
     expect(formatSignedMoney(-1250000)).toBe('-$12.500,00');
     expect(formatSignedMoney(0)).toBe('$0,00');
+  });
+});
+
+describe('signedAmountClass', () => {
+  it('maps the sign to the financial semantic colors', () => {
+    expect(signedAmountClass(4100000)).toBe('text-pos');
+    expect(signedAmountClass(-1250000)).toBe('text-neg');
+    expect(signedAmountClass(0)).toBe('text-ink');
   });
 });

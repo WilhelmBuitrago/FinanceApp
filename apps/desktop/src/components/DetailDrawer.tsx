@@ -8,7 +8,7 @@ import { getSourceEntry } from '../api/sourceEntries';
 import { useResource } from '../hooks/useResource';
 import { eventTypeLabel } from '../lib/eventType';
 import { formatDate } from '../lib/formatDate';
-import { formatMoney, formatSignedMoney } from '../lib/formatMoney';
+import { formatMoney, formatSignedMoney, signedAmountClass } from '../lib/formatMoney';
 import { CopyId } from './CopyId';
 import {
   DrawerBody,
@@ -128,13 +128,12 @@ export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerPro
 
   if (!movement) return null;
 
-  const amountClass =
-    movement.AmountMinor > 0 ? 'text-pos' : movement.AmountMinor < 0 ? 'text-neg' : 'text-ink';
-
   return (
     <DrawerShell ariaLabel="Detalle del movimiento" onClose={onClose}>
       <DrawerHeader>
-        <p className={`text-amount font-semibold tabular-nums ${amountClass}`}>
+        <p
+          className={`text-amount font-semibold tabular-nums ${signedAmountClass(movement.AmountMinor)}`}
+        >
           {formatSignedMoney(movement.AmountMinor)}
         </p>
         <DrawerCloseButton onClose={onClose} />

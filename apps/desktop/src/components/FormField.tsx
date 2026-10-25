@@ -29,3 +29,9 @@ export const inputClass =
 
 export const selectClass =
   'h-8 w-full rounded-tk border border-line bg-bg px-2 text-body text-ink focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+
+/* Toolbar selects size to their content instead of stretching; the
+   transactions toolbar carried its own copy of this string. */
+
+export const selectClassAuto =
+  'h-8 rounded-tk border border-line bg-bg px-2 text-body text-ink focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';

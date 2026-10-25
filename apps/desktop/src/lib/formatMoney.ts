@@ -21,3 +21,12 @@ export function formatSignedMoney(amountMinor: number): string {
   if (amountMinor > 0) return `+${formatMoney(amountMinor)}`;
   return formatMoney(amountMinor);
 }
+
+/* The color a signed amount carries in tables and drawer headers: the
+   same three-way mapping was copy-pasted in four components before the
+   audit. Sign semantics only, never decoration. */
+export function signedAmountClass(amountMinor: number): string {
+  if (amountMinor > 0) return 'text-pos';
+  if (amountMinor < 0) return 'text-neg';
+  return 'text-ink';
+}

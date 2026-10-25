@@ -8,12 +8,13 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
 import { SkeletonRows } from '../components/ui/SkeletonRows';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { tableHead, tableHeadRight } from '../components/ui/table';
 import { useAccounts } from '../hooks/useAccounts';
 import { useResource } from '../hooks/useResource';
 import { accountTypeLabel } from '../lib/accountType';
 import { invalidateCollections } from '../lib/dataBus';
 import { formatDate } from '../lib/formatDate';
-import { formatSignedMoney } from '../lib/formatMoney';
+import { formatSignedMoney, signedAmountClass } from '../lib/formatMoney';
 import type { Movement } from '../types/movement';
 
 /* Cuenta individual — the account as a financial entity: identity, its real
@@ -21,9 +22,6 @@ import type { Movement } from '../types/movement';
    list (single-user desktop app): an account referenced by movements but
    not yet registered shows the honest "sin ficha" state — no invented
    entity, no 404 round-trip. Its movements and documents are real. */
-
-const tableHead =
-  'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
 
 export default function AccountDetailPage() {
   const { id = '' } = useParams();
@@ -144,9 +142,7 @@ export default function AccountDetailPage() {
                     <th className={`${tableHead} w-24`}>Fecha</th>
                     <th className={tableHead}>Descripción</th>
                     <th className={`${tableHead} w-32`}>Categoría</th>
-                    <th className={`${tableHead.replace('text-left', 'text-right')} w-32`}>
-                      Monto
-                    </th>
+                    <th className={`${tableHeadRight} w-32`}>Monto</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -182,13 +178,7 @@ export default function AccountDetailPage() {
                         </td>
                         <td className="truncate px-3 py-2 text-ink-2">{mv.categoryName || '—'}</td>
                         <td
-                          className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${
-                            mv.AmountMinor > 0
-                              ? 'text-pos'
-                              : mv.AmountMinor < 0
-                                ? 'text-neg'
-                                : 'text-ink'
-                          }`}
+                          className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${signedAmountClass(mv.AmountMinor)}`}
                         >
                           {formatSignedMoney(mv.AmountMinor)}
                         </td>

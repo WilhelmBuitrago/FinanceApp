@@ -10,16 +10,12 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
 import { SkeletonRows } from '../components/ui/SkeletonRows';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { primaryButton } from '../components/ui/buttons';
+import { tableHead, tableHeadRight } from '../components/ui/table';
 
 /* Cuentas — the configuration center for financial sources: registered
    entities on the list, creation via the wizard drawer, honest empty state
    that offers configuration (never a dead-end table). */
-
-const tableHead =
-  'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
-
-const primaryButton =
-  'inline-flex h-8 items-center rounded-[8px] bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:hover:bg-accent-strong';
 
 export default function AccountsPage() {
   const accounts = useAccounts();
@@ -95,9 +91,7 @@ export default function AccountsPage() {
                 <th className={tableHead}>Institución</th>
                 <th className={tableHead}>Moneda</th>
                 <th className={`${tableHead} w-28`}>Estado</th>
-                <th className={`${tableHead.replace('text-left', 'text-right')} w-32`}>
-                  Movimientos
-                </th>
+                <th className={`${tableHeadRight} w-32`}>Movimientos</th>
                 <th className={`${tableHead} w-28`}>Creada</th>
               </tr>
             </thead>

@@ -46,7 +46,7 @@ prácticas concretas. Sin cambios de funcionalidad.
 
 | ID | Descripción | Ruta | Estado |
 |----|-------------|------|--------|
-| T1 | Borrar muertos (S3) + gate de types para configs (S4) + tests ajustados | inline | pending |
+| T1 | Borrar muertos (S3) + gate de types para configs (S4) + tests ajustados | inline | done (a624049) |
 | T2 | Módulos compartidos: tabla, botones, controles, `signedAmountClass`, `useAccountNames` (S5) | inline | pending |
 | T3 | Prácticas: navigate, icono, popovers, h1, nav config única, tokens de radio, comentarios (S6) | inline | pending |
 

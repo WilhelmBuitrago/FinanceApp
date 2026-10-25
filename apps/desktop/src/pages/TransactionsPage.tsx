@@ -2,15 +2,19 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAccounts } from '../hooks/useAccounts';
 import { useMovements } from '../hooks/useMovements';
+import { useAccountNames } from '../hooks/useAccountNames';
 import { invalidateCollections } from '../lib/dataBus';
 import { formatDate } from '../lib/formatDate';
-import { formatSignedMoney } from '../lib/formatMoney';
+import { formatSignedMoney, signedAmountClass } from '../lib/formatMoney';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { IconClose, IconSearch } from '../components/icons';
+import { selectClassAuto } from '../components/FormField';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
 import { SkeletonRows } from '../components/ui/SkeletonRows';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { secondaryButton } from '../components/ui/buttons';
+import { tableHead, tableHeadRight } from '../components/ui/table';
 import type { Movement } from '../types/movement';
 
 /* Movimientos — the product's main query screen.
@@ -24,9 +28,6 @@ const MOVEMENT_STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Cancelados',
   REVERSED: 'Revertidos',
 };
-
-const tableHead =
-  'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
@@ -42,12 +43,6 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
     </span>
   );
 }
-
-const secondaryButton =
-  'inline-flex h-8 items-center rounded-[8px] border border-line bg-raised px-3 text-body font-medium text-ink transition-colors duration-[120ms] hover:bg-interactive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
-
-const selectClass =
-  'h-8 rounded-[8px] border border-line bg-bg px-2 text-body text-ink focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 export default function TransactionsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -71,11 +66,7 @@ export default function TransactionsPage() {
   const movements = useMovements();
   const accounts = useAccounts();
 
-  const accountNames = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const account of accounts.data ?? []) map.set(account.ID, account.Name);
-    return map;
-  }, [accounts.data]);
+  const accountNames = useAccountNames(accounts);
 
   /* Every documented record stays an independent row — filter only, never merge. */
   const filtered = useMemo(() => {
@@ -156,7 +147,7 @@ export default function TransactionsPage() {
           value={cuenta}
           onChange={(e) => setParam('cuenta', e.target.value)}
           aria-label="Filtrar por cuenta"
-          className={selectClass}
+          className={selectClassAuto}
         >
           <option value="">Todas las cuentas</option>
           {accountOptions.map((opt) => (
@@ -169,7 +160,7 @@ export default function TransactionsPage() {
           value={estado}
           onChange={(e) => setParam('estado', e.target.value)}
           aria-label="Filtrar por estado"
-          className={selectClass}
+          className={selectClassAuto}
         >
           <option value="">Todos los estados</option>
           {statusOptions.map((s) => (
@@ -258,7 +249,7 @@ export default function TransactionsPage() {
                 <th className={`${tableHead} w-32`}>Categoría</th>
                 <th className={`${tableHead} w-40`}>Cuenta</th>
                 {showEstado && <th className={`${tableHead} w-28`}>Estado</th>}
-                <th className={`${tableHead.replace('text-left', 'text-right')} w-32`}>Monto</th>
+                <th className={`${tableHeadRight} w-32`}>Monto</th>
               </tr>
             </thead>
             <tbody>
@@ -305,13 +296,7 @@ export default function TransactionsPage() {
                       </td>
                     )}
                     <td
-                      className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${
-                        mv.AmountMinor > 0
-                          ? 'text-pos'
-                          : mv.AmountMinor < 0
-                            ? 'text-neg'
-                            : 'text-ink'
-                      }`}
+                      className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${signedAmountClass(mv.AmountMinor)}`}
                     >
                       {formatSignedMoney(mv.AmountMinor)}
                     </td>
