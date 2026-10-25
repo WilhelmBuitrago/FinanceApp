@@ -15,11 +15,14 @@ export type ResourceState<T> =
   | { status: 'error'; code?: number }
   | { status: 'ready'; data: T };
 
+/* What consumers actually hold: the state plus its retry handle. */
+export type ResourceHandle<T> = ResourceState<T> & { retry: () => void };
+
 export function useResource<T>(
   id: string | null | undefined,
   fetcher: (id: string) => Promise<T>,
   collections: DataCollection[] = [],
-): ResourceState<T> & { retry: () => void } {
+): ResourceHandle<T> {
   const [state, setState] = useState<ResourceState<T>>({ status: 'idle' });
   const [attempt, setAttempt] = useState(0);
   const effectiveId = id ?? null;
