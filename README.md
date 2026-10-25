@@ -97,7 +97,7 @@ Windows x64. La última versión está en
   publicar (el tag y el release los dispara el mantenedor).
 - **v0.1.0** — último release público (Windows MSI).
 
-El detalle de cambios, versión por versión, está en [CHANGELOG.md](CHANGELOG.md).
+El detalle de cambios, versión por versión, está en [CHANGELOGS.md](CHANGELOGS.md).
 
 ## Licencia
 

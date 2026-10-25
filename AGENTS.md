@@ -158,3 +158,37 @@ batteries green.
   `<python.exe> tests/<file>.py`.
 - **Desktop** (from `apps/desktop/`): `npm run build` (the type gate),
   `npm run lint` (0 problems), `npm test`, `npm run format:check`.
+
+## 8. Version bumps and releases (hard rules)
+
+A version bump touches a FIXED list of files. When the maintainer declares a
+version ready ("todo listo", "release vX.Y.Z"), walk this list and verify each
+one before reporting the bump done:
+
+| File                                     | Field to change                                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `apps/desktop/package.json`              | `"version"` (the sidebar label reads it)                                                    |
+| `apps/desktop/package-lock.json`         | the two ROOT entries (`""` and `packages[""]`) — never a dependency version                 |
+| `apps/desktop/src-tauri/tauri.conf.json` | `"version"` (the MSI installer version)                                                     |
+| `apps/desktop/src-tauri/Cargo.toml`      | `[package] version`                                                                         |
+| `apps/desktop/src-tauri/Cargo.lock`      | the `financeapp-tauri` entry only                                                           |
+| `apps/processor/src/main.py`             | `PROCESSOR_VERSION` (`CONTRACT_VERSION` is the artifacts contract, NOT the release version) |
+| `backend/README.md`                      | "Versión del componente"                                                                    |
+| `README.md` (root)                       | the version badge and the Releases list                                                     |
+| `docs/README.md`                         | the public-version line                                                                     |
+| `CHANGELOGS.md`                          | a new entry for the version                                                                 |
+
+Rules:
+
+- After the bump, `grep` the OLD version across the repo and report what you
+  found: the only legitimate leftovers are dependency versions inside lockfiles,
+  test fixtures that reproduce old payloads, and the history under
+  `odd/tasks/`. Anything else is a miss.
+- The `CHANGELOGS.md` entry (Spanish, like the repo prose) lands in the SAME
+  commit as the bump: what was fixed, added and refactored per component, with
+  the battery evidence.
+- Run the desktop battery after the bump: `version.test` pins the component
+  version to `package.json` and fails on drift.
+- The tag and the GitHub release are maintainer actions. Never create a tag,
+  never push to `main`, and never mark a version public before the release
+  exists: docs say "complete on `developer`, pending publication" until then.

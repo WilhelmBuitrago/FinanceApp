@@ -35,4 +35,4 @@ desarrollador lee antes de tocar código.
 - Versión pública del producto: **v0.1.0** (último release publicado, Windows
   MSI). **v0.1.1** — completa en `developer`, pendiente de publicación
   (optimización y buenas prácticas sobre los tres componentes). Detalle en
-  [CHANGELOG.md](../CHANGELOG.md).
+  [CHANGELOGS.md](../CHANGELOGS.md).
