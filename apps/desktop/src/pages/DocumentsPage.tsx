@@ -14,6 +14,7 @@ import { SkeletonRows } from '../components/ui/SkeletonRows';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { primaryButton } from '../components/ui/buttons';
 import { tableHead } from '../components/ui/table';
+import { PageWithDrawer } from '../app/layout/PageWithDrawer';
 import type { Document } from '../types/document';
 
 /* Documentos — provenance. An import ALWAYS requires a configured account
@@ -33,11 +34,7 @@ export default function DocumentsPage() {
   const hasAccounts = !accounts.loading && !accounts.error && (accounts.data?.length ?? 0) > 0;
 
   return (
-    <div
-      className={`transition-[padding] duration-[220ms] ease-out-tk ${
-        selected ? 'pr-[calc(min(440px,40vw)_+_16px)]' : ''
-      }`}
-    >
+    <PageWithDrawer open={selected !== null}>
       {documents.loading ? (
         <SkeletonRows rows={5} />
       ) : documents.error ? (
@@ -155,6 +152,6 @@ export default function DocumentsPage() {
         accountName={selected ? (accountNames.get(selected.AccountID ?? '') ?? null) : null}
         onClose={() => setSelected(null)}
       />
-    </div>
+    </PageWithDrawer>
   );
 }

@@ -15,6 +15,7 @@ import { SkeletonRows } from '../components/ui/SkeletonRows';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { secondaryButton } from '../components/ui/buttons';
 import { tableHead, tableHeadRight } from '../components/ui/table';
+import { PageWithDrawer } from '../app/layout/PageWithDrawer';
 import type { Movement } from '../types/movement';
 
 /* Movimientos — the product's main query screen.
@@ -122,11 +123,7 @@ export default function TransactionsPage() {
   const total = movements.data?.length ?? 0;
 
   return (
-    <div
-      className={`transition-[padding] duration-[220ms] ease-out-tk ${
-        selected ? 'pr-[calc(min(440px,40vw)_+_16px)]' : ''
-      }`}
-    >
+    <PageWithDrawer open={selected !== null}>
       {/* Toolbar: search + filters + count */}
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <div className="relative">
@@ -313,6 +310,6 @@ export default function TransactionsPage() {
         accountName={selected ? (accountNames.get(selected.AccountID) ?? null) : null}
         onClose={() => setSelected(null)}
       />
-    </div>
+    </PageWithDrawer>
   );
 }

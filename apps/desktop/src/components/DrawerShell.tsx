@@ -9,6 +9,11 @@ interface DrawerShellProps {
   children: React.ReactNode;
 }
 
+/* The page-side counterpart of the panel width below: while a drawer is
+   open the page reserves this exact column (PageWithDrawer uses it).
+   One geometry, two consumers — they cannot drift apart. */
+export const drawerReserveClass = 'pr-[calc(min(440px,40vw)_+_16px)]';
+
 export function DrawerShell({ ariaLabel, onClose, children }: DrawerShellProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -25,6 +30,41 @@ export function DrawerShell({ ariaLabel, onClose, children }: DrawerShellProps) 
     >
       {children}
     </aside>
+  );
+}
+
+/* Key/value row inside drawers — the one definition for both drawers
+   (DetailDrawer and DocumentDrawer used to carry a copy each). */
+export function KV({ label, children }: { label: string; children?: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-1">
+      <dt className="shrink-0 text-meta text-ink-3">{label}</dt>
+      <dd className="min-w-0 break-words text-right text-body text-ink">{children ?? '—'}</dd>
+    </div>
+  );
+}
+
+/* Section loading state — discreet bars, aria-hidden (the body wrapper
+   announces politely when the content lands). */
+export function SectionLoading() {
+  return (
+    <div className="space-y-2" aria-hidden="true">
+      <div className="h-2.5 w-24 animate-pulse rounded-tk bg-interactive" />
+      <div className="h-2.5 w-40 animate-pulse rounded-tk bg-interactive" />
+    </div>
+  );
+}
+
+/* Section failure with its retry: one section failing never blanks the
+   others. */
+export function SectionError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex items-center gap-3">
+      <p className="text-meta text-ink-2">No se pudo cargar esta sección.</p>
+      <button onClick={onRetry} className="text-meta font-medium text-accent hover:underline">
+        Reintentar
+      </button>
+    </div>
   );
 }
 

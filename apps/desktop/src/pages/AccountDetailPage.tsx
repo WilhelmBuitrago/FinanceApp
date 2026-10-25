@@ -8,6 +8,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
 import { SkeletonRows } from '../components/ui/SkeletonRows';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { PageWithDrawer } from '../app/layout/PageWithDrawer';
 import { tableHead, tableHeadRight } from '../components/ui/table';
 import { useAccounts } from '../hooks/useAccounts';
 import { useResource } from '../hooks/useResource';
@@ -54,11 +55,7 @@ export default function AccountDetailPage() {
   const accountName = account?.Name ?? null;
 
   return (
-    <div
-      className={`space-y-8 transition-[padding] duration-[220ms] ease-out-tk ${
-        selected ? 'pr-[calc(min(440px,40vw)_+_16px)]' : ''
-      }`}
-    >
+    <PageWithDrawer open={selected !== null} className="space-y-8">
       {/* Identidad de la cuenta */}
       {accounts.loading ? (
         <div className="h-14 w-72 animate-pulse rounded-tk bg-interactive" aria-hidden="true" />
@@ -247,6 +244,6 @@ export default function AccountDetailPage() {
         accountName={selected ? (accountName ?? selected.AccountID) : null}
         onClose={() => setSelected(null)}
       />
-    </div>
+    </PageWithDrawer>
   );
 }
