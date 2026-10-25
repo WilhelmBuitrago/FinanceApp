@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatMoney, formatMoneyFromMinorSafe, formatSignedMoney } from './formatMoney';
+import { formatMoney, formatSignedMoney } from './formatMoney';
 
 describe('formatMoney', () => {
   it('renders minor units as pesos with two decimals', () => {
@@ -12,18 +12,6 @@ describe('formatMoney', () => {
   it('keeps the sign and never drops the fraction for small amounts', () => {
     expect(formatMoney(-2500)).toBe('-$25,00');
     expect(formatMoney(5)).toBe('$0,05');
-  });
-});
-
-describe('formatMoneyFromMinorSafe', () => {
-  it('renders an em dash for absent or invalid data', () => {
-    expect(formatMoneyFromMinorSafe(null)).toBe('—');
-    expect(formatMoneyFromMinorSafe(undefined)).toBe('—');
-    expect(formatMoneyFromMinorSafe(Number.NaN)).toBe('—');
-  });
-
-  it('renders a real amount', () => {
-    expect(formatMoneyFromMinorSafe(1000)).toBe('$10,00');
   });
 });
 

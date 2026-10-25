@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ACCOUNT_TYPE_LABELS, accountTypeLabel } from './accountType';
+import { accountTypeLabel } from './accountType';
 
 describe('accountTypeLabel', () => {
   it('labels the closed set of account types', () => {
@@ -10,7 +10,7 @@ describe('accountTypeLabel', () => {
   });
 
   it('keeps the legacy value legible', () => {
-    expect(ACCOUNT_TYPE_LABELS.BANK).toBe('Cuenta bancaria');
+    expect(accountTypeLabel('BANK')).toBe('Cuenta bancaria');
   });
 
   it('falls back to the raw value for an unknown type', () => {

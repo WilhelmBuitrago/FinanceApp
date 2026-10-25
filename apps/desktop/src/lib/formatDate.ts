@@ -26,18 +26,3 @@ export function formatDate(iso: string | null | undefined, locale = 'es-CO'): st
       : { year: 'numeric', month: 'short', day: '2-digit' },
   );
 }
-
-export function formatDateTime(iso: string | null | undefined, locale = 'es-CO'): string {
-  if (!iso) return '—';
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  const parts = new Intl.DateTimeFormat(locale, {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).formatToParts(date);
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
-  return `${get('day')} ${get('month')} ${get('year')}, ${get('hour')}:${get('minute')}`;
-}

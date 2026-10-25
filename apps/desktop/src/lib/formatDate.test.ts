@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDate, formatDateTime } from './formatDate';
+import { formatDate } from './formatDate';
 
 describe('formatDate', () => {
   it('renders an em dash for absent dates', () => {
@@ -18,16 +18,5 @@ describe('formatDate', () => {
 
   it('returns the raw value when it cannot parse', () => {
     expect(formatDate('not-a-date')).toBe('not-a-date');
-  });
-});
-
-describe('formatDateTime', () => {
-  it('includes the time for full timestamps', () => {
-    // 15:04 UTC, rendered without a timezone suffix.
-    expect(formatDateTime('2026-10-01T15:04:00Z')).toMatch(/^01 oct 2026, \d{2}:\d{2}$/);
-  });
-
-  it('renders an em dash for absent timestamps', () => {
-    expect(formatDateTime(null)).toBe('—');
   });
 });

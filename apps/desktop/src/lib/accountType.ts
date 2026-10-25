@@ -1,6 +1,6 @@
 /* Spanish labels for AccountType (closed set: DB CHECK BANK_ACCOUNT/CASH/CREDIT_CARD). */
 
-export const ACCOUNT_TYPE_LABELS: Record<string, string> = {
+const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   BANK_ACCOUNT: 'Cuenta bancaria',
   CASH: 'Efectivo',
   CREDIT_CARD: 'Tarjeta de crédito',

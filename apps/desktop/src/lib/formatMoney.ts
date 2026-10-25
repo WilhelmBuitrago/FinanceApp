@@ -16,11 +16,6 @@ export function formatMoney(amountMinor: number, locale = 'es-CO'): string {
   }
 }
 
-export function formatMoneyFromMinorSafe(amountMinor: number | null | undefined): string {
-  if (amountMinor == null || Number.isNaN(amountMinor)) return '—';
-  return formatMoney(amountMinor);
-}
-
 /* Signed money for table cells and drawer headers: "+$41.000" / "-$12.500" / "$0". */
 export function formatSignedMoney(amountMinor: number): string {
   if (amountMinor > 0) return `+${formatMoney(amountMinor)}`;

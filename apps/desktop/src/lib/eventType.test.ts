@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { EVENT_TYPE_LABELS, eventTypeLabel } from './eventType';
+import { eventTypeLabel } from './eventType';
 
 describe('eventTypeLabel', () => {
   it('labels the domain event types', () => {
@@ -11,6 +11,6 @@ describe('eventTypeLabel', () => {
 
   it('falls back to the raw value for an event type outside the catalog', () => {
     expect(eventTypeLabel('BRAND_NEW_EVENT')).toBe('BRAND_NEW_EVENT');
-    expect(EVENT_TYPE_LABELS.TRANSFER).toBe('Transferencia');
+    expect(eventTypeLabel('TRANSFER')).toBe('Transferencia');
   });
 });
