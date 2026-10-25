@@ -51,6 +51,18 @@ npx tauri dev
   falla al arrancar: por eso la opción B lo compila primero.
 - Build de producción: `npm run build` (genera `dist/`) + `cargo tauri build`
   (bundle MSI). Es exactamente lo que hace el workflow de releases.
+- **Antes de un build local de MSI, refrescar los recursos de Python**:
+  `pwsh -File src-tauri/resources/refresh-resources.ps1`. El bundle
+  empaqueta `resources/python-runtime/` y `resources/python-wheels/` tal
+  cual están en disco; el CI los genera frescos en cada corrida, el build
+  local no. Con recursos viejos el MSI falla al instalar ("Python zip
+  missing") o instala un Python que el backend rechaza. El script lee la
+  versión y el SHA del propio `prepare-python.ps1`, descarga, verifica y
+  resuelve los wheels para la versión empaquetada.
+- En un upgrade, la preparación de Python corre de nuevo
+  (`prepare-python.ps1` detecta el mismatch por el marker) y poda los
+  entornos viejos: cada bump de Python deja el entorno anterior (~240 MB)
+  huérfano hasta que la poda lo elimina.
 
 ## Procesador (Python)
 

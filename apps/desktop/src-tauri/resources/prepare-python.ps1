@@ -128,6 +128,35 @@ marker_format=1
     Move-Item -Path $markerTmp -Destination $marker -Force
     Write-Log "Marker written"
 
+    # ---- Prune orphaned environments (post-migration hygiene) ----
+    # A Python or requirements bump leaves the previous runtime and venv
+    # behind; each pair costs roughly 240 MB and nothing references it
+    # anymore (the marker was just swapped). Remove every versioned
+    # directory that is not the current one. A failure here (a locked
+    # interpreter, a running process) must never fail the installation:
+    # it is logged and the next install retries.
+    foreach ($pair in @(
+        @{ Root = Join-Path $targetBase 'python-runtime'; Keep = (Split-Path -Leaf $runtimeDir); Label = 'runtime' },
+        @{ Root = Join-Path $targetBase 'venvs'; Keep = (Split-Path -Leaf $venvDir); Label = 'venv' }
+    )) {
+        # Defensive: never prune if the target is unexpected or the keep
+        # name could not be resolved (an empty name would match nothing
+        # and, worse, could mean the path logic changed).
+        if ([string]::IsNullOrWhiteSpace($pair.Keep)) { continue }
+        if (-not $pair.Root.StartsWith($targetBase, [System.StringComparison]::OrdinalIgnoreCase)) { continue }
+        if (-not (Test-Path $pair.Root)) { continue }
+        Get-ChildItem -Path $pair.Root -Directory | ForEach-Object {
+            $item = $_
+            if ($item.Name -eq $pair.Keep) { return }
+            try {
+                Remove-Item -LiteralPath $item.FullName -Recurse -Force -ErrorAction Stop
+                Write-Log "Pruned old $($pair.Label): $($item.Name)"
+            } catch {
+                Write-Log "WARNING: could not prune old $($pair.Label) '$($item.Name)' (will retry next install): $($_.Exception.Message)"
+            }
+        }
+    }
+
     Write-Log "FinanceApp Python preparation completed successfully"
     exit 0
 } finally {
