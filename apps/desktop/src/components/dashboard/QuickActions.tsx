@@ -17,7 +17,7 @@ export function QuickActions({ onAddMovement }: { onAddMovement: () => void }) {
         +
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-56 rounded-tk border border-line bg-surface shadow-xl p-1 z-30">
+        <div className="absolute right-0 top-full mt-2 w-56 rounded-tk border border-line bg-surface shadow-float p-1 z-30">
           <Link
             to="/documents"
             onClick={() => setOpen(false)}

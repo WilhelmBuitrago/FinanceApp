@@ -29,7 +29,7 @@ export function NotificationBell({ notifications }: { notifications: string[] })
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 rounded-tk border border-line bg-surface shadow-xl p-2 z-30">
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-tk border border-line bg-surface shadow-float p-2 z-30">
           <p className="text-body font-medium px-2 py-1">Notificaciones</p>
           {notifications.length === 0 ? (
             <p className="text-body text-ink-3 px-2 py-1">Sin notificaciones</p>
