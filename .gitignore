@@ -86,6 +86,9 @@ Thumbs.db
 # Private project documentation
 # ==================================================
 /FinanceApp.md
+# Agent operating contract: internal rules, never published. It stays on
+# disk for the tools that load it; git only stopped tracking it.
+/AGENTS.md
 /backend/docs/architecture/
 
 
