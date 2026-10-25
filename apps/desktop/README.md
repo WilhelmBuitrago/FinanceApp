@@ -43,6 +43,7 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
       - [`Sidebar.tsx`](./src/app/layout/Sidebar.tsx) — navegación lateral.
       - [`Topbar.tsx`](./src/app/layout/Topbar.tsx) — barra superior.
       - [`PageContainer.tsx`](./src/app/layout/PageContainer.tsx) — contenedor de páginas.
+      - [`PageWithDrawer.tsx`](./src/app/layout/PageWithDrawer.tsx) — páginas que abren drawer: reservan su columna (geometría compartida con `DrawerShell`).
   - **`components/`** — componentes compartidos.
     - [`CashFlowChart.tsx`](./src/components/CashFlowChart.tsx) — gráfico de flujo de caja.
     - [`DonutChart.tsx`](./src/components/DonutChart.tsx) — distribuciones.
@@ -54,12 +55,27 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`ImportDocumentDrawer.tsx`](./src/components/ImportDocumentDrawer.tsx) — flujo de importación.
     - [`ImportStatus.tsx`](./src/components/ImportStatus.tsx) — estado del job de importación.
     - [`NewAccountDrawer.tsx`](./src/components/NewAccountDrawer.tsx) — alta de cuenta.
-    - [`DrawerShell.tsx`](./src/components/DrawerShell.tsx) — base común de drawers.
+    - [`DrawerShell.tsx`](./src/components/DrawerShell.tsx) — base común de drawers (+ `KV`, estados de sección y la geometría del panel).
+    - **`drawer/`** — las secciones del drawer de trazabilidad.
+      - [`MovementDetail.tsx`](./src/components/drawer/MovementDetail.tsx) — movimiento: datos locales, asignación de categoría y borrado.
+      - [`FinancialEventDetail.tsx`](./src/components/drawer/FinancialEventDetail.tsx) — evento financiero detrás del movimiento.
+      - [`SourceEntryDetail.tsx`](./src/components/drawer/SourceEntryDetail.tsx) — entrada documental: la evidencia del PDF.
+      - [`DocumentDetail.tsx`](./src/components/drawer/DocumentDetail.tsx) — documento de origen.
     - [`FormField.tsx`](./src/components/FormField.tsx) — campo de formulario.
     - [`SectionHeader.tsx`](./src/components/SectionHeader.tsx) — encabezado de sección.
     - [`SummaryStrip.tsx`](./src/components/SummaryStrip.tsx) — franja de totales.
     - [`CopyId.tsx`](./src/components/CopyId.tsx) — copiar identificador.
     - [`icons.tsx`](./src/components/icons.tsx) — iconografía propia.
+    - **`dashboard/`** — las piezas del Overview: la página compone, no renderiza secciones.
+      - [`NotificationBell.tsx`](./src/components/dashboard/NotificationBell.tsx) — campana de revisión (popover con Escape/click afuera).
+      - [`QuickActions.tsx`](./src/components/dashboard/QuickActions.tsx) — menú "+": importar documento o agregar movimiento.
+      - [`NetTotalCard.tsx`](./src/components/dashboard/NetTotalCard.tsx) — neto total y desglose por cuenta.
+      - [`FinancialSummarySection.tsx`](./src/components/dashboard/FinancialSummarySection.tsx) — suma real de 30 días.
+      - [`CashFlowSection.tsx`](./src/components/dashboard/CashFlowSection.tsx) — flujo de dinero (línea + área).
+      - [`DistributionSection.tsx`](./src/components/dashboard/DistributionSection.tsx) — ingresos y egresos clasificados.
+      - [`RecentMovementsTable.tsx`](./src/components/dashboard/RecentMovementsTable.tsx) — actividad reciente.
+      - [`AttentionSection.tsx`](./src/components/dashboard/AttentionSection.tsx) — documentos que requieren atención.
+      - [`RecentDocumentsTable.tsx`](./src/components/dashboard/RecentDocumentsTable.tsx) — documentos recientes.
     - **`review/`** — una card por tipo de ítem de la cola de revisión.
       - [`ReviewCategoryCard.tsx`](./src/components/review/ReviewCategoryCard.tsx) — movimiento sin categoría.
       - [`ReviewPeriodCard.tsx`](./src/components/review/ReviewPeriodCard.tsx) — período de documento no reconocido.
@@ -73,7 +89,7 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
       - [`buttons.ts`](./src/components/ui/buttons.ts) — clases de botón primario/secundario (una sola definición).
       - [`table.ts`](./src/components/ui/table.ts) — celdas de encabezado de tabla (izquierda y derecha).
   - **`hooks/`** — acceso a datos por recurso.
-    - [`useResource.ts`](./src/hooks/useResource.ts) — hook genérico de recursos (por id, con reintento).
+    - [`useResource.ts`](./src/hooks/useResource.ts) — hook genérico de recursos (por id, con reintento; expone `ResourceHandle`).
     - [`useListQuery.ts`](./src/hooks/useListQuery.ts) — hook genérico de listas (el único; acepta `refreshKey` y colecciones del bus).
     - [`useAccounts.ts`](./src/hooks/useAccounts.ts) — cuentas.
     - [`useDashboard.ts`](./src/hooks/useDashboard.ts) — datos del dashboard.
@@ -83,6 +99,8 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`usePopover.ts`](./src/hooks/usePopover.ts) — cierre de popovers por Escape y click afuera.
     - [`useReviewQueue.ts`](./src/hooks/useReviewQueue.ts) — cola de revisión y sus resoluciones.
     - [`useReviewNotifications.ts`](./src/hooks/useReviewNotifications.ts) — campana de notificaciones del dashboard.
+    - [`useMovementActions.ts`](./src/hooks/useMovementActions.ts) — categoría y borrado del drawer de trazabilidad.
+    - [`useUpdater.ts`](./src/hooks/useUpdater.ts) — máquina del updater (check, ofrecer, descargar, instalar).
   - **`lib/`** — utilidades puras de presentación.
     - [`formatMoney.ts`](./src/lib/formatMoney.ts) — formato de montos.
     - [`formatDate.ts`](./src/lib/formatDate.ts) — formato de fechas.

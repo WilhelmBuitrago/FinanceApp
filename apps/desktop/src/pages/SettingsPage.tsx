@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 
 import { purgeAllData } from '../api/admin';
-import { invalidateCollections } from '../lib/dataBus';
-import { progressLabel } from '../lib/updateProgress';
-import type { Category, CategoryOption } from '../types/category';
 import {
   createCategory,
   deleteCategory as deleteCategoryApi,
@@ -11,25 +8,23 @@ import {
 } from '../api/categories';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { SectionHeader } from '../components/SectionHeader';
-import { check, type DownloadEvent, type Update } from '@tauri-apps/plugin-updater';
+import { useUpdater } from '../hooks/useUpdater';
+import { invalidateCollections } from '../lib/dataBus';
+import type { Category, CategoryOption } from '../types/category';
 
 /* Configuración — data management. The purge deletes EVERYTHING (accounts,
    documents, movements, events, relations, installments, categories) via
    DELETE /admin/purge. Irreversible: guarded by an explicit confirmation
-   that names the exact consequence. */
+   that names the exact consequence. Categories come from the backend and
+   their mutations refresh through the bus; the updater machine lives in
+   useUpdater. */
 
 export default function SettingsPage() {
+  const updater = useUpdater();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Actualizaciones
-  const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const [updateAvailable, setUpdateAvailable] = useState<Update | null>(null);
-  const [updateConfirming, setUpdateConfirming] = useState(false);
-  const [updateProgress, setUpdateProgress] = useState<string | null>(null);
-  const [updateError, setUpdateError] = useState<string | null>(null);
 
   // Categorías desde backend
   const [categories, setCategories] = useState<CategoryOption[]>([]);
@@ -92,53 +87,6 @@ export default function SettingsPage() {
     } catch {
       setBusy(false);
       setError('No se pudieron borrar los datos. Inténtalo de nuevo.');
-    }
-  };
-
-  const handleCheckUpdates = async () => {
-    setCheckingUpdate(true);
-    setUpdateError(null);
-    setUpdateProgress(null);
-    try {
-      const update = await check();
-      if (update) {
-        setUpdateAvailable(update);
-        setUpdateConfirming(true);
-      } else {
-        setUpdateProgress('FinanceApp está actualizado.');
-        setTimeout(() => setUpdateProgress(null), 3000);
-      }
-    } catch {
-      setUpdateError('Error verificando actualizaciones.');
-    } finally {
-      setCheckingUpdate(false);
-    }
-  };
-
-  const handleInstallUpdate = async () => {
-    if (!updateAvailable) return;
-    setUpdateConfirming(false);
-    setUpdateProgress(`Descargando versión ${updateAvailable.version}...`);
-    try {
-      // El plugin permite callback de progreso (Started trae el total;
-      // Progress trae cada chunk: se acumula, no existe un percent).
-      let downloaded = 0;
-      let total = 0;
-      await updateAvailable.downloadAndInstall((event: DownloadEvent) => {
-        if (event.event === 'Started') {
-          total = event.data.contentLength ?? 0;
-        }
-        if (event.event === 'Progress') {
-          downloaded += event.data.chunkLength;
-          setUpdateProgress(
-            `Descargando ${updateAvailable.version}... ${progressLabel(downloaded, total)}`,
-          );
-        }
-      });
-      setUpdateProgress('Instalación completada. Reiniciando...');
-    } catch (e) {
-      setUpdateError(e instanceof Error ? e.message : 'Falló la instalación de la actualización.');
-      setUpdateProgress(null);
     }
   };
 
@@ -259,20 +207,20 @@ export default function SettingsPage() {
             Verifica si hay una nueva versión de FinanceApp disponible.
           </p>
           <button
-            onClick={handleCheckUpdates}
-            disabled={checkingUpdate}
+            onClick={updater.checkUpdates}
+            disabled={updater.checking}
             className="inline-flex h-8 items-center rounded-tk bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep disabled:opacity-60"
           >
-            {checkingUpdate ? 'Buscando...' : 'Buscar Actualizaciones'}
+            {updater.checking ? 'Buscando...' : 'Buscar Actualizaciones'}
           </button>
-          {updateProgress && (
+          {updater.progress && (
             <p className="text-body text-ink-2" role="status">
-              {updateProgress}
+              {updater.progress}
             </p>
           )}
-          {updateError && (
+          {updater.error && (
             <p className="text-body text-neg" role="alert">
-              {updateError}
+              {updater.error}
             </p>
           )}
         </div>
@@ -289,14 +237,14 @@ export default function SettingsPage() {
         />
       )}
 
-      {updateConfirming && updateAvailable && (
+      {updater.confirming && updater.available && (
         <ConfirmModal
           title="Actualización disponible"
-          message={`Se encontró la versión ${updateAvailable.version}. ¿Deseas instalarla? La aplicación se reiniciará al finalizar.`}
+          message={`Se encontró la versión ${updater.available.version}. ¿Deseas instalarla? La aplicación se reiniciará al finalizar.`}
           confirmLabel="Instalar"
-          onConfirm={handleInstallUpdate}
-          onCancel={() => setUpdateConfirming(false)}
-          busy={!!updateProgress}
+          onConfirm={updater.installUpdate}
+          onCancel={updater.cancelInstall}
+          busy={!!updater.progress}
         />
       )}
     </div>
