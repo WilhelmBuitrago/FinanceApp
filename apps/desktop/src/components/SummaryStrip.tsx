@@ -18,7 +18,7 @@ export function SummaryStrip({ income, expense, periodLabel }: SummaryStripProps
           <p className="font-mono text-meta uppercase tracking-[0.08em] text-ink-3">
             Ingresos · {periodLabel}
           </p>
-          <p className="mt-2 text-[1.375rem] font-medium tabular-nums text-pos">
+          <p className="mt-2 text-figure font-medium tabular-nums text-pos">
             {formatSignedMoney(income)}
           </p>
         </div>
@@ -27,7 +27,7 @@ export function SummaryStrip({ income, expense, periodLabel }: SummaryStripProps
           <p className="font-mono text-meta uppercase tracking-[0.08em] text-ink-3">
             Egresos · {periodLabel}
           </p>
-          <p className="mt-2 text-[1.375rem] font-medium tabular-nums text-neg">
+          <p className="mt-2 text-figure font-medium tabular-nums text-neg">
             {formatSignedMoney(expense)}
           </p>
         </div>
@@ -36,7 +36,7 @@ export function SummaryStrip({ income, expense, periodLabel }: SummaryStripProps
           <p className="font-mono text-meta uppercase tracking-[0.08em] text-ink-3">
             Neto · {periodLabel}
           </p>
-          <p className="mt-2 inline-block border-b border-accent pb-1 text-[1.75rem] font-semibold tabular-nums text-ink">
+          <p className="mt-2 inline-block border-b border-accent pb-1 text-headline font-semibold tabular-nums text-ink">
             {formatSignedMoney(income + expense)}
           </p>
         </div>

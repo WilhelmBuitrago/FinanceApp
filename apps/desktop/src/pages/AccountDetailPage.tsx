@@ -66,7 +66,7 @@ export default function AccountDetailPage() {
         />
       ) : account ? (
         <header className="space-y-3">
-          <h1 className="text-[1.75rem] font-semibold tracking-tight text-ink">{account.Name}</h1>
+          <h1 className="text-headline font-semibold tracking-tight text-ink">{account.Name}</h1>
           <div className="flex flex-wrap items-center gap-2 text-body text-ink-2">
             <span>{accountTypeLabel(account.AccountType)}</span>
             <span aria-hidden="true">·</span>

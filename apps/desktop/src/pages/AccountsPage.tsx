@@ -48,7 +48,7 @@ export default function AccountsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">Cuentas</h1>
+          <h1 className="text-page font-semibold tracking-tight text-ink">Cuentas</h1>
           <p className="text-body text-ink-2">
             Tus entidades financieras: qué puedes importar y desde dónde.
           </p>

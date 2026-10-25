@@ -98,7 +98,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div className="flex items-baseline justify-between gap-4">
         <div>
-          <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">{greeting()}</h1>
+          <h1 className="text-page font-semibold tracking-tight text-ink">{greeting()}</h1>
           <p className="text-meta text-ink-3">{formatDate(todayIso())}</p>
         </div>
         {firstUse ? null : (

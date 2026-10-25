@@ -108,7 +108,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
           )}
           <div className="space-y-4">
             <div>
-              <label className="text-sm" htmlFor="add-movement-amount">
+              <label className="text-body" htmlFor="add-movement-amount">
                 Cantidad *
               </label>
               <input
@@ -123,7 +123,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               />
             </div>
             <div>
-              <label className="text-sm" htmlFor="add-movement-type">
+              <label className="text-body" htmlFor="add-movement-type">
                 Tipo *
               </label>
               <select
@@ -138,7 +138,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-sm" htmlFor="add-movement-account">
+              <label className="text-body" htmlFor="add-movement-account">
                 Cuenta *
               </label>
               <select
@@ -155,7 +155,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-sm" htmlFor="add-movement-category">
+              <label className="text-body" htmlFor="add-movement-category">
                 Categoría
               </label>
               <select
@@ -182,7 +182,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               </select>
             </div>
             <div>
-              <label className="text-sm" htmlFor="add-movement-description">
+              <label className="text-body" htmlFor="add-movement-description">
                 Descripción
               </label>
               <input
@@ -194,7 +194,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               />
             </div>
             <div>
-              <label className="text-sm" htmlFor="add-movement-date">
+              <label className="text-body" htmlFor="add-movement-date">
                 Fecha *
               </label>
               <input

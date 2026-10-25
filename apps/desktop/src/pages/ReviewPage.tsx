@@ -37,7 +37,7 @@ export default function ReviewPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">Revisión</h1>
+      <h1 className="text-page font-semibold tracking-tight text-ink">Revisión</h1>
 
       {items.length === 0 ? (
         <div className="rounded-card border border-dashed border-line bg-surface/50 p-12 text-center">

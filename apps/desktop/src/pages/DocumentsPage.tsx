@@ -57,7 +57,7 @@ export default function DocumentsPage() {
         <>
           <div className="mb-6 flex items-baseline justify-between gap-4">
             <div>
-              <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">Documentos</h1>
+              <h1 className="text-page font-semibold tracking-tight text-ink">Documentos</h1>
               <p className="text-body text-ink-2">
                 {documents.data?.length ?? 0} documentos registrados.
               </p>

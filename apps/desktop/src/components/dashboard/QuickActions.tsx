@@ -21,7 +21,7 @@ export function QuickActions({ onAddMovement }: { onAddMovement: () => void }) {
           <Link
             to="/documents"
             onClick={() => setOpen(false)}
-            className="block px-3 py-2 rounded-sm hover:bg-raised text-sm"
+            className="block px-3 py-2 rounded-sm hover:bg-raised text-body"
           >
             Importar documento
           </Link>
@@ -30,7 +30,7 @@ export function QuickActions({ onAddMovement }: { onAddMovement: () => void }) {
               setOpen(false);
               onAddMovement();
             }}
-            className="w-full text-left px-3 py-2 rounded-sm hover:bg-raised text-sm"
+            className="w-full text-left px-3 py-2 rounded-sm hover:bg-raised text-body"
           >
             Agregar movimiento
           </button>

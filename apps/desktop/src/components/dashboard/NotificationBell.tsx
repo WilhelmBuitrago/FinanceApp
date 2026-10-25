@@ -23,21 +23,21 @@ export function NotificationBell({ notifications }: { notifications: string[] })
       >
         <IconBell />
         {notifications.length > 0 && (
-          <span className="absolute -top-1 -right-1 bg-neg text-white text-xs rounded-full px-1">
+          <span className="absolute -top-1 -right-1 bg-neg text-white text-meta rounded-full px-1">
             {notifications.length}
           </span>
         )}
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 rounded-tk border border-line bg-surface shadow-xl p-2 z-30">
-          <p className="text-sm font-medium px-2 py-1">Notificaciones</p>
+          <p className="text-body font-medium px-2 py-1">Notificaciones</p>
           {notifications.length === 0 ? (
-            <p className="text-sm text-ink-3 px-2 py-1">Sin notificaciones</p>
+            <p className="text-body text-ink-3 px-2 py-1">Sin notificaciones</p>
           ) : (
             notifications.map((n, i) => (
               <div
                 key={i}
-                className="px-2 py-1 text-sm border-b border-line last:border-0 cursor-pointer hover:bg-raised"
+                className="px-2 py-1 text-body border-b border-line last:border-0 cursor-pointer hover:bg-raised"
                 onClick={() => {
                   setOpen(false);
                   navigate('/review');

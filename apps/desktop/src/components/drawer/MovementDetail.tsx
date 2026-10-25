@@ -84,7 +84,7 @@ export function MovementDetail({
       <div className="pt-2">
         <button
           onClick={onRequestDelete}
-          className="rounded-tk border border-line bg-bg px-3 py-1.5 text-sm font-medium text-neg hover:bg-red-50"
+          className="rounded-tk border border-line bg-bg px-3 py-1.5 text-body font-medium text-neg hover:bg-neg/10"
         >
           Eliminar movimiento
         </button>

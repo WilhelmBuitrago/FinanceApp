@@ -24,7 +24,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
         <div className="h-5 w-px bg-line" aria-hidden="true" />
         {/* The screen's own h1 is the document heading; the chrome title
             is a paragraph so every screen keeps exactly one h1. */}
-        <p className="truncate text-[1.125rem] font-semibold tracking-tight text-ink">{title}</p>
+        <p className="truncate text-overline font-semibold tracking-tight text-ink">{title}</p>
       </div>
     </header>
   );

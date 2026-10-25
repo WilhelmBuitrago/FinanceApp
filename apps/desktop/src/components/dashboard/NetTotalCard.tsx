@@ -20,7 +20,7 @@ export function NetTotalCard({
     <section aria-label="Neto total">
       <div className="rounded-card border border-line bg-surface p-5">
         <p className="text-meta text-ink-3">Neto total</p>
-        <p className="text-[1.75rem] font-semibold tracking-tight text-ink">
+        <p className="text-headline font-semibold tracking-tight text-ink">
           {formatSignedMoney(totalNet)}
         </p>
         <div className="mt-4 space-y-2">

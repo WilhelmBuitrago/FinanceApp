@@ -93,7 +93,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl space-y-8">
       <header className="space-y-1">
-        <h1 className="text-[1.5rem] font-semibold tracking-tight text-ink">Configuración</h1>
+        <h1 className="text-page font-semibold tracking-tight text-ink">Configuración</h1>
         <p className="text-body text-ink-2">Gestiona datos y preferencias de la aplicación.</p>
       </header>
 
@@ -121,7 +121,7 @@ export default function SettingsPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <h3 className="text-sm font-medium text-ink-2 mb-2">Categorías de Ingresos</h3>
+              <h3 className="text-body font-medium text-ink-2 mb-2">Categorías de Ingresos</h3>
               <ul className="space-y-2">
                 {categories
                   .filter((c) => c.type === 'INCOME')
@@ -131,18 +131,18 @@ export default function SettingsPage() {
                       className="flex items-center justify-between border border-line rounded px-3 py-2"
                     >
                       <span>{c.name}</span>
-                      <button onClick={() => deleteCategory(c.id)} className="text-neg text-sm">
+                      <button onClick={() => deleteCategory(c.id)} className="text-neg text-body">
                         Eliminar
                       </button>
                     </li>
                   ))}
                 {categories.filter((c) => c.type === 'INCOME').length === 0 && (
-                  <li className="text-meta text-ink-3 text-sm">Sin categorías</li>
+                  <li className="text-meta text-ink-3 text-body">Sin categorías</li>
                 )}
               </ul>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-ink-2 mb-2">Categorías de Egresos</h3>
+              <h3 className="text-body font-medium text-ink-2 mb-2">Categorías de Egresos</h3>
               <ul className="space-y-2">
                 {categories
                   .filter((c) => c.type === 'EXPENSE')
@@ -152,13 +152,13 @@ export default function SettingsPage() {
                       className="flex items-center justify-between border border-line rounded px-3 py-2"
                     >
                       <span>{c.name}</span>
-                      <button onClick={() => deleteCategory(c.id)} className="text-neg text-sm">
+                      <button onClick={() => deleteCategory(c.id)} className="text-neg text-body">
                         Eliminar
                       </button>
                     </li>
                   ))}
                 {categories.filter((c) => c.type === 'EXPENSE').length === 0 && (
-                  <li className="text-meta text-ink-3 text-sm">Sin categorías</li>
+                  <li className="text-meta text-ink-3 text-body">Sin categorías</li>
                 )}
               </ul>
             </div>
