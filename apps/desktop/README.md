@@ -160,13 +160,15 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
 - `npm run lint` **verde**: 0 errores y 0 warnings (las advertencias de deuda
   documentadas en `eslint.config.mjs` quedaron en cero tras la ronda de
   auditoría).
-- `npm test` **verde**: 88 tests en 22 archivos (payload de revisión, contrato
+- `npm test` **verde**: 99 tests en 24 archivos (payload de revisión, contrato
   del cliente HTTP, las formas de request de `api/review`, `api/movements` y
   `api/categories`, `useListQuery` y `useResource` (con el bus), las tres cards
   de revisión, el drawer de detalle (cadena completa, asignación de categoría,
   borrado con confirmación), el drawer de alta, `useReviewQueue`,
-  `useReviewNotifications`, las utilidades de formato, la versión y el bus de
-  invalidación).
+  `useReviewNotifications`, las utilidades de formato, la versión, el bus de
+  invalidación y las dos pantallas con lógica propia (`TransactionsPage`:
+  filtros, chips y drawer; `SettingsPage`: categorías, purga y updater).
+  Todos viven en `src/test/` con estructura espejada.
 - Refresco de datos: **sin `window.location.reload` en las mutaciones** —
   cada una publica las colecciones que dejó obsoletas (`dataBus`) y las
   pantallas suscritas refetchean solas. La única recarga completa que

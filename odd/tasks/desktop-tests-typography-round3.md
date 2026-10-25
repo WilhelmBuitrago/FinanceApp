@@ -43,7 +43,7 @@ estructura espejada y que sigan pasando.
 |----|-------------|------|--------|
 | A | Mover los `.test` a `src/test/` espejado + reescribir specifiers | inline | done |
 | B | Tokens de tipografía + reemplazo de valores arbitrarios | inline | pending |
-| C | Tests de página: TransactionsPage y SettingsPage | inline | pending |
+| C | Tests de página: TransactionsPage y SettingsPage | inline | done |
 
 ## Log
 
@@ -52,3 +52,25 @@ estructura espejada y que sigan pasando.
   666f474..e32d1e9). Batería de referencia: build 0, lint 0/0, 88/88 tests
   en 22 archivos, prettier 0. `src/test/` contiene solo `setup.ts`; los 22
   tests viven al lado de su módulo.
+- L3 (2026-10-24) — Ronda 3 ejecutada y pusheada:
+  - A (6ecabe7): 22 tests mudados a `src/test/` espejado (api, components,
+    components/review, hooks, lib); specifiers reescritos por profundidad
+    (los de `components/review` necesitan 3 ups, el resto 2). Sin cambios de
+    configuración: el include `src/**/*.test.{ts,tsx}` ya los cubría.
+    88/88 siguen pasando.
+  - B (49db581): `@theme` declara `--text-page` (24px), `--text-headline`
+    (28px), `--text-overline` (18px) y `--text-figure` (22px); 13 valores
+    arbitrarios + 12 `text-sm`/`text-xs` pasados a tokens (mismo valor
+    renderizado, verificado en el CSS built). Hallazgo de contraste corregido:
+    `hover:bg-red-50` del borrado → `hover:bg-neg/10`.
+  - C (commit final): `test/pages/TransactionsPage.test.tsx` (5 tests: filas
+    sin deduplicar, filtro por texto vía URL + chip, filtro por cuenta +
+    estado vacío honesto, URL como estado inicial, apertura del drawer) y
+    `test/pages/SettingsPage.test.tsx` (6 tests: catálogo por tipo, alta,
+    borrado, purga solo tras confirmación destructiva, updater "al día" y
+    updater con instalación). 99/99 en 24 archivos.
+  - Tres errores autoinfligidos durante la ronda, todos cazados por la
+    batería antes de commit: profundidad de `../` en los tests de review
+    (3 niveles, sobrecorregidos a 4 y revertidos), profundidad en los tests
+    nuevos de `test/pages` (2 niveles, escribí 3) y default export importado
+    como named en las dos páginas.
