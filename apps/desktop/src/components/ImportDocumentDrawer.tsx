@@ -209,7 +209,7 @@ export function ImportDocumentDrawer({ accounts, onClose, onFinished }: ImportDo
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`mt-0.5 rounded-md bg-raised p-2 text-ink-3 group-[.is-dragging]:text-accent`}
+                      className={`mt-0.5 rounded-sm bg-raised p-2 text-ink-3 group-[.is-dragging]:text-accent`}
                     >
                       <svg
                         width="18"

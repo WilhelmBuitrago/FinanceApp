@@ -76,7 +76,7 @@ export default function DocumentsPage() {
               description="Importa el primer extracto de una de tus cuentas para generar movimientos."
             />
           ) : (
-            <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
+            <div className="overflow-x-auto rounded-card border border-line bg-surface">
               <table className="w-full text-body">
                 <thead className="bg-raised">
                   <tr>

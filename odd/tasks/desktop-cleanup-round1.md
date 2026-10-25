@@ -47,8 +47,8 @@ prácticas concretas. Sin cambios de funcionalidad.
 | ID | Descripción | Ruta | Estado |
 |----|-------------|------|--------|
 | T1 | Borrar muertos (S3) + gate de types para configs (S4) + tests ajustados | inline | done (a624049) |
-| T2 | Módulos compartidos: tabla, botones, controles, `signedAmountClass`, `useAccountNames` (S5) | inline | pending |
-| T3 | Prácticas: navigate, icono, popovers, h1, nav config única, tokens de radio, comentarios (S6) | inline | pending |
+| T2 | Módulos compartidos: tabla, botones, controles, `signedAmountClass`, `useAccountNames` (S5) | inline | done (2ea4dcd) |
+| T3 | Prácticas: navigate, icono, popovers, h1, nav config única, tokens de radio, comentarios (S6) | inline | done |
 
 ## Log
 
@@ -65,3 +65,18 @@ prácticas concretas. Sin cambios de funcionalidad.
   (obs 63, topic `audit/desktop-v0.1.1`). Batería desktop de referencia:
   tsc 0, eslint 0/0, 91 tests en 22 archivos, prettier OK. git limpio en
   `developer` (3a96d5c).
+- L4 (2026-10-24) — Ronda 1 ejecutada: T1 (a624049) borró `postcss.config.json`,
+  `tsconfig.node.json` (con el include de `tsconfig.json` extendido a los
+  configs), `ApiErrorResponse`, `formatDateTime`, `formatMoneyFromMinorSafe`;
+  de-exportó los dos mapas de etiquetas (4 tests de código muerto fueron con
+  él: 91 → 87). T2 (2ea4dcd) creó `ui/table.ts`, `ui/buttons.ts`,
+  `useAccountNames`, `signedAmountClass` y `selectClassAuto`; 5 páginas
+  perdieron sus copias. T3 (commit final de la ronda): `app/nav.ts` como
+  registro único (router/Sidebar/Topbar), un solo `<h1>` por pantalla (Topbar
+  pasa a `<p>`; ReviewPage unifica su heading), `useNavigate` en la campana,
+  `IconBell`, popovers con Escape/click-afuera (`usePopover`, z-30 bajo el
+  modal z-40), `--radius-card: 12px` declarado y 74 usages mágicos
+  (`rounded-[12px]`/`rounded-[8px]`/`rounded-md`/`rounded-lg`/`bg-violet-*`)
+  pasados a tokens, comentarios stale corregidos. Batería final de la ronda:
+  build 0, lint 0, 88/88 tests, prettier 0, 102 links del README sin rotos.
+  Fuera de ronda (pendientes de decisión): lotes 4 y 5 del informe.

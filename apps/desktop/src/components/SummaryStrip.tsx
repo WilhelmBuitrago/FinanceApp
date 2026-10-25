@@ -12,7 +12,7 @@ interface SummaryStripProps {
 
 export function SummaryStrip({ income, expense, periodLabel }: SummaryStripProps) {
   return (
-    <div className="rounded-[12px] border border-line bg-surface p-6">
+    <div className="rounded-card border border-line bg-surface p-6">
       <div className="flex flex-wrap items-end gap-x-10 gap-y-6">
         <div className="min-w-40">
           <p className="font-mono text-meta uppercase tracking-[0.08em] text-ink-3">

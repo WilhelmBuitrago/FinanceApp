@@ -10,8 +10,8 @@ import type { UseQueryState } from '../types/api';
    anywhere refreshes every screen showing that data. Without collections
    the fetch runs on mount only.
 
-   It replaced four copies of the same effect (useAccounts, useMovements,
-   useDocuments and a private twin inside useDashboard). */
+   Every list hook runs through it, including the ones useDashboard
+   exposes — it replaced four copies of the same effect. */
 
 export function useListQuery<T>(
   fetcher: () => Promise<T>,

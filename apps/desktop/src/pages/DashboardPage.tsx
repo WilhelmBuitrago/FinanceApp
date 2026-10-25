@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAccounts } from '../hooks/useAccounts';
 import { useMovements } from '../hooks/useMovements';
 import {
@@ -10,6 +10,8 @@ import {
   useRecentMovements,
 } from '../hooks/useDashboard';
 import { useAccountNames } from '../hooks/useAccountNames';
+import { usePopoverDismiss } from '../hooks/usePopover';
+import { IconBell } from '../components/icons';
 import { AddMovementDrawer } from '../components/AddMovementDrawer';
 import { useReviewNotifications } from '../hooks/useReviewNotifications';
 import { formatDate } from '../lib/formatDate';
@@ -50,6 +52,9 @@ export default function DashboardPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [addMovementOpen, setAddMovementOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const navigate = useNavigate();
+  const notificationsRef = usePopoverDismiss(() => setNotificationsOpen(false));
+  const menuRef = usePopoverDismiss(() => setMenuOpen(false));
   const { notifications, notify } = useReviewNotifications();
   const accounts = useAccounts();
   const cashFlow = useCashFlow();
@@ -131,13 +136,14 @@ export default function DashboardPage() {
         </div>
         {firstUse ? null : (
           <div className="flex items-center gap-2">
-            <div className="relative">
+            <div className="relative" ref={notificationsRef}>
               <button
-                className="relative p-2 rounded border border-line bg-surface"
+                className="relative p-2 rounded-tk border border-line bg-surface"
                 onClick={() => setNotificationsOpen((v) => !v)}
                 title="Notificaciones"
+                aria-label="Notificaciones"
               >
-                🔔
+                <IconBell />
                 {notifications.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-neg text-white text-xs rounded-full px-1">
                     {notifications.length}
@@ -145,7 +151,7 @@ export default function DashboardPage() {
                 )}
               </button>
               {notificationsOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 rounded-lg border border-line bg-surface shadow-xl p-2 z-[9999]">
+                <div className="absolute right-0 top-full mt-2 w-80 rounded-tk border border-line bg-surface shadow-xl p-2 z-30">
                   <p className="text-sm font-medium px-2 py-1">Notificaciones</p>
                   {notifications.length === 0 ? (
                     <p className="text-sm text-ink-3 px-2 py-1">Sin notificaciones</p>
@@ -156,7 +162,7 @@ export default function DashboardPage() {
                         className="px-2 py-1 text-sm border-b border-line last:border-0 cursor-pointer hover:bg-raised"
                         onClick={() => {
                           setNotificationsOpen(false);
-                          window.location.href = '/review';
+                          navigate('/review');
                         }}
                       >
                         {n}
@@ -166,16 +172,16 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
-            <div className="relative">
+            <div className="relative" ref={menuRef}>
               <button className={primaryButton} onClick={() => setMenuOpen((v) => !v)}>
                 +
               </button>
               {menuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-line bg-surface shadow-xl p-1 z-[9999]">
+                <div className="absolute right-0 top-full mt-2 w-56 rounded-tk border border-line bg-surface shadow-xl p-1 z-30">
                   <Link
                     to="/documents"
                     onClick={() => setMenuOpen(false)}
-                    className="block px-3 py-2 rounded-md hover:bg-raised text-sm"
+                    className="block px-3 py-2 rounded-sm hover:bg-raised text-sm"
                   >
                     Importar documento
                   </Link>
@@ -184,7 +190,7 @@ export default function DashboardPage() {
                       setMenuOpen(false);
                       setAddMovementOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-md hover:bg-raised text-sm"
+                    className="w-full text-left px-3 py-2 rounded-sm hover:bg-raised text-sm"
                   >
                     Agregar movimiento
                   </button>
@@ -197,7 +203,7 @@ export default function DashboardPage() {
 
       {!firstUse && (
         <section aria-label="Neto total">
-          <div className="rounded-[12px] border border-line bg-surface p-5">
+          <div className="rounded-card border border-line bg-surface p-5">
             <p className="text-meta text-ink-3">Neto total</p>
             <p className="text-[1.75rem] font-semibold tracking-tight text-ink">
               {formatSignedMoney(totalNet)}
@@ -232,7 +238,7 @@ export default function DashboardPage() {
           <section aria-label="Situación financiera">
             {cashFlow.loading ? (
               <div
-                className="h-14 w-full max-w-2xl animate-pulse rounded-[8px] bg-interactive"
+                className="h-14 w-full max-w-2xl animate-pulse rounded-tk bg-interactive"
                 aria-hidden="true"
               />
             ) : cashFlow.error ? (
@@ -255,7 +261,7 @@ export default function DashboardPage() {
             <SectionHeader title="Flujo de dinero" />
             {cashFlow.loading ? (
               <div
-                className="h-48 w-full animate-pulse rounded-[12px] border border-line bg-surface"
+                className="h-48 w-full animate-pulse rounded-card border border-line bg-surface"
                 aria-hidden="true"
               />
             ) : cashFlow.error ? (
@@ -283,7 +289,7 @@ export default function DashboardPage() {
             <div className="grid gap-6 md:grid-cols-2">
               {incomeDist.loading || expenseDist.loading ? (
                 <div
-                  className="h-40 w-full animate-pulse rounded-[12px] border border-line bg-surface"
+                  className="h-40 w-full animate-pulse rounded-card border border-line bg-surface"
                   aria-hidden="true"
                 />
               ) : (
@@ -339,7 +345,7 @@ export default function DashboardPage() {
                 description="Los movimientos aparecerán al importar documentos."
               />
             ) : (
-              <div className="overflow-hidden rounded-[12px] border border-line bg-surface">
+              <div className="overflow-hidden rounded-card border border-line bg-surface">
                 <table className="w-full table-fixed text-body">
                   <thead className="bg-raised">
                     <tr>
@@ -389,7 +395,7 @@ export default function DashboardPage() {
                 title="Requiere atención"
                 action={{ to: '/documents', label: 'Ver documentos' }}
               />
-              <div className="overflow-hidden rounded-[12px] border border-line bg-surface">
+              <div className="overflow-hidden rounded-card border border-line bg-surface">
                 {attentionDocs.slice(0, 3).map((doc) => (
                   <div
                     key={doc.ID}
@@ -427,7 +433,7 @@ export default function DashboardPage() {
                 description="Los documentos bancarios importados aparecerán aquí."
               />
             ) : (
-              <div className="overflow-hidden rounded-[12px] border border-line bg-surface">
+              <div className="overflow-hidden rounded-card border border-line bg-surface">
                 <table className="w-full text-body">
                   <thead className="bg-raised">
                     <tr>

@@ -31,7 +31,7 @@ const MOVEMENT_STATUS_LABELS: Record<string, string> = {
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex h-7 items-center gap-1.5 rounded-[8px] border border-line bg-surface px-2 text-meta text-ink-2">
+    <span className="inline-flex h-7 items-center gap-1.5 rounded-tk border border-line bg-surface px-2 text-meta text-ink-2">
       {label}
       <button
         onClick={onRemove}

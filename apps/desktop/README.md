@@ -12,6 +12,8 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
 - [`index.html`](./index.html) — entrada HTML de Vite.
 - [`package.json`](./package.json) — dependencias y scripts (`dev`, `build`, `preview`, `lint`, `test`).
 - [`package-lock.json`](./package-lock.json) — dependencias fijadas.
+- [`vite.config.ts`](./vite.config.ts) — build de Vite (dev server, salida `dist`).
+- [`tsconfig.json`](./tsconfig.json) — gate de types: cubre `src` y los configs (`tsc --noEmit` typechea también `vite.config.ts` y `vitest.config.ts`).
 - [`postcss.config.js`](./postcss.config.js) — pipeline PostCSS con Tailwind 4.
 - [`eslint.config.mjs`](./eslint.config.mjs) — configuración de ESLint (flat).
 - [`vitest.config.ts`](./vitest.config.ts) — configuración de tests (jsdom).
@@ -23,7 +25,6 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`client.ts`](./src/api/client.ts) — fetch base, JSON y manejo de errores.
     - [`accounts.ts`](./src/api/accounts.ts) — cuentas bancarias y de tarjeta.
     - [`categories.ts`](./src/api/categories.ts) — categorías del usuario.
-    - [`client.ts`](./src/api/client.ts) — fetch base, JSON, errores y traza HTTP.
     - [`dashboard.ts`](./src/api/dashboard.ts) — flujo de caja y distribuciones.
     - [`documents.ts`](./src/api/documents.ts) — documentos importados.
     - [`financialEvents.ts`](./src/api/financialEvents.ts) — eventos financieros.
@@ -35,7 +36,8 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`admin.ts`](./src/api/admin.ts) — operaciones administrativas (purga).
   - **`app/`** — armado de la aplicación.
     - [`App.tsx`](./src/app/App.tsx) — componente raíz.
-    - [`router.tsx`](./src/app/router.tsx) — rutas de la SPA.
+    - [`router.tsx`](./src/app/router.tsx) — rutas de la SPA (compone desde el registro).
+    - [`nav.ts`](./src/app/nav.ts) — registro único de rutas: path, etiqueta, icono y grupo (consumen router, Sidebar y Topbar).
     - **`layout/`** — estructura visual.
       - [`AppShell.tsx`](./src/app/layout/AppShell.tsx) — marco general.
       - [`Sidebar.tsx`](./src/app/layout/Sidebar.tsx) — navegación lateral.
@@ -68,6 +70,8 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
       - [`Notice.tsx`](./src/components/ui/Notice.tsx) — aviso transicional inline (reemplaza a `alert`).
       - [`SkeletonRows.tsx`](./src/components/ui/SkeletonRows.tsx) — filas de carga.
       - [`StatusBadge.tsx`](./src/components/ui/StatusBadge.tsx) — etiqueta de estado.
+      - [`buttons.ts`](./src/components/ui/buttons.ts) — clases de botón primario/secundario (una sola definición).
+      - [`table.ts`](./src/components/ui/table.ts) — celdas de encabezado de tabla (izquierda y derecha).
   - **`hooks/`** — acceso a datos por recurso.
     - [`useResource.ts`](./src/hooks/useResource.ts) — hook genérico de recursos (por id, con reintento).
     - [`useListQuery.ts`](./src/hooks/useListQuery.ts) — hook genérico de listas (el único; acepta `refreshKey` y colecciones del bus).
@@ -75,6 +79,8 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`useDashboard.ts`](./src/hooks/useDashboard.ts) — datos del dashboard.
     - [`useDocuments.ts`](./src/hooks/useDocuments.ts) — documentos.
     - [`useMovements.ts`](./src/hooks/useMovements.ts) — movimientos.
+    - [`useAccountNames.ts`](./src/hooks/useAccountNames.ts) — mapa id→nombre de cuenta (las tres pantallas que lo pintaban lo comparten).
+    - [`usePopover.ts`](./src/hooks/usePopover.ts) — cierre de popovers por Escape y click afuera.
     - [`useReviewQueue.ts`](./src/hooks/useReviewQueue.ts) — cola de revisión y sus resoluciones.
     - [`useReviewNotifications.ts`](./src/hooks/useReviewNotifications.ts) — campana de notificaciones del dashboard.
   - **`lib/`** — utilidades puras de presentación.
@@ -86,7 +92,8 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`reviewPayload.ts`](./src/lib/reviewPayload.ts) — parseo defensivo del payload de un ítem en revisión.
     - [`dataBus.ts`](./src/lib/dataBus.ts) — bus de invalidación compartido (colecciones versionadas; `useSyncExternalStore`).
     - [`version.ts`](./src/lib/version.ts) — versión del componente (lee `package.json`).
-  - **`test/`** — setup de Vitest (`@testing-library/jest-dom`); los tests viven al lado de cada módulo (`*.test.ts` / `*.test.tsx`).
+    - [`updateProgress.ts`](./src/lib/updateProgress.ts) — etiqueta de progreso del updater (porcentaje o KB).
+  - **`test/`** — setup de Vitest ([`setup.ts`](./src/test/setup.ts), `@testing-library/jest-dom`); los tests viven al lado de cada módulo (`*.test.ts` / `*.test.tsx`).
   - **`types/`** — contratos TypeScript del backend y de la UI, un archivo por
     concepto.
     - [`account.ts`](./src/types/account.ts) — cuenta.
@@ -126,11 +133,12 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
   Tailwind 4, react-router-dom 7.
 - `npm run build` **verde** (2026-10-24): `tsc --noEmit && vite build`, sin
   errores ni warnings. Regla dura (AGENTS.md): el build del front es siempre
-  `npm run build`, nunca `vite build` pelado.
-- `npm run lint` **verde**: 0 errores. 28 warnings son deuda documentada en
-  `eslint.config.mjs` (los `any` del payload de revisión y las reglas de la
-  era React Compiler: `set-state-in-effect`, `purity`).
-- `npm test` **verde**: 89 tests en 21 archivos (payload de revisión, contrato
+  `npm run build`, nunca `vite build` pelado. El gate de types cubre también
+  los configs (`tsconfig.json` incluye `vite.config.ts` y `vitest.config.ts`).
+- `npm run lint` **verde**: 0 errores y 0 warnings (las advertencias de deuda
+  documentadas en `eslint.config.mjs` quedaron en cero tras la ronda de
+  auditoría).
+- `npm test` **verde**: 88 tests en 22 archivos (payload de revisión, contrato
   del cliente HTTP, las formas de request de `api/review`, `api/movements` y
   `api/categories`, `useListQuery` y `useResource` (con el bus), las tres cards
   de revisión, el drawer de detalle (cadena completa, asignación de categoría,

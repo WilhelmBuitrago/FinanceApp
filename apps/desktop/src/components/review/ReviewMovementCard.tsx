@@ -28,7 +28,7 @@ export function ReviewMovementCard({
 }: Props) {
   const isDuplicate = item.Kind === 'DUPLICATE';
   return (
-    <div className="rounded-[12px] border border-line bg-surface p-6">
+    <div className="rounded-card border border-line bg-surface p-6">
       <p className="text-body font-medium">
         {isDuplicate ? 'Movimiento duplicado detectado' : 'Extracción requiere verificación'}
       </p>

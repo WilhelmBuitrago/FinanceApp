@@ -151,7 +151,7 @@ export default function SettingsPage() {
 
       <section aria-label="Categorías" className="space-y-3">
         <SectionHeader title="Categorías" />
-        <div className="rounded-[12px] border border-line bg-surface p-5 space-y-4">
+        <div className="rounded-card border border-line bg-surface p-5 space-y-4">
           <div className="flex gap-2">
             <input
               value={newCat.name}
@@ -224,7 +224,7 @@ export default function SettingsPage() {
 
       <section aria-label="Datos" className="space-y-3">
         <SectionHeader title="Datos" />
-        <div className="rounded-[12px] border border-line bg-surface p-5">
+        <div className="rounded-card border border-line bg-surface p-5">
           <p className="text-body text-ink-2">
             Borrar todos los datos elimina de forma permanente las cuentas, documentos, movimientos,
             eventos, relaciones y cuotas registradas en FinanceApp. Esta acción no se puede
@@ -235,7 +235,7 @@ export default function SettingsPage() {
               setConfirming(true);
               setError(null);
             }}
-            className="mt-4 inline-flex h-8 items-center rounded-[8px] border border-neg px-3 text-body font-medium text-neg transition-colors duration-[120ms] hover:bg-neg/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neg"
+            className="mt-4 inline-flex h-8 items-center rounded-tk border border-neg px-3 text-body font-medium text-neg transition-colors duration-[120ms] hover:bg-neg/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neg"
           >
             Borrar todos los datos
           </button>
@@ -254,14 +254,14 @@ export default function SettingsPage() {
 
       <section aria-label="Actualizaciones" className="space-y-3">
         <SectionHeader title="Actualizaciones" />
-        <div className="rounded-[12px] border border-line bg-surface p-5 space-y-3">
+        <div className="rounded-card border border-line bg-surface p-5 space-y-3">
           <p className="text-body text-ink-2">
             Verifica si hay una nueva versión de FinanceApp disponible.
           </p>
           <button
             onClick={handleCheckUpdates}
             disabled={checkingUpdate}
-            className="inline-flex h-8 items-center rounded-[8px] bg-violet-600 px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-violet-700 disabled:opacity-60"
+            className="inline-flex h-8 items-center rounded-tk bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep disabled:opacity-60"
           >
             {checkingUpdate ? 'Buscando...' : 'Buscar Actualizaciones'}
           </button>

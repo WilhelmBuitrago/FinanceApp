@@ -82,7 +82,7 @@ export default function AccountsPage() {
           }
         />
       ) : (
-        <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
+        <div className="overflow-x-auto rounded-card border border-line bg-surface">
           <table className="w-full text-body">
             <thead className="bg-raised">
               <tr>

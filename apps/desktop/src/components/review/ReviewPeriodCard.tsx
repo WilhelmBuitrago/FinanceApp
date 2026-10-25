@@ -42,7 +42,7 @@ export function ReviewPeriodCard({
   onDiscard,
 }: Props) {
   return (
-    <div className="rounded-[12px] border border-line bg-surface p-6">
+    <div className="rounded-card border border-line bg-surface p-6">
       <p className="text-body font-medium">Período del documento no reconocido</p>
       <p className="mt-1 text-meta text-ink-3">
         El extracto no traía un período legible

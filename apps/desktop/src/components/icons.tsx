@@ -96,3 +96,10 @@ export const IconClose = (p: IconProps) => (
     <path d="M6 6l12 12M18 6 6 18" />
   </Svg>
 );
+
+export const IconBell = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M6 9.5a6 6 0 0 1 12 0c0 4.5 1.5 6 1.5 6h-15S6 14 6 9.5z" />
+    <path d="M10 19a2.2 2.2 0 0 0 4 0" />
+  </Svg>
+);

@@ -1,40 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import {
-  IconChart,
-  IconDocument,
-  IconGear,
-  IconGrid,
-  IconShieldCheck,
-  IconTransfer,
-  IconWallet,
-} from '../../components/icons';
-import { useCollectionVersion } from '../../lib/dataBus';
+
 import { getReviewEntries } from '../../api/review';
+import { useCollectionVersion } from '../../lib/dataBus';
 import { APP_VERSION } from '../../lib/version';
+import { NAV_ITEMS } from '../nav';
 
 interface SidebarProps {
   collapsed: boolean;
 }
 
-type NavItemDef = {
-  to: string;
-  label: string;
-  Icon: (p: { className?: string }) => React.ReactElement;
-};
-
-const systemNav: NavItemDef[] = [
-  { to: '/', label: 'Overview', Icon: IconGrid },
-  { to: '/accounts', label: 'Cuentas', Icon: IconWallet },
-  { to: '/transactions', label: 'Movimientos', Icon: IconTransfer },
-  { to: '/documents', label: 'Documentos', Icon: IconDocument },
-  { to: '/review', label: 'Revisión', Icon: IconShieldCheck },
-];
-
-const toolsNav: NavItemDef[] = [
-  { to: '/reports', label: 'Reportes', Icon: IconChart },
-  { to: '/settings', label: 'Configuración', Icon: IconGear },
-];
+const GROUPS = ['Sistema', 'Herramientas'] as const;
 
 // Pending review count: the honest "you have items waiting" signal. It
 // reads the real queue and refetches whenever anything invalidates the
@@ -56,7 +32,13 @@ function NavItem({
   Icon,
   collapsed,
   badge,
-}: NavItemDef & { collapsed: boolean; badge?: number }) {
+}: {
+  to: string;
+  label: string;
+  Icon: (p: { className?: string }) => React.ReactElement;
+  collapsed: boolean;
+  badge?: number;
+}) {
   const showBadge = !!badge && badge > 0;
   return (
     <NavLink
@@ -64,7 +46,7 @@ function NavItem({
       end={to === '/'}
       title={collapsed ? label : undefined}
       className={({ isActive }) =>
-        `relative flex h-9 items-center mx-2 rounded-[8px] text-body font-medium transition-colors duration-[120ms] ${
+        `relative flex h-9 items-center mx-2 rounded-tk text-body font-medium transition-colors duration-[120ms] ${
           collapsed ? 'justify-center' : 'gap-3 px-3'
         } ${isActive ? 'bg-raised text-ink' : 'text-ink-2 hover:bg-interactive hover:text-ink'}`
       }
@@ -126,25 +108,26 @@ export default function Sidebar({ collapsed }: SidebarProps) {
         )}
       </div>
 
-      {/* Navigation */}
+      {/* Navigation — the registry in app/nav.ts feeds the router and the
+          topbar too: one list, three consumers. */}
       <nav className="flex flex-col pb-2">
-        <GroupLabel label="Sistema" collapsed={collapsed} />
-        <div className="flex flex-col gap-0.5">
-          {systemNav.map((item) => (
-            <NavItem
-              key={item.to}
-              {...item}
-              collapsed={collapsed}
-              badge={item.to === '/review' ? reviewCount : undefined}
-            />
-          ))}
-        </div>
-        <GroupLabel label="Herramientas" collapsed={collapsed} />
-        <div className="flex flex-col gap-0.5">
-          {toolsNav.map((item) => (
-            <NavItem key={item.to} {...item} collapsed={collapsed} />
-          ))}
-        </div>
+        {GROUPS.map((group) => (
+          <div key={group} className="flex flex-col">
+            <GroupLabel label={group} collapsed={collapsed} />
+            <div className="flex flex-col gap-0.5">
+              {NAV_ITEMS.filter((item) => item.group === group).map((item) => (
+                <NavItem
+                  key={item.to}
+                  to={item.to}
+                  label={item.label}
+                  Icon={item.Icon}
+                  collapsed={collapsed}
+                  badge={item.to === '/review' ? reviewCount : undefined}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
       </nav>
 
       {/* Version — real metadata, not decoration */}

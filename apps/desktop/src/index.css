@@ -41,8 +41,9 @@
   --text-display: 1.625rem; /* 26px — Overview dominant number */
 
   /* ── Form ── */
-  --radius-tk: 8px; /* card radius */
-  --radius-sm: 6px; /* controls */
+  --radius-tk: 8px; /* buttons, inputs, small surfaces */
+  --radius-card: 12px; /* cards, panels, list containers */
+  --radius-sm: 6px; /* form controls */
   --shadow-float: 0 1px 0 0 rgb(0 0 0 / 0.2), 0 8px 24px rgb(0 0 0 / 0.45);
 
   /* ── Motion ── */

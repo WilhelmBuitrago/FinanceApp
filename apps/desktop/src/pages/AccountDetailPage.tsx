@@ -123,7 +123,7 @@ export default function AccountDetailPage() {
               description="Esta cuenta todavía no tiene movimientos registrados."
             />
           ) : (
-            <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
+            <div className="overflow-x-auto rounded-card border border-line bg-surface">
               <table
                 className="w-full text-body"
                 onKeyDown={(e) => {
@@ -210,7 +210,7 @@ export default function AccountDetailPage() {
               description="Esta cuenta todavía no tiene documentos asociados."
             />
           ) : (
-            <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
+            <div className="overflow-x-auto rounded-card border border-line bg-surface">
               <table className="w-full text-body">
                 <thead className="bg-raised">
                   <tr>

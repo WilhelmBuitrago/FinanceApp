@@ -26,7 +26,7 @@ export function ReviewCategoryCard({
 }: Props) {
   const cats = categories.filter((c) => c.type === (p.category_type || 'EXPENSE'));
   return (
-    <div className="rounded-[12px] border border-line bg-surface p-6">
+    <div className="rounded-card border border-line bg-surface p-6">
       <p className="text-body font-medium">Movimiento sin categoría</p>
       <p className="mt-1 text-meta text-ink-3">
         La categoría "{p.category_name || '—'}" fue eliminada.

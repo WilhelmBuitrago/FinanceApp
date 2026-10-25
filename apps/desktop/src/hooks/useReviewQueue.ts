@@ -19,7 +19,8 @@ import type { CategoryOption } from '../types/category';
 /* All review-page state: the queue, the data its cards need (categories
    to assign, accounts to correct against), the per-item form, and the
    four resolutions. The resolutions keep the exact UX they had —alert
-   copy, in-place removal, sidebar badge event. */
+   copy, in-place removal; the bus is what refreshes the queue, the
+   sidebar badge and the dashboard now. */
 
 export function useReviewQueue() {
   const [items, setItems] = useState<ReviewItem[]>([]);
