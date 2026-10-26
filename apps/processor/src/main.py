@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+import shutil
 import sys
 import uuid
 import warnings
@@ -12,7 +14,7 @@ log = logging.getLogger('processor')
 # Normalize path and add processor root to sys.path
 processor_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(processor_root))
-from extraction.artifacts import write_artifacts
+from extraction.artifacts import write_artifacts, write_json_atomic
 from extraction.capture import inspect_and_extract
 from extraction.extractor import extract_native_text
 from parser.nu_account import NuAccountParser
@@ -55,75 +57,84 @@ def parse_with_retry(pdf_path, artifacts_base, processing_id, inspection, extrac
 def process_pdf(pdf_path):
     processing_id = str(uuid.uuid4())
     log.info(f"process_pdf start pdf={pdf_path} processing_id={processing_id}")
-    log.info("inspection+extraction start (single pass)")
-    inspection, extraction = inspect_and_extract(pdf_path)
-    log.info(f"inspection done sha256={inspection['file']['sha256']}")
-    artifacts_base = os.environ.get('ARTIFACTS_PATH')
-    if not artifacts_base:
-        base = Path(__file__).resolve().parent.parent.parent
-        artifacts_base = str(base / "data" / "artifacts")
-    artifact_dir = os.path.join(artifacts_base, processing_id)
-    os.makedirs(artifact_dir, exist_ok=True)
-    log.info(f"writing artifacts to {artifact_dir}")
-    write_artifacts(artifact_dir, inspection, extraction)
+    artifact_dir = None
+    try:
+        log.info("inspection+extraction start (single pass)")
+        inspection, extraction = inspect_and_extract(pdf_path)
+        log.info(f"inspection done sha256={inspection['file']['sha256']}")
+        artifacts_base = os.environ.get('ARTIFACTS_PATH')
+        if not artifacts_base:
+            base = Path(__file__).resolve().parent.parent.parent
+            artifacts_base = str(base / "data" / "artifacts")
+        artifact_dir = os.path.join(artifacts_base, processing_id)
+        os.makedirs(artifact_dir, exist_ok=True)
+        log.info(f"writing artifacts to {artifact_dir}")
+        write_artifacts(artifact_dir, inspection, extraction)
 
-    # Parsing & validation for Nu account statements. The silent retry
-    # (Layer 0) lives inside: the user only sees the outcome.
-    log.info("parser start")
-    parsed_doc = parse_with_retry(pdf_path, artifacts_base, processing_id, inspection)
-    log.info(f"parser done movements={len(parsed_doc.movements)}")
-    log.info("validation start")
-    validator = NuAccountValidator()
-    validation_result = validator.validate(parsed_doc)
-    log.info(f"validation done valid={validation_result.get('valid')}")
+        # Parsing & validation for Nu account statements. The silent retry
+        # (Layer 0) lives inside: the user only sees the outcome.
+        log.info("parser start")
+        parsed_doc = parse_with_retry(pdf_path, artifacts_base, processing_id, inspection)
+        log.info(f"parser done movements={len(parsed_doc.movements)}")
+        log.info("validation start")
+        validator = NuAccountValidator()
+        validation_result = validator.validate(parsed_doc)
+        log.info(f"validation done valid={validation_result.get('valid')}")
 
-    manifest = {
-        "processing_id": processing_id,
-        "processor_version": PROCESSOR_VERSION,
-        "contract_version": CONTRACT_VERSION,
-        "input": {
-            "sha256": inspection["file"]["sha256"],
-            "filename": os.path.basename(pdf_path),
-            "size_bytes": inspection["file"]["size_bytes"]
-        },
-        "stages": {
-            "inspection": "completed",
-            "native_extraction": "completed",
-            "parsing": "completed",
-            "validation": "completed"
-        },
-        "status": "completed" if validation_result.get('valid') else "validation_failed",
-        "warnings": inspection.get("warnings", []),
-        "errors": [],
-        "validation": validation_result,
-        "parsed_metadata": {
-            "titular": parsed_doc.metadata.get('titular'),
-            "cc": parsed_doc.metadata.get('cc'),
-            "numero_cuenta": parsed_doc.metadata.get('numero_cuenta'),
-            "periodo": parsed_doc.metadata.get('periodo')
-        },
-        "movements_count": len(parsed_doc.movements)
-    }
-    import json
-    with open(os.path.join(artifact_dir, "manifest.json"), "w", encoding="utf-8") as f:
-        json.dump(manifest, f, ensure_ascii=False, indent=2)
-    log.info("manifest written")
-    # Save parsed document for later use
-    with open(os.path.join(artifact_dir, "parsed.json"), "w", encoding="utf-8") as f:
-        json.dump({
+        manifest = {
+            "processing_id": processing_id,
+            "processor_version": PROCESSOR_VERSION,
+            "contract_version": CONTRACT_VERSION,
+            "input": {
+                "sha256": inspection["file"]["sha256"],
+                "filename": os.path.basename(pdf_path),
+                "size_bytes": inspection["file"]["size_bytes"]
+            },
+            "stages": {
+                "inspection": "completed",
+                "native_extraction": "completed",
+                "parsing": "completed",
+                "validation": "completed"
+            },
+            "status": "completed" if validation_result.get('valid') else "validation_failed",
+            "warnings": inspection.get("warnings", []),
+            "errors": [],
+            "validation": validation_result,
+            "parsed_metadata": {
+                "titular": parsed_doc.metadata.get('titular'),
+                "cc": parsed_doc.metadata.get('cc'),
+                "numero_cuenta": parsed_doc.metadata.get('numero_cuenta'),
+                "periodo": parsed_doc.metadata.get('periodo')
+            },
+            "movements_count": len(parsed_doc.movements)
+        }
+        # The terminal outputs are written atomically: the backend reads
+        # manifest.json as the job's result, and a crash mid-write must
+        # never leave a truncated file that still looks like an artifact.
+        write_json_atomic(os.path.join(artifact_dir, "manifest.json"), manifest)
+        log.info("manifest written")
+        # Save parsed document for later use
+        write_json_atomic(os.path.join(artifact_dir, "parsed.json"), {
             "metadata": parsed_doc.metadata,
             "summary": parsed_doc.summary,
             "movements": [m.__dict__ for m in parsed_doc.movements],
             "review_required": [r.__dict__ for r in parsed_doc.review_required],
             "document_review": [d.__dict__ for d in parsed_doc.document_review]
-        }, f, ensure_ascii=False, indent=2)
-    log.info(f"parsed.json written movements={len(parsed_doc.movements)}")
-    log.info("process_pdf complete")
-    return manifest
+        })
+        log.info(f"parsed.json written movements={len(parsed_doc.movements)}")
+        log.info("process_pdf complete")
+        return manifest
+    except Exception:
+        # Nothing outside this process knows this run: the backend learns
+        # of it only through a successful manifest. A half-written run is
+        # dead weight on the user's disk, so remove it and let the caller
+        # report the failure.
+        if artifact_dir is not None:
+            shutil.rmtree(artifact_dir, ignore_errors=True)
+            log.warning(f"cleaned partial artifacts after failure: {artifact_dir}")
+        raise
 
 if __name__ == "__main__":
-    import json
-    import sys
     if len(sys.argv) < 2:
         sys.stderr.write("usage: python apps/processor/src/main.py <pdf_path>\n")
         sys.exit(1)
