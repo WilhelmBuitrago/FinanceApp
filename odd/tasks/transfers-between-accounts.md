@@ -41,8 +41,8 @@
 |----|--------|------|--------|
 | T1 | Núcleo backend: `TransferService` (escritura transaccional + borrado consciente), interfaz inyectada, rama en `createMovement`, `deleteMovement` transfer-aware | inline | done (a0df231) |
 | T2 | Tests backend (servicio + HTTP) | inline | done (a0df231) |
-| T3 | Frontend: campo de destino en el drawer + tests | inline | pending |
-| T4 | Contraparte visible: join en la hidratación + KV en el drawer | inline | pending |
+| T3 | Frontend: campo de destino en el drawer + tests | inline | done (091f4fc) |
+| T4 | Contraparte visible: join en la hidratación + KV en el drawer | inline | done (18b0812) |
 
 ## Log
 
@@ -52,3 +52,16 @@
   deja el sistema de trasferencias y construyelo correctamente..."
 - L2: opción de modelo elegida tras la pregunta: un evento/dos
   movimientos/relación TRANSFER_COUNTERPART.
+
+## Log
+
+- L3 (2026-10-26): feature COMPLETO. Unidad backend a0df231 (TransferService
+  + rama en createMovement + borrado transfer-aware, 11 tests), e194b87
+  (documento + comentario de scaffolding actualizado), 091f4fc (drawer con
+  cuenta destino, 6 tests, contrato de createMovement con counterpart_id),
+  18b0812 (contraparte visible en las listings hidratadas y en el drawer,
+  tests en ambos extremos). Con una sola cuenta la opción ni aparece en el
+  drawer (accounts.length > 1), así que el sistema queda listo y dormido hasta
+  que exista la segunda cuenta. Pendiente de decisión futura: si una
+  transferencia debe poder dejarse sin clasificar en Revisión (hoy nunca se
+  estaciona, por diseño S5).
