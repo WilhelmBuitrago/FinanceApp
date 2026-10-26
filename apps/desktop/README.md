@@ -53,7 +53,6 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
     - [`DetailDrawer.tsx`](./src/components/DetailDrawer.tsx) — panel de detalle.
     - [`DocumentDrawer.tsx`](./src/components/DocumentDrawer.tsx) — detalle de documento.
     - [`ImportDocumentDrawer.tsx`](./src/components/ImportDocumentDrawer.tsx) — flujo de importación.
-    - [`ImportStatus.tsx`](./src/components/ImportStatus.tsx) — estado del job de importación.
     - [`NewAccountDrawer.tsx`](./src/components/NewAccountDrawer.tsx) — alta de cuenta.
     - [`DrawerShell.tsx`](./src/components/DrawerShell.tsx) — base común de drawers (+ `KV`, estados de sección y la geometría del panel).
     - **`drawer/`** — las secciones del drawer de trazabilidad.
