@@ -1,6 +1,5 @@
 """Parser for Nu Account statements from processor artefacts."""
 
-import json
 import os
 import re
 from dataclasses import dataclass
@@ -96,13 +95,6 @@ class NuAccountParser:
         self.processing_id = processing_id
         self.base_path = base_path
         self.artifact_dir = os.path.join(base_path, processing_id)
-
-    def _load_json(self, filename: str, optional: bool = False) -> dict:
-        path = os.path.join(self.artifact_dir, filename)
-        if optional and not os.path.exists(path):
-            return {}
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
 
     def _load_extraction_pages(self) -> list[str]:
         extraction_dir = os.path.join(self.artifact_dir, 'extraction')
