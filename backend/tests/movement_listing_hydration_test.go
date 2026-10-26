@@ -18,6 +18,87 @@ func hydrationDo(t *testing.T, router http.Handler, method, target, body string)
 	return rr.Code, rr.Body.String()
 }
 
+// TestHydratedListings_CarryTheCounterpartOfATransfer pins that both legs
+// of a transfer name the account on the other side: the two rows read as
+// one decision.
+func TestHydratedListings_CarryTheCounterpartOfATransfer(t *testing.T) {
+	router, sqlDB := newTestRouter(t)
+	defer func() { _ = sqlDB.Close() }()
+
+	seed := func(method, target, body string, want int) {
+		t.Helper()
+		code, resp := hydrationDo(t, router, method, target, body)
+		if code != want {
+			t.Fatalf("setup %s %s: %d %s", method, target, code, resp)
+		}
+	}
+	seed(http.MethodPost, "/accounts", `{"id":"acc-cp-a","user_id":"u","name":"Nu","account_type":"BANK_ACCOUNT","currency":"COP","institution":"NU"}`, http.StatusCreated)
+	seed(http.MethodPost, "/accounts", `{"id":"acc-cp-b","user_id":"u","name":"Ahorros","account_type":"BANK_ACCOUNT","currency":"COP","institution":"NU"}`, http.StatusCreated)
+	seed(http.MethodPost, "/movements", `{"account_id":"acc-cp-a","to_account_id":"acc-cp-b","amount_minor":250000,"type":"TRANSFER","date":"2026-10-26","description":"Alquiler"}`, http.StatusCreated)
+
+	type row struct {
+		ID                     string `json:"id"`
+		AccountID              string `json:"AccountID"`
+		CounterpartAccountName string `json:"counterpartAccountName"`
+	}
+	// Both listings (all + by account) hydrate the counterpart: the origin
+	// leg names the destination, and the destination leg names the origin.
+	code, body := hydrationDo(t, router, http.MethodGet, "/movements", "")
+	if code != http.StatusOK {
+		t.Fatalf("GET /movements: %d %s", code, body)
+	}
+	var rows []row
+	if err := json.Unmarshal([]byte(body), &rows); err != nil {
+		t.Fatalf("decode: %v (%s)", err, body)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("the transfer must have two legs, got %d", len(rows))
+	}
+	counterpartOf := map[string]string{}
+	for _, r := range rows {
+		counterpartOf[r.AccountID] = r.CounterpartAccountName
+	}
+	if counterpartOf["acc-cp-a"] != "Ahorros" {
+		t.Errorf("the origin leg must name the destination account, got %q", counterpartOf["acc-cp-a"])
+	}
+	if counterpartOf["acc-cp-b"] != "Nu" {
+		t.Errorf("the destination leg must name the origin account, got %q", counterpartOf["acc-cp-b"])
+	}
+
+	code, body = hydrationDo(t, router, http.MethodGet, "/accounts/acc-cp-a/movements", "")
+	if code != http.StatusOK {
+		t.Fatalf("GET account movements: %d %s", code, body)
+	}
+	var accountRows []row
+	if err := json.Unmarshal([]byte(body), &accountRows); err != nil {
+		t.Fatalf("decode: %v (%s)", err, body)
+	}
+	if len(accountRows) != 1 {
+		t.Fatalf("the origin account must hold exactly one leg, got %d", len(accountRows))
+	}
+	if accountRows[0].CounterpartAccountName != "Ahorros" {
+		t.Errorf("the account listing must hydrate the counterpart, got %q", accountRows[0].CounterpartAccountName)
+	}
+
+	// A movement with no counterpart (a plain expense) carries nothing.
+	seed(http.MethodPost, "/accounts", `{"id":"acc-cp-c","user_id":"u","name":"Efectivo","account_type":"BANK_ACCOUNT","currency":"COP","institution":"NU"}`, http.StatusCreated)
+	seed(http.MethodPost, "/movements", `{"account_id":"acc-cp-c","amount_minor":-1000,"type":"EXPENSE","date":"2026-10-26","description":"Café"}`, http.StatusCreated)
+
+	code, body = hydrationDo(t, router, http.MethodGet, "/accounts/acc-cp-c/movements", "")
+	if code != http.StatusOK {
+		t.Fatalf("GET account movements: %d %s", code, body)
+	}
+	var plainRows []row
+	if err := json.Unmarshal([]byte(body), &plainRows); err != nil {
+		t.Fatalf("decode: %v (%s)", err, body)
+	}
+	for _, r := range plainRows {
+		if r.CounterpartAccountName != "" {
+			t.Errorf("a movement with no counterpart must not carry one, got %q", r.CounterpartAccountName)
+		}
+	}
+}
+
 // TestMovementListings_CarryTheCategory pins the hydrated listings: every
 // route that returns movements carries the category of the financial
 // event, and the distributions group by its name. One join replaced two

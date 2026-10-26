@@ -160,4 +160,16 @@ describe('MovementDetail', () => {
 
     expect(screen.getByRole('alert').textContent).toBe('No se pudo eliminar el movimiento');
   });
+
+  it('shows the counterpart account when the movement is a transfer leg', () => {
+    setup({ movement: { ...movement, counterpartAccountName: 'Ahorros' } });
+
+    expect(screen.getByText('Transferencia con Ahorros')).toBeTruthy();
+  });
+
+  it('says nothing about a counterpart for an ordinary movement', () => {
+    setup();
+
+    expect(screen.queryByText(/Transferencia con/)).toBeNull();
+  });
 });

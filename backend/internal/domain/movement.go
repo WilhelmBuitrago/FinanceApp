@@ -27,12 +27,15 @@ type MovementComponent struct {
 
 // MovementWithCategory is a movement plus the category of its financial
 // event, hydrated by a single join. Every movement listing needs both,
-// and fetching them per row cost two queries per movement.
+// and fetching them per row cost two queries per movement. A transfer
+// leg also carries the account of its counterpart: the two legs of one
+// transfer read as one decision.
 type MovementWithCategory struct {
 	Movement
-	CategoryID   string
-	CategoryName string
-	EventType    string
+	CategoryID             string
+	CategoryName           string
+	EventType              string
+	CounterpartAccountName string
 }
 
 // ManualMovementCommand is the manual-creation input the API layer decoded

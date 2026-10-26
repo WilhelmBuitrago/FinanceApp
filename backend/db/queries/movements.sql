@@ -33,24 +33,42 @@ ORDER BY m.created_at DESC;
 
 -- name: ListMovementsWithEventAndCategory :many
 -- Every movement listing needs the category of its financial event: one
--- join replaces the two per-row lookups the handlers used to do.
+-- join replaces the two per-row lookups the handlers used to do. A
+-- transfer leg also carries the account of its counterpart, so the two
+-- legs of one transfer read as one decision.
 SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at,
        fe.event_type,
        fe.category_id,
-       c.name AS category_name
+       c.name AS category_name,
+       ca.id AS counterpart_account_id,
+       ca.name AS counterpart_account_name
 FROM movements m
 JOIN financial_events fe ON fe.id = m.financial_event_id
 LEFT JOIN categories c ON c.id = fe.category_id
+LEFT JOIN movement_relations mr
+       ON mr.relation_type = 'TRANSFER_COUNTERPART'
+       AND (mr.movement_id_a = m.id OR mr.movement_id_b = m.id)
+LEFT JOIN movements cm
+       ON cm.id = CASE WHEN mr.movement_id_a = m.id THEN mr.movement_id_b ELSE mr.movement_id_a END
+LEFT JOIN accounts ca ON ca.id = cm.account_id
 ORDER BY m.created_at DESC;
 
 -- name: ListMovementsByAccountWithEventAndCategory :many
 SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at,
        fe.event_type,
        fe.category_id,
-       c.name AS category_name
+       c.name AS category_name,
+       ca.id AS counterpart_account_id,
+       ca.name AS counterpart_account_name
 FROM movements m
 JOIN financial_events fe ON fe.id = m.financial_event_id
 LEFT JOIN categories c ON c.id = fe.category_id
+LEFT JOIN movement_relations mr
+       ON mr.relation_type = 'TRANSFER_COUNTERPART'
+       AND (mr.movement_id_a = m.id OR mr.movement_id_b = m.id)
+LEFT JOIN movements cm
+       ON cm.id = CASE WHEN mr.movement_id_a = m.id THEN mr.movement_id_b ELSE mr.movement_id_a END
+LEFT JOIN accounts ca ON ca.id = cm.account_id
 WHERE m.account_id = ?
 ORDER BY m.created_at DESC;
 

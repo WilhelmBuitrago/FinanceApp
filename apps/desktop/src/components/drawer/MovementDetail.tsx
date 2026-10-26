@@ -77,6 +77,9 @@ export function MovementDetail({
         <KV label="Estado">
           <StatusBadge status={movement.Status} />
         </KV>
+        {movement.counterpartAccountName && (
+          <KV label="Contraparte">Transferencia con {movement.counterpartAccountName}</KV>
+        )}
         <KV label="ID">
           <CopyId id={movement.ID} />
         </KV>

@@ -55,7 +55,9 @@ type Querier interface {
 	ListMovementsByAccountWithEventAndCategory(ctx context.Context, accountID string) ([]ListMovementsByAccountWithEventAndCategoryRow, error)
 	ListMovementsByCategory(ctx context.Context, categoryID sql.NullString) ([]Movement, error)
 	// Every movement listing needs the category of its financial event: one
-	// join replaces the two per-row lookups the handlers used to do.
+	// join replaces the two per-row lookups the handlers used to do. A
+	// transfer leg also carries the account of its counterpart, so the two
+	// legs of one transfer read as one decision.
 	ListMovementsWithEventAndCategory(ctx context.Context) ([]ListMovementsWithEventAndCategoryRow, error)
 	ListPendingReviewItems(ctx context.Context) ([]ReviewItem, error)
 	ListRelationsByEvent(ctx context.Context, arg ListRelationsByEventParams) ([]EventRelation, error)

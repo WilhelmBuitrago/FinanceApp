@@ -18,4 +18,5 @@ export interface Movement {
   UpdatedAt: string;
   categoryName: string;
   categoryId?: string;
+  counterpartAccountName?: string;
 }

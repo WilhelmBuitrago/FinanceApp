@@ -248,29 +248,39 @@ const listMovementsByAccountWithEventAndCategory = `-- name: ListMovementsByAcco
 SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at,
        fe.event_type,
        fe.category_id,
-       c.name AS category_name
+       c.name AS category_name,
+       ca.id AS counterpart_account_id,
+       ca.name AS counterpart_account_name
 FROM movements m
 JOIN financial_events fe ON fe.id = m.financial_event_id
 LEFT JOIN categories c ON c.id = fe.category_id
+LEFT JOIN movement_relations mr
+       ON mr.relation_type = 'TRANSFER_COUNTERPART'
+       AND (mr.movement_id_a = m.id OR mr.movement_id_b = m.id)
+LEFT JOIN movements cm
+       ON cm.id = CASE WHEN mr.movement_id_a = m.id THEN mr.movement_id_b ELSE mr.movement_id_a END
+LEFT JOIN accounts ca ON ca.id = cm.account_id
 WHERE m.account_id = ?
 ORDER BY m.created_at DESC
 `
 
 type ListMovementsByAccountWithEventAndCategoryRow struct {
-	ID               string         `json:"id"`
-	FinancialEventID string         `json:"financial_event_id"`
-	AccountID        string         `json:"account_id"`
-	SourceEntryID    sql.NullString `json:"source_entry_id"`
-	MovementDate     string         `json:"movement_date"`
-	AmountMinor      int64          `json:"amount_minor"`
-	Description      sql.NullString `json:"description"`
-	Status           string         `json:"status"`
-	MetadataJson     sql.NullString `json:"metadata_json"`
-	CreatedAt        string         `json:"created_at"`
-	UpdatedAt        string         `json:"updated_at"`
-	EventType        string         `json:"event_type"`
-	CategoryID       sql.NullString `json:"category_id"`
-	CategoryName     sql.NullString `json:"category_name"`
+	ID                     string         `json:"id"`
+	FinancialEventID       string         `json:"financial_event_id"`
+	AccountID              string         `json:"account_id"`
+	SourceEntryID          sql.NullString `json:"source_entry_id"`
+	MovementDate           string         `json:"movement_date"`
+	AmountMinor            int64          `json:"amount_minor"`
+	Description            sql.NullString `json:"description"`
+	Status                 string         `json:"status"`
+	MetadataJson           sql.NullString `json:"metadata_json"`
+	CreatedAt              string         `json:"created_at"`
+	UpdatedAt              string         `json:"updated_at"`
+	EventType              string         `json:"event_type"`
+	CategoryID             sql.NullString `json:"category_id"`
+	CategoryName           sql.NullString `json:"category_name"`
+	CounterpartAccountID   sql.NullString `json:"counterpart_account_id"`
+	CounterpartAccountName sql.NullString `json:"counterpart_account_name"`
 }
 
 func (q *Queries) ListMovementsByAccountWithEventAndCategory(ctx context.Context, accountID string) ([]ListMovementsByAccountWithEventAndCategoryRow, error) {
@@ -297,6 +307,8 @@ func (q *Queries) ListMovementsByAccountWithEventAndCategory(ctx context.Context
 			&i.EventType,
 			&i.CategoryID,
 			&i.CategoryName,
+			&i.CounterpartAccountID,
+			&i.CounterpartAccountName,
 		); err != nil {
 			return nil, err
 		}
@@ -358,32 +370,44 @@ const listMovementsWithEventAndCategory = `-- name: ListMovementsWithEventAndCat
 SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at,
        fe.event_type,
        fe.category_id,
-       c.name AS category_name
+       c.name AS category_name,
+       ca.id AS counterpart_account_id,
+       ca.name AS counterpart_account_name
 FROM movements m
 JOIN financial_events fe ON fe.id = m.financial_event_id
 LEFT JOIN categories c ON c.id = fe.category_id
+LEFT JOIN movement_relations mr
+       ON mr.relation_type = 'TRANSFER_COUNTERPART'
+       AND (mr.movement_id_a = m.id OR mr.movement_id_b = m.id)
+LEFT JOIN movements cm
+       ON cm.id = CASE WHEN mr.movement_id_a = m.id THEN mr.movement_id_b ELSE mr.movement_id_a END
+LEFT JOIN accounts ca ON ca.id = cm.account_id
 ORDER BY m.created_at DESC
 `
 
 type ListMovementsWithEventAndCategoryRow struct {
-	ID               string         `json:"id"`
-	FinancialEventID string         `json:"financial_event_id"`
-	AccountID        string         `json:"account_id"`
-	SourceEntryID    sql.NullString `json:"source_entry_id"`
-	MovementDate     string         `json:"movement_date"`
-	AmountMinor      int64          `json:"amount_minor"`
-	Description      sql.NullString `json:"description"`
-	Status           string         `json:"status"`
-	MetadataJson     sql.NullString `json:"metadata_json"`
-	CreatedAt        string         `json:"created_at"`
-	UpdatedAt        string         `json:"updated_at"`
-	EventType        string         `json:"event_type"`
-	CategoryID       sql.NullString `json:"category_id"`
-	CategoryName     sql.NullString `json:"category_name"`
+	ID                     string         `json:"id"`
+	FinancialEventID       string         `json:"financial_event_id"`
+	AccountID              string         `json:"account_id"`
+	SourceEntryID          sql.NullString `json:"source_entry_id"`
+	MovementDate           string         `json:"movement_date"`
+	AmountMinor            int64          `json:"amount_minor"`
+	Description            sql.NullString `json:"description"`
+	Status                 string         `json:"status"`
+	MetadataJson           sql.NullString `json:"metadata_json"`
+	CreatedAt              string         `json:"created_at"`
+	UpdatedAt              string         `json:"updated_at"`
+	EventType              string         `json:"event_type"`
+	CategoryID             sql.NullString `json:"category_id"`
+	CategoryName           sql.NullString `json:"category_name"`
+	CounterpartAccountID   sql.NullString `json:"counterpart_account_id"`
+	CounterpartAccountName sql.NullString `json:"counterpart_account_name"`
 }
 
 // Every movement listing needs the category of its financial event: one
-// join replaces the two per-row lookups the handlers used to do.
+// join replaces the two per-row lookups the handlers used to do. A
+// transfer leg also carries the account of its counterpart, so the two
+// legs of one transfer read as one decision.
 func (q *Queries) ListMovementsWithEventAndCategory(ctx context.Context) ([]ListMovementsWithEventAndCategoryRow, error) {
 	rows, err := q.db.QueryContext(ctx, listMovementsWithEventAndCategory)
 	if err != nil {
@@ -408,6 +432,8 @@ func (q *Queries) ListMovementsWithEventAndCategory(ctx context.Context) ([]List
 			&i.EventType,
 			&i.CategoryID,
 			&i.CategoryName,
+			&i.CounterpartAccountID,
+			&i.CounterpartAccountName,
 		); err != nil {
 			return nil, err
 		}
