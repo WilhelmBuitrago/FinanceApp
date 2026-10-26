@@ -36,13 +36,31 @@
 
 | ID | Unidad | Ruta | Estado |
 |----|--------|------|--------|
-| T1 | Hooks de datos: `useAccountNames`, `useAccounts`, `useMovements`, `useDocuments`, `useDashboard` | inline | done |
-| T2 | Máquinas de estado: `useMovementActions`, `useUpdater` | inline | pending |
-| T3 | Dashboard I: `NetTotalCard`, `FinancialSummarySection`, `AttentionSection`, `RecentMovementsTable`, `RecentDocumentsTable` | inline | pending |
-| T4 | Dashboard II: `CashFlowSection`, `DistributionSection`, `NotificationBell`, `QuickActions` | inline | pending |
-| T5 | Drawer: `MovementDetail`, `FinancialEventDetail`, `SourceEntryDetail`, `DocumentDetail` | inline | pending |
+| T1 | Hooks de datos: `useAccountNames`, `useAccounts`, `useMovements`, `useDocuments`, `useDashboard` | inline | done (866534e) |
+| T2 | Máquinas de estado: `useMovementActions`, `useUpdater` | inline | done (e10964a) |
+| T3 | Dashboard I: `NetTotalCard`, `FinancialSummarySection`, `AttentionSection`, `RecentMovementsTable`, `RecentDocumentsTable` | inline | done (f4dfca3) |
+| T4 | Dashboard II: `CashFlowSection`, `DistributionSection`, `NotificationBell`, `QuickActions` | inline | done (9d22ef6) |
+| T5 | Drawer: `MovementDetail`, `FinancialEventDetail`, `SourceEntryDetail`, `DocumentDetail` | inline | done (5332330) |
 
 ## Log
 
 - L1 (usuario, 2026-10-25): "Ahora realiza D2. y para P1-bis explicalo bien
   detalladamente."
+
+## Log
+
+- L2 (2026-10-26): ronda COMPLETA. 5 unidades, 18 archivos de test, 201 tests
+  en total (eran 99). Commits: 866534e (T1), e10964a (T2), f4dfca3 (T3),
+  9d22ef6 (T4), 5332330 (T5). Cada unidad verificada por mutación del código
+  productivo (RED) antes de cerrar: cableado de colecciones, ventana de 30
+  días, slice de 3, umbral de 2 puntos, navegación de la campana, rama
+  manual, wiring del confirm, invalidaciones del bus, suscripción de
+  instituciones, fallback del guión. Batería desktop verde por unidad
+  (build, lint, tests, prettier). Dos auto-correcciones de proceso: dos
+  commits se enmendaron por cometer con la batería en rojo (un type error de
+  mi test y prettier sin correr); la lección queda en el Log de memoria.
+- L3: nuevos hallazgos del propio testing (no son bugs del código productivo,
+  son huecos de expectativa que los tests ya fijan): `AttentionSection` no
+  muestra el id de cuenta cuando el nombre falta (solo el nombre del mapa);
+  `RecentDocumentsTable` formatea la fecha de subida en zona local (los
+  fixtures usa mediodía UTC para ser deterministas).
