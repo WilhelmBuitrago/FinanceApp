@@ -26,9 +26,12 @@ export interface CreateMovementInput {
 
 // A colliding movement answers 409 with the parked review item: the error
 // carries it (ApiError.response.review_item_id) so the UI can say where
-// the duplicate went.
-export async function createMovement(input: CreateMovementInput): Promise<{ id: string }> {
-  return apiPost<{ id: string }>('/movements', input);
+// the duplicate went. A transfer answers 201 with both legs: the created
+// movement and its counterpart (the other side of the same decision).
+export async function createMovement(
+  input: CreateMovementInput,
+): Promise<{ id: string; counterpart_id?: string }> {
+  return apiPost<{ id: string; counterpart_id?: string }>('/movements', input);
 }
 
 export async function deleteMovement(id: string): Promise<void> {

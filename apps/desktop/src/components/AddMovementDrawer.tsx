@@ -24,6 +24,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
     cantidad: '',
     tipo: 'Ingreso',
     cuenta: '',
+    destino: '',
     categoria: '',
     descripcion: '',
     fecha: '',
@@ -65,21 +66,31 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               setError('Cantidad debe ser positiva');
               return;
             }
+            // A transfer moves money between two own accounts: the backend
+            // derives the signs (it leaves the origin, it enters the
+            // destination), so the amount stays positive here.
+            const isTransfer = form.tipo === 'Transferencia';
+            if (isTransfer) {
+              if (!form.destino) {
+                setError('Elegí la cuenta destino');
+                return;
+              }
+              if (form.destino === effectiveCuenta) {
+                setError('La cuenta destino debe ser distinta a la de origen');
+                return;
+              }
+            }
             const sign = form.tipo === 'Egreso' ? -1 : 1;
             const amountMinor = Math.round(amount * 100) * sign;
             try {
               await createMovement({
                 amount_minor: amountMinor,
-                type:
-                  form.tipo === 'Ingreso'
-                    ? 'INCOME'
-                    : form.tipo === 'Egreso'
-                      ? 'EXPENSE'
-                      : 'TRANSFER',
+                type: isTransfer ? 'TRANSFER' : form.tipo === 'Ingreso' ? 'INCOME' : 'EXPENSE',
                 account_id: effectiveCuenta,
+                ...(isTransfer ? { to_account_id: form.destino } : {}),
                 description: form.descripcion,
                 date: form.fecha,
-                category_id: form.categoria,
+                category_id: isTransfer ? '' : form.categoria,
               });
               // Every screen showing movements or their aggregates refetches
               // through the bus; no document reload.
@@ -139,7 +150,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
             </div>
             <div>
               <label className="text-body" htmlFor="add-movement-account">
-                Cuenta *
+                {form.tipo === 'Transferencia' ? 'Cuenta origen *' : 'Cuenta *'}
               </label>
               <select
                 id="add-movement-account"
@@ -154,33 +165,57 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="text-body" htmlFor="add-movement-category">
-                Categoría
-              </label>
-              <select
-                id="add-movement-category"
-                value={form.categoria}
-                onChange={(e) => setForm({ ...form, categoria: e.target.value })}
-                className="w-full bg-surface border border-line rounded px-2 py-1 text-ink"
-              >
-                <option value="">Sin categoría</option>
-                {categories
-                  .filter((c) => {
-                    const typeMap: Record<string, string> = {
-                      Ingreso: 'INCOME',
-                      Egreso: 'EXPENSE',
-                      Transferencia: 'TRANSFER',
-                    };
-                    return c.type === typeMap[form.tipo];
-                  })
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
+            {form.tipo === 'Transferencia' && (
+              <div>
+                <label className="text-body" htmlFor="add-movement-destination">
+                  Cuenta destino *
+                </label>
+                <select
+                  id="add-movement-destination"
+                  value={form.destino}
+                  onChange={(e) => setForm({ ...form, destino: e.target.value })}
+                  className="w-full bg-surface border border-line rounded px-2 py-1 text-ink"
+                >
+                  <option value="">Elegí una cuenta</option>
+                  {accounts
+                    .filter((a) => a.ID !== effectiveCuenta)
+                    .map((a) => (
+                      <option key={a.ID} value={a.ID}>
+                        {a.Name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
+            {form.tipo !== 'Transferencia' && (
+              <div>
+                <label className="text-body" htmlFor="add-movement-category">
+                  Categoría
+                </label>
+                <select
+                  id="add-movement-category"
+                  value={form.categoria}
+                  onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+                  className="w-full bg-surface border border-line rounded px-2 py-1 text-ink"
+                >
+                  <option value="">Sin categoría</option>
+                  {categories
+                    .filter((c) => {
+                      const typeMap: Record<string, string> = {
+                        Ingreso: 'INCOME',
+                        Egreso: 'EXPENSE',
+                        Transferencia: 'TRANSFER',
+                      };
+                      return c.type === typeMap[form.tipo];
+                    })
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="text-body" htmlFor="add-movement-description">
                 Descripción
