@@ -105,6 +105,18 @@ func (r *RelationRepository) ListEventRelations(ctx context.Context, eventID str
 	return out, nil
 }
 
+// DeleteMovementRelation removes one relation row. The transfer delete
+// needs it explicit: the relation outlives neither of its legs.
+func (r *RelationRepository) DeleteMovementRelation(ctx context.Context, id string) error {
+	if r.db.Querier == nil {
+		return ErrUnavailable
+	}
+	if err := r.db.Querier.DeleteMovementRelation(ctx, id); err != nil {
+		return translateError(err)
+	}
+	return nil
+}
+
 func mapDBMovementRelationToDomain(r db.MovementRelation) domain.MovementRelation {
 	return domain.MovementRelation{
 		ID:           r.ID,

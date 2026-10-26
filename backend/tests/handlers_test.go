@@ -42,6 +42,7 @@ func newTestRouter(t *testing.T) (http.Handler, *sql.DB) {
 		repositories.NewSourceEntryRepository(repoDB),
 		repositories.NewCategoryRepository(repoDB),
 		app.NewMovementService(sqlDB, app.NewReviewService(sqlDB)),
+		app.NewTransferService(sqlDB),
 		app.NewReviewService(sqlDB),
 		nil,
 		nil)

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -15,6 +16,14 @@ import (
 type movementWriter interface {
 	CreateWithEvent(ctx context.Context, fe domain.FinancialEvent, mv domain.Movement, components []domain.MovementComponent) (domain.Movement, error)
 	CreateManual(ctx context.Context, cmd domain.ManualMovementCommand) (domain.ManualMovementOutcome, error)
+}
+
+// transferWriter is satisfied by app.TransferService. Same injection rule:
+// the transfer policy (two legs, one relation, counterpart-aware delete)
+// lives in the service; the handler maps it to HTTP.
+type transferWriter interface {
+	Transfer(ctx context.Context, cmd domain.TransferCommand) (domain.TransferOutcome, error)
+	DeleteMovement(ctx context.Context, movementID string) error
 }
 
 func (rt *router) listMovements(w http.ResponseWriter, r *http.Request) {
@@ -72,6 +81,34 @@ func (rt *router) createMovement(w http.ResponseWriter, r *http.Request) {
 
 	// Duplicate detection, review parking and the atomic write are the
 	// service's policy; this handler maps the outcome to HTTP.
+	if req.Type == "TRANSFER" && req.ToAccountID != "" {
+		// One decision with two legs: the transfer service owns it.
+		outcome, err := rt.transfers.Transfer(r.Context(), domain.TransferCommand{
+			OriginID:      req.AccountID,
+			DestinationID: req.ToAccountID,
+			AmountMinor:   req.AmountMinor,
+			Date:          req.Date,
+			Description:   req.Description,
+		})
+		if err != nil {
+			if errors.Is(err, domain.ErrTransferToSelf) {
+				writeJSONError(w, http.StatusBadRequest, "a transfer needs two different accounts")
+				return
+			}
+			if errors.Is(err, domain.ErrTransferAmount) {
+				writeJSONError(w, http.StatusBadRequest, "the transfer amount must be positive")
+				return
+			}
+			log.Info(fmt.Sprintf("[MOVEMENT CREATE] transfer failed: %v", err))
+			writeRepoError(w, err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		encodeJSON(w, map[string]string{"id": outcome.OriginMovementID, "counterpart_id": outcome.DestinationMovementID})
+		return
+	}
+
 	outcome, err := rt.movements.CreateManual(r.Context(), domain.ManualMovementCommand{
 		AccountID:   req.AccountID,
 		AmountMinor: req.AmountMinor,
@@ -131,7 +168,8 @@ func (rt *router) setMovementCategory(w http.ResponseWriter, r *http.Request) {
 
 func (rt *router) deleteMovement(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	if err := rt.movementRepo.Delete(r.Context(), id); err != nil {
+	// Transfer-aware: deleting either leg deletes the whole transfer.
+	if err := rt.transfers.DeleteMovement(r.Context(), id); err != nil {
 		log.Info(fmt.Sprintf("[MOVEMENT DELETE] failed id=%s err=%v", id, err))
 		writeRepoError(w, err)
 		return
@@ -155,9 +193,10 @@ func (rt *router) deleteAccountMovement(w http.ResponseWriter, r *http.Request) 
 		writeJSONError(w, http.StatusForbidden, "unauthorized")
 		return
 	}
-	if err := rt.movementRepo.Delete(r.Context(), mid); err != nil {
+	// Transfer-aware, like the plain delete: a leg deletes its transfer.
+	if err := rt.transfers.DeleteMovement(r.Context(), mid); err != nil {
 		log.Info(fmt.Sprintf("[MOVEMENT DELETE ACCOUNT] error=%v", err))
-		writeJSONError(w, http.StatusInternalServerError, "failed to delete")
+		writeRepoError(w, err)
 		return
 	}
 	log.Info(fmt.Sprintf("[MOVEMENT DELETE ACCOUNT] success id=%s", mid))

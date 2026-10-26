@@ -48,6 +48,7 @@ func TestMovement_Category_Assignment_Contract(t *testing.T) {
 		repositories.NewSourceEntryRepository(repoDB),
 		repositories.NewCategoryRepository(repoDB),
 		app.NewMovementService(sqlDB, app.NewReviewService(sqlDB)),
+		app.NewTransferService(sqlDB),
 		app.NewReviewService(sqlDB),
 		nil,
 		nil)

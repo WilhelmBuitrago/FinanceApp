@@ -23,6 +23,7 @@ type router struct {
 	sourceEntryRepo *repositories.SourceEntryRepository
 	categoryRepo    *repositories.CategoryRepository
 	movements       movementWriter
+	transfers       transferWriter
 	reviews         reviewResolver
 }
 
@@ -39,7 +40,7 @@ type ProcessorRunnerFunc func(ctx context.Context, pdfPath, accountID string) (*
 
 // NewRouter wires every route to its handler. Health and upload stay here;
 // the rest live in the handlers_*.go files by domain.
-func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository, categoryRepo *repositories.CategoryRepository, movements movementWriter, reviews reviewResolver, imports ImportRunner, run ProcessorRunnerFunc) http.Handler {
+func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, importRepo *repositories.ImportJobRepo, accountRepo *repositories.AccountRepository, movementRepo *repositories.MovementRepository, eventRepo *repositories.FinancialEventRepository, sourceEntryRepo *repositories.SourceEntryRepository, categoryRepo *repositories.CategoryRepository, movements movementWriter, transfers transferWriter, reviews reviewResolver, imports ImportRunner, run ProcessorRunnerFunc) http.Handler {
 	rt := &router{
 		cfg:             cfg,
 		docRepo:         docRepo,
@@ -50,6 +51,7 @@ func NewRouter(cfg config.Config, docRepo *repositories.DocumentRepository, impo
 		sourceEntryRepo: sourceEntryRepo,
 		categoryRepo:    categoryRepo,
 		movements:       movements,
+		transfers:       transfers,
 		reviews:         reviews,
 	}
 	mux := http.NewServeMux()

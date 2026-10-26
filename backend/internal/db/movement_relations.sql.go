@@ -65,6 +65,15 @@ func (q *Queries) CreateMovementRelation(ctx context.Context, arg CreateMovement
 	return i, err
 }
 
+const deleteMovementRelation = `-- name: DeleteMovementRelation :exec
+DELETE FROM movement_relations WHERE id = ?
+`
+
+func (q *Queries) DeleteMovementRelation(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteMovementRelation, id)
+	return err
+}
+
 const listRelationsByMovement = `-- name: ListRelationsByMovement :many
 SELECT id, movement_id_a, movement_id_b, relation_type, status, confidence, reason, created_at, updated_at FROM movement_relations WHERE movement_id_a = ? OR movement_id_b = ?
 `

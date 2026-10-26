@@ -25,6 +25,7 @@ type Querier interface {
 	CreateSourceEntry(ctx context.Context, arg CreateSourceEntryParams) (SourceEntry, error)
 	DeleteCategory(ctx context.Context, id string) error
 	DeleteMovement(ctx context.Context, id string) error
+	DeleteMovementRelation(ctx context.Context, id string) error
 	DiscardReviewItem(ctx context.Context, arg DiscardReviewItemParams) (int64, error)
 	// The manual-entry identity: same account, date and amount, with a
 	// description that matches the row or is empty on the request's side.

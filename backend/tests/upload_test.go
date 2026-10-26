@@ -55,6 +55,7 @@ func newUploadTestRouter(t *testing.T, imports api.ImportRunner, run api.Process
 		repositories.NewSourceEntryRepository(repoDB),
 		repositories.NewCategoryRepository(repoDB),
 		app.NewMovementService(sqlDB, app.NewReviewService(sqlDB)),
+		app.NewTransferService(sqlDB),
 		app.NewReviewService(sqlDB),
 		imports,
 		run)
