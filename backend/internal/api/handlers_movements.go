@@ -20,7 +20,7 @@ type movementWriter interface {
 func (rt *router) listMovements(w http.ResponseWriter, r *http.Request) {
 	movements, err := rt.movementRepo.List(r.Context())
 	if err != nil {
-		http.Error(w, `{"error":"failed to list movements"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to list movements")
 		return
 	}
 	type movementDTO struct {
@@ -59,14 +59,14 @@ func (rt *router) createMovement(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Info("[MOVEMENT CREATE] Invalid body: " + err.Error())
-		http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "invalid body")
 		return
 	}
 	log.Info(fmt.Sprintf("[MOVEMENT CREATE] account=%s amount=%d type=%s date=%s desc=%s", req.AccountID, req.AmountMinor, req.Type, req.Date, req.Description))
 	// A zero amount is neither income nor expense: same criterion as the
 	// parser, the manual path cannot fabricate financial identity either.
 	if req.AmountMinor == 0 {
-		http.Error(w, `{"error":"amount_minor must not be zero"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "amount_minor must not be zero")
 		return
 	}
 	// Validate the event type here so the caller gets a clear message: the
@@ -75,14 +75,14 @@ func (rt *router) createMovement(w http.ResponseWriter, r *http.Request) {
 	switch req.Type {
 	case "INCOME", "EXPENSE", "TRANSFER":
 	default:
-		http.Error(w, `{"error":"type must be INCOME, EXPENSE or TRANSFER"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "type must be INCOME, EXPENSE or TRANSFER")
 		return
 	}
 	if !force {
 		existing, err := rt.movementRepo.List(r.Context())
 		if err != nil {
 			log.Info(fmt.Sprintf("[MOVEMENT CREATE] duplicate check failed: %v", err))
-			http.Error(w, `{"error":"failed to check duplicates"}`, http.StatusInternalServerError)
+			writeJSONError(w, http.StatusInternalServerError, "failed to check duplicates")
 			return
 		}
 		for _, m := range existing {
@@ -161,20 +161,20 @@ func (rt *router) setMovementCategory(w http.ResponseWriter, r *http.Request) {
 		CategoryID *string `json:"categoryId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "invalid body")
 		return
 	}
 	mv, err := rt.movementRepo.GetByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, `{"error":"movement not found"}`, http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "movement not found")
 		return
 	}
 	if mv.FinancialEventID == "" {
-		http.Error(w, `{"error":"no financial event"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "no financial event")
 		return
 	}
 	if err := rt.eventRepo.SetCategory(r.Context(), mv.FinancialEventID, body.CategoryID); err != nil {
-		http.Error(w, `{"error":"update failed"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "update failed")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -198,17 +198,17 @@ func (rt *router) deleteAccountMovement(w http.ResponseWriter, r *http.Request) 
 	mv, err := rt.movementRepo.GetByID(r.Context(), mid)
 	if err != nil {
 		log.Info(fmt.Sprintf("[MOVEMENT DELETE ACCOUNT] not found id=%s err=%v", mid, err))
-		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "not found")
 		return
 	}
 	if mv.AccountID != accountID {
 		log.Info(fmt.Sprintf("[MOVEMENT DELETE ACCOUNT] mismatch account=%s movement_account=%s", accountID, mv.AccountID))
-		http.Error(w, `{"error":"unauthorized"}`, http.StatusForbidden)
+		writeJSONError(w, http.StatusForbidden, "unauthorized")
 		return
 	}
 	if err := rt.movementRepo.Delete(r.Context(), mid); err != nil {
 		log.Info(fmt.Sprintf("[MOVEMENT DELETE ACCOUNT] error=%v", err))
-		http.Error(w, `{"error":"failed to delete"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to delete")
 		return
 	}
 	log.Info(fmt.Sprintf("[MOVEMENT DELETE ACCOUNT] success id=%s", mid))

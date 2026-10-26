@@ -28,13 +28,13 @@ func (rt *router) adminPurge(w http.ResponseWriter, r *http.Request) {
 	sqlDB, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		logErr("open failed " + err.Error())
-		http.Error(w, fmt.Sprintf(`{"error":"purge failed","detail":"%v"}`, err), http.StatusInternalServerError)
+		writeJSONObject(w, http.StatusInternalServerError, map[string]string{"error": "purge failed", "detail": err.Error()})
 		return
 	}
 	defer func() { _ = sqlDB.Close() }()
 	if _, err := sqlDB.Exec("PRAGMA foreign_keys=OFF"); err != nil {
 		logErr("pragma failed " + err.Error())
-		http.Error(w, fmt.Sprintf(`{"error":"purge failed","detail":"%v"}`, err), http.StatusInternalServerError)
+		writeJSONObject(w, http.StatusInternalServerError, map[string]string{"error": "purge failed", "detail": err.Error()})
 		return
 	}
 	tables := []string{
@@ -54,7 +54,7 @@ func (rt *router) adminPurge(w http.ResponseWriter, r *http.Request) {
 				_, _ = fmt.Fprintf(f, "[%s] PURGE error table %s: %v\n", time.Now().Format("15:04:05"), t, err)
 				_ = f.Close()
 			}
-			http.Error(w, fmt.Sprintf(`{"error":"purge failed","detail":"table %s: %v"}`, t, err), http.StatusInternalServerError)
+			writeJSONObject(w, http.StatusInternalServerError, map[string]string{"error": "purge failed", "detail": fmt.Sprintf("table %s: %v", t, err)})
 			return
 		}
 	}

@@ -12,7 +12,7 @@ import (
 func (rt *router) listCategories(w http.ResponseWriter, r *http.Request) {
 	cats, err := rt.categoryRepo.List(r.Context(), "ACTIVE")
 	if err != nil {
-		http.Error(w, `{"error":"failed to list categories"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to list categories")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -27,7 +27,7 @@ func (rt *router) createCategory(w http.ResponseWriter, r *http.Request) {
 		ParentID     *string `json:"parent_id,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "invalid body")
 		return
 	}
 	now := timeNowUTC()
@@ -42,7 +42,7 @@ func (rt *router) createCategory(w http.ResponseWriter, r *http.Request) {
 	}
 	created, err := rt.categoryRepo.Create(r.Context(), cat)
 	if err != nil {
-		http.Error(w, `{"error":"failed to create category"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to create category")
 		return
 	}
 	log.Info(fmt.Sprintf("[CATEGORY CREATE] %s %s", created.ID, created.Name))
@@ -58,12 +58,12 @@ func (rt *router) updateCategory(w http.ResponseWriter, r *http.Request) {
 		CategoryType string `json:"category_type"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "invalid body")
 		return
 	}
 	existing, err := rt.categoryRepo.GetByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "not found")
 		return
 	}
 	// Log review trigger
@@ -79,16 +79,16 @@ func (rt *router) deleteCategory(w http.ResponseWriter, r *http.Request) {
 	// the name and the movements it leaves behind.
 	category, catErr := rt.categoryRepo.GetByID(r.Context(), id)
 	if catErr != nil {
-		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "not found")
 		return
 	}
 	affected, listErr := rt.movementRepo.ListByCategory(r.Context(), id)
 	if listErr != nil {
-		http.Error(w, `{"error":"failed to list affected movements"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to list affected movements")
 		return
 	}
 	if err := rt.categoryRepo.Delete(r.Context(), id); err != nil {
-		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "delete failed")
 		return
 	}
 	log.Info(fmt.Sprintf("[CATEGORY DELETE] %s", id))

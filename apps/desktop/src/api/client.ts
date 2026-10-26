@@ -20,9 +20,9 @@ function errorLabel(data: unknown): string {
 }
 
 /* The most specific error text a failed call carries, for the UI to show:
-   an extracted {error} when the body has one (the backend answers
-   text/plain JSON), otherwise the raw body. Shared so every surface
-   reports the same detail for the same failure. */
+   an extracted {error} when the body has one (the API answers every
+   failure as application/json), otherwise the raw body. Shared so every
+   surface reports the same detail for the same failure. */
 export function apiErrorDetail(err: unknown): string | undefined {
   if (!(err instanceof ApiError)) return undefined;
   const response = err.response;

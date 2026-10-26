@@ -9,7 +9,7 @@ import (
 func (rt *router) recentMovements(w http.ResponseWriter, r *http.Request) {
 	movs, err := rt.movementRepo.List(r.Context())
 	if err != nil {
-		http.Error(w, `{"error":"failed to list movements"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to list movements")
 		return
 	}
 	if len(movs) > 5 {
@@ -41,7 +41,7 @@ func (rt *router) cashFlow(w http.ResponseWriter, r *http.Request) {
 	to := r.URL.Query().Get("to")
 	movements, err := rt.movementRepo.List(r.Context())
 	if err != nil {
-		http.Error(w, `{"error":"failed to list movements"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to list movements")
 		return
 	}
 	agg := make(map[string]struct{ inflow, outflow int64 })
@@ -84,7 +84,7 @@ func (rt *router) incomeDistribution(w http.ResponseWriter, r *http.Request) {
 	to := r.URL.Query().Get("to")
 	movements, err := rt.movementRepo.List(r.Context())
 	if err != nil {
-		http.Error(w, `{"error":"failed to list movements"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to list movements")
 		return
 	}
 	dist := make(map[string]int64)
@@ -138,7 +138,7 @@ func (rt *router) expenseDistribution(w http.ResponseWriter, r *http.Request) {
 	to := r.URL.Query().Get("to")
 	movements, err := rt.movementRepo.List(r.Context())
 	if err != nil {
-		http.Error(w, `{"error":"failed to list movements"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to list movements")
 		return
 	}
 	dist := make(map[string]int64)

@@ -37,13 +37,13 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	log.Info("UploadHandler Handle start")
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		log.Error(fmt.Sprintf("ParseMultipartForm error: %v", err))
-		http.Error(w, "invalid multipart", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "invalid multipart")
 		return
 	}
 	accountID := r.FormValue("account_id")
 	if accountID == "" {
 		log.Error("account_id missing")
-		http.Error(w, `{"error":"account_id required"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "account_id required")
 		return
 	}
 	entity := r.FormValue("entity")
@@ -51,29 +51,29 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	acc, err := h.accountRepo.GetByID(r.Context(), accountID)
 	if err != nil {
 		log.Error(fmt.Sprintf("account not found %s: %v", accountID, err))
-		http.Error(w, `{"error":"account not found"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "account not found")
 		return
 	}
 	if acc.Status != "ACTIVE" {
 		log.Error(fmt.Sprintf("account not active %s status=%s", accountID, acc.Status))
-		http.Error(w, `{"error":"account not active"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "account not active")
 		return
 	}
 	if acc.Institution == nil || *acc.Institution != "NU" {
 		log.Error(fmt.Sprintf("institution not supported %s", accountID))
-		http.Error(w, `{"error":"institution not supported"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "institution not supported")
 		return
 	}
 	// Optional entity verification for accessibility
 	if entity != "" && acc.Institution != nil && entity != *acc.Institution {
 		log.Error(fmt.Sprintf("entity mismatch account %s entity=%s institution=%s", accountID, entity, *acc.Institution))
-		http.Error(w, `{"error":"entity does not match account institution"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "entity does not match account institution")
 		return
 	}
 	file, hdr, err := r.FormFile("file")
 	if err != nil {
 		log.Error(fmt.Sprintf("file missing: %v", err))
-		http.Error(w, "file missing", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "file missing")
 		return
 	}
 	defer func() { _ = file.Close() }()
@@ -81,12 +81,12 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	docsBase := h.cfg.DocumentsPath
 	dstPath := filepath.Join(docsBase, "raw", hdr.Filename)
 	if err := os.MkdirAll(filepath.Dir(dstPath), 0755); err != nil {
-		http.Error(w, "cannot create dir", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "cannot create dir")
 		return
 	}
 	dst, err := os.Create(dstPath)
 	if err != nil {
-		http.Error(w, "cannot create file", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "cannot create file")
 		return
 	}
 	defer func() { _ = dst.Close() }()
@@ -94,7 +94,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	hasher := sha256.New()
 	mw := io.TeeReader(file, hasher)
 	if _, err := io.Copy(dst, mw); err != nil {
-		http.Error(w, "save failed", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "save failed")
 		return
 	}
 	sha := fmt.Sprintf("%x", hasher.Sum(nil))
@@ -116,13 +116,11 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	// The same PDF twice is a conflict, not a crash: docID is derived from
 	// the file hash, so re-uploading an imported file must not 500.
 	if _, err := h.docRepo.GetByID(r.Context(), docID); err == nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusConflict)
-		encodeJSON(w, map[string]string{"error": "document already imported", "document_id": docID})
+		writeJSONObject(w, http.StatusConflict, map[string]string{"error": "document already imported", "document_id": docID})
 		return
 	}
 	if _, err := h.docRepo.Create(r.Context(), document); err != nil {
-		http.Error(w, fmt.Sprintf("document persist failed: %v", err), http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("document persist failed: %v", err))
 		return
 	}
 
@@ -134,7 +132,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:  now,
 	}
 	if _, err := h.jobRepo.Create(r.Context(), job); err != nil {
-		http.Error(w, "job persist failed", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "job persist failed")
 		return
 	}
 
@@ -142,7 +140,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	job.Status = "PROCESSING"
 	job.StartedAt = &started
 	if _, err := h.jobRepo.Update(r.Context(), job); err != nil {
-		http.Error(w, "job update failed", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "job update failed")
 		return
 	}
 
@@ -161,13 +159,13 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 			log.Error(fmt.Sprintf("failed to mark job ERROR: %v", err))
 		}
 		w.Header().Set("Content-Type", "application/json")
-		http.Error(w, fmt.Sprintf(`{"error":"processor failed","detail":%q}`, e), http.StatusInternalServerError)
+		writeJSONObject(w, http.StatusInternalServerError, map[string]string{"error": "processor failed", "detail": e})
 		return
 	}
 
 	job.ProcessingID = &res.ProcessingID
 	if _, err := h.jobRepo.Update(r.Context(), job); err != nil {
-		http.Error(w, "job update failed", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "job update failed")
 		return
 	}
 
@@ -184,7 +182,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	// Staging is owned by the import service: one transaction, review items
 	// included. This handler only validates, persists and reports.
 	if h.imports == nil {
-		http.Error(w, "import service not configured", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "import service not configured")
 		return
 	}
 	if err := h.imports.Import(r.Context(), jobID); err != nil {
@@ -196,7 +194,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		if _, updErr := h.jobRepo.Update(r.Context(), job); updErr != nil {
 			log.Error(fmt.Sprintf("failed to record job failure: %v", updErr))
 		}
-		http.Error(w, fmt.Sprintf(`{"error":"import failed","detail":%q}`, e), http.StatusInternalServerError)
+		writeJSONObject(w, http.StatusInternalServerError, map[string]string{"error": "import failed", "detail": e})
 		return
 	}
 
@@ -223,7 +221,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 func GetJobHandler(w http.ResponseWriter, r *http.Request, repo *repositories.ImportJobRepo, id string) {
 	job, err := repo.GetByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "not found")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

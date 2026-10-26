@@ -9,7 +9,7 @@ import (
 func (rt *router) listDocuments(w http.ResponseWriter, r *http.Request) {
 	documents, err := rt.docRepo.List(r.Context())
 	if err != nil {
-		http.Error(w, `{"error":"failed to list documents"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to list documents")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -19,7 +19,7 @@ func (rt *router) listDocuments(w http.ResponseWriter, r *http.Request) {
 func (rt *router) recentDocuments(w http.ResponseWriter, r *http.Request) {
 	docs, err := rt.docRepo.List(r.Context())
 	if err != nil {
-		http.Error(w, `{"error":"failed to list documents"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to list documents")
 		return
 	}
 	// limit 3

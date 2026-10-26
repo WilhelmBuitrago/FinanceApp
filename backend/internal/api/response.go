@@ -19,17 +19,33 @@ func encodeJSON(w http.ResponseWriter, payload any) {
 	}
 }
 
+// writeJSONObject writes payload as the response with the given status.
+// The content type is set first: every response body in this API is JSON,
+// and a wrong declaration breaks any client that trusts the header.
+func writeJSONObject(w http.ResponseWriter, status int, payload any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	encodeJSON(w, payload)
+}
+
+// writeJSONError is the single writer for API errors: {"error": msg} with
+// an honest content type. It replaces http.Error, which declares
+// text/plain and left every error body mislabeled.
+func writeJSONError(w http.ResponseWriter, status int, msg string) {
+	writeJSONObject(w, status, map[string]string{"error": msg})
+}
+
 // writeRepoError maps the repository error taxonomy to HTTP status codes so a
 // failed write is reported as a real error instead of a fabricated success.
 func writeRepoError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, repositories.ErrNotFound):
-		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "not found")
 	case errors.Is(err, repositories.ErrConflict):
-		http.Error(w, `{"error":"conflict"}`, http.StatusConflict)
+		writeJSONError(w, http.StatusConflict, "conflict")
 	case errors.Is(err, repositories.ErrConstraint):
-		http.Error(w, `{"error":"constraint violation"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "constraint violation")
 	default:
-		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "internal error")
 	}
 }

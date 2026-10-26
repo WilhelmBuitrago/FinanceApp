@@ -23,10 +23,10 @@ func (rw *responseWriter) WriteHeader(code int) {
 // not found is a client error, everything else is a server error.
 func writeLookupError(w http.ResponseWriter, err error) {
 	if errors.Is(err, repositories.ErrNotFound) {
-		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "not found")
 		return
 	}
-	http.Error(w, `{"error":"lookup failed"}`, http.StatusInternalServerError)
+	writeJSONError(w, http.StatusInternalServerError, "lookup failed")
 }
 
 // corsMiddleware allows the Vite dev server and the Tauri desktop shell, and

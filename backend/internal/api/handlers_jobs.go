@@ -18,17 +18,17 @@ func (rt *router) jobParsed(w http.ResponseWriter, r *http.Request) {
 	// Load job to get processing_id
 	job, err := rt.importRepo.GetByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "not found")
 		return
 	}
 	if job.ProcessingID == nil {
-		http.Error(w, `{"error":"processing not ready"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "processing not ready")
 		return
 	}
 	artifactPath := filepath.Join(rt.cfg.ArtifactsPath, *job.ProcessingID, "parsed.json")
 	data, err := os.ReadFile(artifactPath)
 	if err != nil {
-		http.Error(w, `{"error":"parsed not found"}`, http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "parsed not found")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -40,17 +40,17 @@ func (rt *router) jobManifest(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	job, err := rt.importRepo.GetByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "not found")
 		return
 	}
 	if job.ProcessingID == nil {
-		http.Error(w, `{"error":"processing not ready"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "processing not ready")
 		return
 	}
 	artifactPath := filepath.Join(rt.cfg.ArtifactsPath, *job.ProcessingID, "manifest.json")
 	data, err := os.ReadFile(artifactPath)
 	if err != nil {
-		http.Error(w, `{"error":"manifest not found"}`, http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "manifest not found")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

@@ -34,16 +34,16 @@ func (rt *router) createAccount(w http.ResponseWriter, r *http.Request) {
 		ValidationData string `json:"validation_data,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "invalid body")
 		return
 	}
 	// Basic validation per Sprint 12
 	if req.Institution != "NU" {
-		http.Error(w, `{"error":"institution not supported"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "institution not supported")
 		return
 	}
 	if req.AccountType != "BANK_ACCOUNT" && req.AccountType != "CREDIT_CARD" {
-		http.Error(w, `{"error":"account type not supported"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "account type not supported")
 		return
 	}
 	if req.Status == "" {
@@ -53,7 +53,7 @@ func (rt *router) createAccount(w http.ResponseWriter, r *http.Request) {
 		req.Currency = "COP"
 	}
 	if req.ID == "" {
-		http.Error(w, `{"error":"id required"}`, http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "id required")
 		return
 	}
 	now := timeNowUTC()
@@ -87,7 +87,7 @@ func (rt *router) createAccount(w http.ResponseWriter, r *http.Request) {
 func (rt *router) listAccounts(w http.ResponseWriter, r *http.Request) {
 	accounts, err := rt.accountRepo.List(r.Context())
 	if err != nil {
-		http.Error(w, `{"error":"failed to list accounts"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to list accounts")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -108,7 +108,7 @@ func (rt *router) getAccount(w http.ResponseWriter, r *http.Request) {
 func (rt *router) listAccountMovements(w http.ResponseWriter, r *http.Request) {
 	movements, err := rt.movementRepo.ListByAccount(r.Context(), r.PathValue("id"))
 	if err != nil {
-		http.Error(w, `{"error":"failed to list movements"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to list movements")
 		return
 	}
 	type movementDTO struct {
@@ -136,7 +136,7 @@ func (rt *router) listAccountMovements(w http.ResponseWriter, r *http.Request) {
 func (rt *router) listAccountDocuments(w http.ResponseWriter, r *http.Request) {
 	documents, err := rt.docRepo.ListByAccount(r.Context(), r.PathValue("id"))
 	if err != nil {
-		http.Error(w, `{"error":"failed to list documents"}`, http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "failed to list documents")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
