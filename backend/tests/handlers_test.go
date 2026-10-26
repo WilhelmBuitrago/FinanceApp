@@ -18,9 +18,14 @@ import (
 
 // newTestRouter builds the real router over a temporary migrated database.
 // The returned *sql.DB is the handle to break persistence in failure tests.
+// DATABASE_PATH points at that temporary database too: adminPurge opens its
+// own connection from the config, and the default path is the developer's
+// real one.
 func newTestRouter(t *testing.T) (http.Handler, *sql.DB) {
 	t.Helper()
-	sqlDB, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "handler-test.db"))
+	dbPath := filepath.Join(t.TempDir(), "handler-test.db")
+	t.Setenv("DATABASE_PATH", dbPath)
+	sqlDB, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
