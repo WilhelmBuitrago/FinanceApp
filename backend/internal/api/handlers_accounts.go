@@ -106,7 +106,7 @@ func (rt *router) getAccount(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *router) listAccountMovements(w http.ResponseWriter, r *http.Request) {
-	movements, err := rt.movementRepo.ListByAccount(r.Context(), r.PathValue("id"))
+	movements, err := rt.movementRepo.ListByAccountWithCategory(r.Context(), r.PathValue("id"))
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "failed to list movements")
 		return
@@ -118,16 +118,7 @@ func (rt *router) listAccountMovements(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]movementDTO, 0, len(movements))
 	for _, m := range movements {
-		fe, _ := rt.eventRepo.GetByID(r.Context(), m.FinancialEventID)
-		catName := ""
-		catID := ""
-		if fe.CategoryID != nil {
-			catID = *fe.CategoryID
-			if cat, err := rt.categoryRepo.GetByID(r.Context(), *fe.CategoryID); err == nil {
-				catName = cat.Name
-			}
-		}
-		out = append(out, movementDTO{Movement: m, CategoryName: catName, CategoryID: catID})
+		out = append(out, movementDTO{Movement: m.Movement, CategoryName: m.CategoryName, CategoryID: m.CategoryID})
 	}
 	w.Header().Set("Content-Type", "application/json")
 	encodeJSON(w, out)

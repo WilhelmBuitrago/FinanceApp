@@ -138,6 +138,40 @@ func (r *MovementRepository) List(ctx context.Context) ([]domain.Movement, error
 	return out, nil
 }
 
+// ListWithCategory returns every movement joined with the category of its
+// financial event: the listings need both, and one join replaces the two
+// per-row lookups they used to make.
+func (r *MovementRepository) ListWithCategory(ctx context.Context) ([]domain.MovementWithCategory, error) {
+	if r.db.Querier == nil {
+		return nil, ErrUnavailable
+	}
+	rows, err := r.db.Querier.ListMovementsWithEventAndCategory(ctx)
+	if err != nil {
+		return nil, translateError(err)
+	}
+	out := make([]domain.MovementWithCategory, 0, len(rows))
+	for _, m := range rows {
+		out = append(out, mapDBMovementWithCategoryToDomain(m))
+	}
+	return out, nil
+}
+
+// ListByAccountWithCategory is ListWithCategory scoped to one account.
+func (r *MovementRepository) ListByAccountWithCategory(ctx context.Context, accountID string) ([]domain.MovementWithCategory, error) {
+	if r.db.Querier == nil {
+		return nil, ErrUnavailable
+	}
+	rows, err := r.db.Querier.ListMovementsByAccountWithEventAndCategory(ctx, accountID)
+	if err != nil {
+		return nil, translateError(err)
+	}
+	out := make([]domain.MovementWithCategory, 0, len(rows))
+	for _, m := range rows {
+		out = append(out, mapDBMovementByAccountWithCategoryToDomain(m))
+	}
+	return out, nil
+}
+
 // ListByCategory returns movements whose financial event carries the given
 // category: used when a category is removed to park them for human review.
 func (r *MovementRepository) ListByCategory(ctx context.Context, categoryID string) ([]domain.Movement, error) {
@@ -179,6 +213,47 @@ func mapDBMovementToDomain(m db.Movement) domain.Movement {
 		CreatedAt:        m.CreatedAt,
 		UpdatedAt:        m.UpdatedAt,
 	}
+}
+
+func movementWithCategoryToDomain(mv db.Movement, eventType string, categoryID, categoryName sql.NullString) domain.MovementWithCategory {
+	return domain.MovementWithCategory{
+		Movement:     mapDBMovementToDomain(mv),
+		CategoryID:   fromNullStringValue(categoryID),
+		CategoryName: fromNullStringValue(categoryName),
+		EventType:    eventType,
+	}
+}
+
+func mapDBMovementWithCategoryToDomain(m db.ListMovementsWithEventAndCategoryRow) domain.MovementWithCategory {
+	return movementWithCategoryToDomain(db.Movement{
+		ID:               m.ID,
+		FinancialEventID: m.FinancialEventID,
+		AccountID:        m.AccountID,
+		SourceEntryID:    m.SourceEntryID,
+		MovementDate:     m.MovementDate,
+		AmountMinor:      m.AmountMinor,
+		Description:      m.Description,
+		Status:           m.Status,
+		MetadataJson:     m.MetadataJson,
+		CreatedAt:        m.CreatedAt,
+		UpdatedAt:        m.UpdatedAt,
+	}, m.EventType, m.CategoryID, m.CategoryName)
+}
+
+func mapDBMovementByAccountWithCategoryToDomain(m db.ListMovementsByAccountWithEventAndCategoryRow) domain.MovementWithCategory {
+	return movementWithCategoryToDomain(db.Movement{
+		ID:               m.ID,
+		FinancialEventID: m.FinancialEventID,
+		AccountID:        m.AccountID,
+		SourceEntryID:    m.SourceEntryID,
+		MovementDate:     m.MovementDate,
+		AmountMinor:      m.AmountMinor,
+		Description:      m.Description,
+		Status:           m.Status,
+		MetadataJson:     m.MetadataJson,
+		CreatedAt:        m.CreatedAt,
+		UpdatedAt:        m.UpdatedAt,
+	}, m.EventType, m.CategoryID, m.CategoryName)
 }
 
 func mapDBMovementComponentToDomain(c db.MovementComponent) domain.MovementComponent {

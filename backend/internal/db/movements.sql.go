@@ -183,6 +183,73 @@ func (q *Queries) ListMovementsByAccount(ctx context.Context, accountID string) 
 	return items, nil
 }
 
+const listMovementsByAccountWithEventAndCategory = `-- name: ListMovementsByAccountWithEventAndCategory :many
+SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at,
+       fe.event_type,
+       fe.category_id,
+       c.name AS category_name
+FROM movements m
+JOIN financial_events fe ON fe.id = m.financial_event_id
+LEFT JOIN categories c ON c.id = fe.category_id
+WHERE m.account_id = ?
+ORDER BY m.created_at DESC
+`
+
+type ListMovementsByAccountWithEventAndCategoryRow struct {
+	ID               string         `json:"id"`
+	FinancialEventID string         `json:"financial_event_id"`
+	AccountID        string         `json:"account_id"`
+	SourceEntryID    sql.NullString `json:"source_entry_id"`
+	MovementDate     string         `json:"movement_date"`
+	AmountMinor      int64          `json:"amount_minor"`
+	Description      sql.NullString `json:"description"`
+	Status           string         `json:"status"`
+	MetadataJson     sql.NullString `json:"metadata_json"`
+	CreatedAt        string         `json:"created_at"`
+	UpdatedAt        string         `json:"updated_at"`
+	EventType        string         `json:"event_type"`
+	CategoryID       sql.NullString `json:"category_id"`
+	CategoryName     sql.NullString `json:"category_name"`
+}
+
+func (q *Queries) ListMovementsByAccountWithEventAndCategory(ctx context.Context, accountID string) ([]ListMovementsByAccountWithEventAndCategoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, listMovementsByAccountWithEventAndCategory, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListMovementsByAccountWithEventAndCategoryRow
+	for rows.Next() {
+		var i ListMovementsByAccountWithEventAndCategoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FinancialEventID,
+			&i.AccountID,
+			&i.SourceEntryID,
+			&i.MovementDate,
+			&i.AmountMinor,
+			&i.Description,
+			&i.Status,
+			&i.MetadataJson,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.EventType,
+			&i.CategoryID,
+			&i.CategoryName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMovementsByCategory = `-- name: ListMovementsByCategory :many
 SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at
 FROM movements m
@@ -212,6 +279,74 @@ func (q *Queries) ListMovementsByCategory(ctx context.Context, categoryID sql.Nu
 			&i.MetadataJson,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMovementsWithEventAndCategory = `-- name: ListMovementsWithEventAndCategory :many
+SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at,
+       fe.event_type,
+       fe.category_id,
+       c.name AS category_name
+FROM movements m
+JOIN financial_events fe ON fe.id = m.financial_event_id
+LEFT JOIN categories c ON c.id = fe.category_id
+ORDER BY m.created_at DESC
+`
+
+type ListMovementsWithEventAndCategoryRow struct {
+	ID               string         `json:"id"`
+	FinancialEventID string         `json:"financial_event_id"`
+	AccountID        string         `json:"account_id"`
+	SourceEntryID    sql.NullString `json:"source_entry_id"`
+	MovementDate     string         `json:"movement_date"`
+	AmountMinor      int64          `json:"amount_minor"`
+	Description      sql.NullString `json:"description"`
+	Status           string         `json:"status"`
+	MetadataJson     sql.NullString `json:"metadata_json"`
+	CreatedAt        string         `json:"created_at"`
+	UpdatedAt        string         `json:"updated_at"`
+	EventType        string         `json:"event_type"`
+	CategoryID       sql.NullString `json:"category_id"`
+	CategoryName     sql.NullString `json:"category_name"`
+}
+
+// Every movement listing needs the category of its financial event: one
+// join replaces the two per-row lookups the handlers used to do.
+func (q *Queries) ListMovementsWithEventAndCategory(ctx context.Context) ([]ListMovementsWithEventAndCategoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, listMovementsWithEventAndCategory)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListMovementsWithEventAndCategoryRow
+	for rows.Next() {
+		var i ListMovementsWithEventAndCategoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FinancialEventID,
+			&i.AccountID,
+			&i.SourceEntryID,
+			&i.MovementDate,
+			&i.AmountMinor,
+			&i.Description,
+			&i.Status,
+			&i.MetadataJson,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.EventType,
+			&i.CategoryID,
+			&i.CategoryName,
 		); err != nil {
 			return nil, err
 		}

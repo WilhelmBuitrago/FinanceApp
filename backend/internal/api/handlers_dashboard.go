@@ -7,7 +7,7 @@ import (
 )
 
 func (rt *router) recentMovements(w http.ResponseWriter, r *http.Request) {
-	movs, err := rt.movementRepo.List(r.Context())
+	movs, err := rt.movementRepo.ListWithCategory(r.Context())
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "failed to list movements")
 		return
@@ -21,14 +21,7 @@ func (rt *router) recentMovements(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]movementDTO, 0, len(movs))
 	for _, m := range movs {
-		fe, _ := rt.eventRepo.GetByID(r.Context(), m.FinancialEventID)
-		catName := ""
-		if fe.CategoryID != nil {
-			if cat, err := rt.categoryRepo.GetByID(r.Context(), *fe.CategoryID); err == nil {
-				catName = cat.Name
-			}
-		}
-		out = append(out, movementDTO{Movement: m, CategoryName: catName})
+		out = append(out, movementDTO{Movement: m.Movement, CategoryName: m.CategoryName})
 	}
 	w.Header().Set("Content-Type", "application/json")
 	encodeJSON(w, out)
@@ -82,13 +75,12 @@ func (rt *router) cashFlow(w http.ResponseWriter, r *http.Request) {
 func (rt *router) incomeDistribution(w http.ResponseWriter, r *http.Request) {
 	from := r.URL.Query().Get("from")
 	to := r.URL.Query().Get("to")
-	movements, err := rt.movementRepo.List(r.Context())
+	movements, err := rt.movementRepo.ListWithCategory(r.Context())
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "failed to list movements")
 		return
 	}
 	dist := make(map[string]int64)
-	catNames := make(map[string]string)
 	for _, m := range movements {
 		if from != "" && m.MovementDate < from {
 			continue
@@ -102,28 +94,14 @@ func (rt *router) incomeDistribution(w http.ResponseWriter, r *http.Request) {
 		if m.FinancialEventID == "" {
 			continue
 		}
-		evt, err := rt.eventRepo.GetByID(r.Context(), m.FinancialEventID)
-		if err != nil {
+		if m.EventType != "INCOME" {
 			continue
 		}
-		if evt.EventType != "INCOME" {
-			continue
+		catName := "Sin categoría"
+		if m.CategoryID != "" && m.CategoryName != "" {
+			catName = m.CategoryName
 		}
-		var catName string
-		if evt.CategoryID == nil || *evt.CategoryID == "" {
-			catName = "Sin categoría"
-		} else {
-			catID := *evt.CategoryID
-			cat, err := rt.categoryRepo.GetByID(r.Context(), catID)
-			if err != nil {
-				catName = "Sin categoría"
-			} else {
-				catName = cat.Name
-			}
-		}
-		key := catName
-		dist[key] += m.AmountMinor
-		catNames[key] = catName
+		dist[catName] += m.AmountMinor
 	}
 	var out []map[string]interface{}
 	for k, v := range dist {
@@ -136,7 +114,7 @@ func (rt *router) incomeDistribution(w http.ResponseWriter, r *http.Request) {
 func (rt *router) expenseDistribution(w http.ResponseWriter, r *http.Request) {
 	from := r.URL.Query().Get("from")
 	to := r.URL.Query().Get("to")
-	movements, err := rt.movementRepo.List(r.Context())
+	movements, err := rt.movementRepo.ListWithCategory(r.Context())
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "failed to list movements")
 		return
@@ -155,27 +133,14 @@ func (rt *router) expenseDistribution(w http.ResponseWriter, r *http.Request) {
 		if m.FinancialEventID == "" {
 			continue
 		}
-		evt, err := rt.eventRepo.GetByID(r.Context(), m.FinancialEventID)
-		if err != nil {
+		if m.EventType != "EXPENSE" && m.EventType != "DEBIT_PURCHASE" && m.EventType != "CREDIT_PAYMENT" {
 			continue
 		}
-		if evt.EventType != "EXPENSE" && evt.EventType != "DEBIT_PURCHASE" && evt.EventType != "CREDIT_PAYMENT" {
-			continue
+		catName := "Sin categoría"
+		if m.CategoryID != "" && m.CategoryName != "" {
+			catName = m.CategoryName
 		}
-		var catName string
-		if evt.CategoryID == nil || *evt.CategoryID == "" {
-			catName = "Sin categoría"
-		} else {
-			catID := *evt.CategoryID
-			cat, err := rt.categoryRepo.GetByID(r.Context(), catID)
-			if err != nil {
-				catName = "Sin categoría"
-			} else {
-				catName = cat.Name
-			}
-		}
-		key := catName
-		dist[key] += -m.AmountMinor
+		dist[catName] += -m.AmountMinor
 	}
 	var out []map[string]interface{}
 	for k, v := range dist {

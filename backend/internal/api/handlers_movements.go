@@ -18,7 +18,7 @@ type movementWriter interface {
 }
 
 func (rt *router) listMovements(w http.ResponseWriter, r *http.Request) {
-	movements, err := rt.movementRepo.List(r.Context())
+	movements, err := rt.movementRepo.ListWithCategory(r.Context())
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "failed to list movements")
 		return
@@ -30,16 +30,7 @@ func (rt *router) listMovements(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]movementDTO, 0, len(movements))
 	for _, m := range movements {
-		fe, _ := rt.eventRepo.GetByID(r.Context(), m.FinancialEventID)
-		catName := ""
-		catID := ""
-		if fe.CategoryID != nil {
-			catID = *fe.CategoryID
-			if cat, err := rt.categoryRepo.GetByID(r.Context(), *fe.CategoryID); err == nil {
-				catName = cat.Name
-			}
-		}
-		out = append(out, movementDTO{Movement: m, CategoryName: catName, CategoryID: catID})
+		out = append(out, movementDTO{Movement: m.Movement, CategoryName: m.CategoryName, CategoryID: m.CategoryID})
 	}
 	w.Header().Set("Content-Type", "application/json")
 	encodeJSON(w, out)

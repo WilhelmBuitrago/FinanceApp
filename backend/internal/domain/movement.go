@@ -24,3 +24,13 @@ type MovementComponent struct {
 	CreatedAt     string
 	UpdatedAt     string
 }
+
+// MovementWithCategory is a movement plus the category of its financial
+// event, hydrated by a single join. Every movement listing needs both,
+// and fetching them per row cost two queries per movement.
+type MovementWithCategory struct {
+	Movement
+	CategoryID   string
+	CategoryName string
+	EventType    string
+}

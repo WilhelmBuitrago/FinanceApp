@@ -21,6 +21,15 @@ func fromNullString(ns sql.NullString) *string {
 	return &v
 }
 
+// fromNullStringValue reads a nullable column as a plain string: the
+// hydrated movement rows branch on an empty value for "no category".
+func fromNullStringValue(ns sql.NullString) string {
+	if ns.Valid {
+		return ns.String
+	}
+	return ""
+}
+
 func toNullInt64(i *int64) sql.NullInt64 {
 	if i == nil {
 		return sql.NullInt64{}

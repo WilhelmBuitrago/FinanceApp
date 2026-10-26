@@ -46,7 +46,11 @@ type Querier interface {
 	ListInstallmentsByPlan(ctx context.Context, installmentPlanID string) ([]Installment, error)
 	ListMovementsAll(ctx context.Context) ([]Movement, error)
 	ListMovementsByAccount(ctx context.Context, accountID string) ([]Movement, error)
+	ListMovementsByAccountWithEventAndCategory(ctx context.Context, accountID string) ([]ListMovementsByAccountWithEventAndCategoryRow, error)
 	ListMovementsByCategory(ctx context.Context, categoryID sql.NullString) ([]Movement, error)
+	// Every movement listing needs the category of its financial event: one
+	// join replaces the two per-row lookups the handlers used to do.
+	ListMovementsWithEventAndCategory(ctx context.Context) ([]ListMovementsWithEventAndCategoryRow, error)
 	ListPendingReviewItems(ctx context.Context) ([]ReviewItem, error)
 	ListRelationsByEvent(ctx context.Context, arg ListRelationsByEventParams) ([]EventRelation, error)
 	ListRelationsByMovement(ctx context.Context, arg ListRelationsByMovementParams) ([]MovementRelation, error)
