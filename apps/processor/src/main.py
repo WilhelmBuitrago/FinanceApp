@@ -43,7 +43,10 @@ def parse_with_retry(pdf_path, artifacts_base, processing_id, inspection, extrac
     extraction_dir = os.path.join(artifacts_base, processing_id, 'extraction')
     if os.path.isdir(extraction_dir):
         for stale in os.listdir(extraction_dir):
-            if stale.endswith('.txt'):
+            # The interrupted writes leave a .tmp behind (an atomic write
+            # is a tmp then a move): it is not a page, and leaving it
+            # would accumulate garbage across retries.
+            if stale.endswith(('.txt', '.tmp')):
                 os.remove(os.path.join(extraction_dir, stale))
     extraction = extractor(pdf_path)
     write_artifacts(os.path.join(artifacts_base, processing_id), inspection, extraction)
