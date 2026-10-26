@@ -2,12 +2,14 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"financeapp/backend/internal/log"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 type ProcessorResult struct {
@@ -17,7 +19,14 @@ type ProcessorResult struct {
 	Status           string `json:"status"`
 }
 
-func RunProcessor(pdfPath string, accountID string) (*ProcessorResult, error) {
+// ProcessorTimeout bounds one processor run. The interpreter runs as a
+// child process: without a bound, a hung one hangs the upload request
+// forever and the job sits in PROCESSING until the app is restarted.
+// Preparing an environment takes about a minute; this leaves ample
+// headroom. Exported so tests can shrink it.
+var ProcessorTimeout = 5 * time.Minute
+
+func RunProcessor(ctx context.Context, pdfPath string, accountID string) (*ProcessorResult, error) {
 	log.Info(fmt.Sprintf("RunProcessor start pdf=%s account=%s", pdfPath, accountID))
 	pythonPath := os.Getenv("PROCESSOR_PYTHON")
 	if pythonPath == "" {
@@ -28,7 +37,9 @@ func RunProcessor(pdfPath string, accountID string) (*ProcessorResult, error) {
 		return nil, fmt.Errorf("PROCESSOR_SCRIPT not set: the desktop shell passes the processor entrypoint")
 	}
 	log.Info(fmt.Sprintf("Processor python=%s script=%s", pythonPath, scriptPath))
-	cmd := exec.Command(pythonPath, scriptPath, pdfPath)
+	runCtx, cancel := context.WithTimeout(ctx, ProcessorTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(runCtx, pythonPath, scriptPath, pdfPath)
 	cmd.Env = os.Environ()
 	// Ensure artifacts path is available to Python via env
 	if artifacts := os.Getenv("ARTIFACTS_PATH"); artifacts != "" {
@@ -42,6 +53,9 @@ func RunProcessor(pdfPath string, accountID string) (*ProcessorResult, error) {
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
+		if runCtx.Err() != nil {
+			return nil, fmt.Errorf("processor timed out after %s: %w", ProcessorTimeout, runCtx.Err())
+		}
 		log.Error(fmt.Sprintf("processor execution failed: %v stderr=%s", err, stderr.String()))
 		return nil, fmt.Errorf("processor execution failed: %w, stderr: %s", err, stderr.String())
 	}

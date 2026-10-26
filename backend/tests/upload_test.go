@@ -108,7 +108,7 @@ const parsedFixture = `{
 // stubProcessorRunner writes the parsed fixture to the artifacts directory,
 // mimicking what the real processor leaves on disk.
 func stubProcessorRunner(processingID string) api.ProcessorRunnerFunc {
-	return func(pdfPath string, accountID string) (*api.ProcessorResult, error) {
+	return func(ctx context.Context, pdfPath string, accountID string) (*api.ProcessorResult, error) {
 		base := os.Getenv("ARTIFACTS_PATH")
 		dir := filepath.Join(base, processingID)
 		if err := os.MkdirAll(dir, 0755); err != nil {

@@ -148,7 +148,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	if run == nil {
 		run = RunProcessor
 	}
-	res, err := run(dstPath, accountID)
+	res, err := run(r.Context(), dstPath, accountID)
 	if err != nil {
 		finished := time.Now().UTC().Format(time.RFC3339)
 		job.Status = "ERROR"

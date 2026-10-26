@@ -33,8 +33,9 @@ type ImportRunner interface {
 	Import(ctx context.Context, jobID string) error
 }
 
-// ProcessorRunnerFunc runs the Python processor over a saved PDF.
-type ProcessorRunnerFunc func(pdfPath, accountID string) (*ProcessorResult, error)
+// ProcessorRunnerFunc runs the Python processor over a saved PDF. It
+// carries the request context so a cancelled upload cancels the run.
+type ProcessorRunnerFunc func(ctx context.Context, pdfPath, accountID string) (*ProcessorResult, error)
 
 // NewRouter wires every route to its handler. Health and upload stay here;
 // the rest live in the handlers_*.go files by domain.
