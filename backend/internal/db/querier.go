@@ -26,6 +26,11 @@ type Querier interface {
 	DeleteCategory(ctx context.Context, id string) error
 	DeleteMovement(ctx context.Context, id string) error
 	DiscardReviewItem(ctx context.Context, arg DiscardReviewItemParams) (int64, error)
+	// The manual-entry identity: same account, date and amount, with a
+	// description that matches the row or is empty on the request's side.
+	// One query replaces loading the whole movements table into the handler
+	// to hunt a duplicate.
+	FindMovementsByNaturalKey(ctx context.Context, arg FindMovementsByNaturalKeyParams) ([]Movement, error)
 	GetAccount(ctx context.Context, id string) (Account, error)
 	GetCategory(ctx context.Context, id string) (Category, error)
 	GetDocument(ctx context.Context, id string) (Document, error)

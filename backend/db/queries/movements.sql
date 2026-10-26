@@ -56,3 +56,16 @@ ORDER BY m.created_at DESC;
 
 -- name: DeleteMovement :exec
 DELETE FROM movements WHERE id = ?;
+
+-- name: FindMovementsByNaturalKey :many
+-- The manual-entry identity: same account, date and amount, with a
+-- description that matches the row or is empty on the request's side.
+-- One query replaces loading the whole movements table into the handler
+-- to hunt a duplicate.
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at
+FROM movements
+WHERE account_id = sqlc.arg(account_id)
+  AND movement_date = sqlc.arg(movement_date)
+  AND amount_minor = sqlc.arg(amount_minor)
+  AND (description IS NULL OR description = sqlc.arg(request_description) OR sqlc.arg(request_description) = '')
+ORDER BY created_at DESC;

@@ -189,6 +189,29 @@ func (r *MovementRepository) ListByCategory(ctx context.Context, categoryID stri
 	return out, nil
 }
 
+// FindByNaturalKey returns the movements that collide with a manual entry
+// on account, date and amount, with a description that is empty on either
+// side. One indexed query replaces loading the entire movements table.
+func (r *MovementRepository) FindByNaturalKey(ctx context.Context, accountID, date string, amountMinor int64, description string) ([]domain.Movement, error) {
+	if r.db.Querier == nil {
+		return nil, ErrUnavailable
+	}
+	rows, err := r.db.Querier.FindMovementsByNaturalKey(ctx, db.FindMovementsByNaturalKeyParams{
+		AccountID:          accountID,
+		MovementDate:       date,
+		AmountMinor:        amountMinor,
+		RequestDescription: toNullString(&description),
+	})
+	if err != nil {
+		return nil, translateError(err)
+	}
+	out := make([]domain.Movement, 0, len(rows))
+	for _, m := range rows {
+		out = append(out, mapDBMovementToDomain(m))
+	}
+	return out, nil
+}
+
 func (r *MovementRepository) Delete(ctx context.Context, id string) error {
 	if r.db.Querier == nil {
 		return ErrUnavailable

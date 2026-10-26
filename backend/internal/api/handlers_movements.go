@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"financeapp/backend/internal/domain"
 	"financeapp/backend/internal/log"
@@ -15,6 +14,7 @@ import (
 // import app (app imports api), so the transaction owner arrives injected.
 type movementWriter interface {
 	CreateWithEvent(ctx context.Context, fe domain.FinancialEvent, mv domain.Movement, components []domain.MovementComponent) (domain.Movement, error)
+	CreateManual(ctx context.Context, cmd domain.ManualMovementCommand) (domain.ManualMovementOutcome, error)
 }
 
 func (rt *router) listMovements(w http.ResponseWriter, r *http.Request) {
@@ -69,78 +69,36 @@ func (rt *router) createMovement(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "type must be INCOME, EXPENSE or TRANSFER")
 		return
 	}
-	if !force {
-		existing, err := rt.movementRepo.List(r.Context())
-		if err != nil {
-			log.Info(fmt.Sprintf("[MOVEMENT CREATE] duplicate check failed: %v", err))
-			writeJSONError(w, http.StatusInternalServerError, "failed to check duplicates")
-			return
-		}
-		for _, m := range existing {
-			if m.AccountID == req.AccountID && m.MovementDate == req.Date && m.AmountMinor == req.AmountMinor && (m.Description == nil || req.Description == "" || *m.Description == req.Description) {
-				log.Info(fmt.Sprintf("[MOVEMENT CREATE] Duplicate found %s", m.ID))
-				// Park the duplicate in the unified review queue so the human
-				// decides (persisted, no localStorage).
-				itemID, parkErr := rt.reviews.Submit(r.Context(), "DUPLICATE", map[string]any{
-					"account_id":    req.AccountID,
-					"amount_minor":  req.AmountMinor,
-					"date":          req.Date,
-					"type":          req.Type,
-					"description":   req.Description,
-					"collides_with": m.ID,
-				}, nil)
-				if parkErr != nil {
-					log.Info(fmt.Sprintf("[MOVEMENT CREATE] failed to park duplicate: %v", parkErr))
-				}
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusConflict)
-				encodeJSON(w, map[string]string{
-					"error":          "duplicate",
-					"redirect":       "/review",
-					"review_item_id": itemID,
-				})
-				return
-			}
-		}
-	}
-	now := timeNowUTC()
-	feID := fmt.Sprintf("fe_manual_%d", time.Now().UnixNano())
-	var catID *string
-	if req.CategoryID != "" {
-		catID = &req.CategoryID
-	}
-	fe := domain.FinancialEvent{
-		ID:                 feID,
-		EventType:          req.Type,
-		EventDate:          &req.Date,
-		Status:             "ACTIVE",
-		VerificationStatus: "UNVERIFIED",
-		Description:        &req.Description,
-		CategoryID:         catID,
-		CreatedAt:          now,
-		UpdatedAt:          now,
-	}
-	mvID := fmt.Sprintf("mv_manual_%d", time.Now().UnixNano())
-	mv := domain.Movement{
-		ID:               mvID,
-		FinancialEventID: feID,
-		AccountID:        req.AccountID,
-		MovementDate:     req.Date,
-		AmountMinor:      req.AmountMinor,
-		Description:      &req.Description,
-		Status:           "ACTIVE",
-		CreatedAt:        now,
-		UpdatedAt:        now,
-	}
-	if _, err := rt.movements.CreateWithEvent(r.Context(), fe, mv, []domain.MovementComponent{}); err != nil {
+
+	// Duplicate detection, review parking and the atomic write are the
+	// service's policy; this handler maps the outcome to HTTP.
+	outcome, err := rt.movements.CreateManual(r.Context(), domain.ManualMovementCommand{
+		AccountID:   req.AccountID,
+		AmountMinor: req.AmountMinor,
+		Type:        req.Type,
+		ToAccountID: req.ToAccountID,
+		Description: req.Description,
+		Date:        req.Date,
+		CategoryID:  req.CategoryID,
+		Force:       force,
+	})
+	if err != nil {
 		log.Info(fmt.Sprintf("[MOVEMENT CREATE] transactional create failed: %v", err))
 		writeRepoError(w, err)
 		return
 	}
-	log.Info(fmt.Sprintf("[MOVEMENT CREATE] Created movement %s", mvID))
+	if outcome.Duplicate {
+		writeJSONObject(w, http.StatusConflict, map[string]string{
+			"error":          "duplicate",
+			"redirect":       "/review",
+			"review_item_id": outcome.ParkedReviewID,
+		})
+		return
+	}
+	log.Info(fmt.Sprintf("[MOVEMENT CREATE] Created movement %s", outcome.ID))
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	encodeJSON(w, map[string]string{"id": mvID})
+	encodeJSON(w, map[string]string{"id": outcome.ID})
 }
 
 // setMovementCategory moves the category to the financial event behind the

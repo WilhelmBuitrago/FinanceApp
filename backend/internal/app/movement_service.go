@@ -15,11 +15,12 @@ import (
 // manual creation path (and is the foundation for credit card breakdowns,
 // where a bad component must never leave a half-written movement behind).
 type MovementService struct {
-	db *sql.DB
+	db         *sql.DB
+	duplicates DuplicateSubmitter
 }
 
-func NewMovementService(db *sql.DB) *MovementService {
-	return &MovementService{db: db}
+func NewMovementService(db *sql.DB, duplicates DuplicateSubmitter) *MovementService {
+	return &MovementService{db: db, duplicates: duplicates}
 }
 
 // CreateWithEvent inserts a financial event, its movement and the movement's

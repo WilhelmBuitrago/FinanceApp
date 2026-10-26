@@ -34,3 +34,25 @@ type MovementWithCategory struct {
 	CategoryName string
 	EventType    string
 }
+
+// ManualMovementCommand is the manual-creation input the API layer decoded
+// and validated, handed to the service that owns the policy (duplicate
+// detection, review parking, the atomic write).
+type ManualMovementCommand struct {
+	AccountID   string
+	AmountMinor int64
+	Type        string
+	ToAccountID string
+	Description string
+	Date        string
+	CategoryID  string
+	Force       bool
+}
+
+// ManualMovementOutcome is the result: either the created movement's id,
+// or the collision parked in the review queue for the human to decide.
+type ManualMovementOutcome struct {
+	ID             string
+	Duplicate      bool
+	ParkedReviewID string
+}

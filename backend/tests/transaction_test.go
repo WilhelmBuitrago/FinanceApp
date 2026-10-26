@@ -29,7 +29,7 @@ func TestMovementService_RollbackOnComponentFailure(t *testing.T) {
 		{ID: "comp-bad", ComponentType: "INVALID_TYPE", AmountMinor: 5000, CreatedAt: now, UpdatedAt: now},
 	}
 
-	service := app.NewMovementService(p.DB)
+	service := app.NewMovementService(p.DB, nil)
 	if _, err := service.CreateWithEvent(ctx, fe, mv, badComp); err == nil {
 		t.Fatal("expected error for invalid component type")
 	}
@@ -62,7 +62,7 @@ func TestMovementService_CreatesEventMovementAndComponents(t *testing.T) {
 		{ID: "ok-c2", ComponentType: "INSURANCE", AmountMinor: 5000, CreatedAt: now, UpdatedAt: now},
 	}
 
-	service := app.NewMovementService(p.DB)
+	service := app.NewMovementService(p.DB, nil)
 	created, err := service.CreateWithEvent(ctx, fe, mv, comps)
 	if err != nil {
 		t.Fatalf("create: %v", err)

@@ -30,7 +30,7 @@ func New(cfg config.Config, db *sql.DB, persistence *repositories.Persistence) *
 		DB:            db,
 		Persistence:   persistence,
 		ImportJobRepo: persistence.ImportJobRepo,
-		Movements:     NewMovementService(db),
+		Movements:     NewMovementService(db, NewReviewService(db)),
 		Reviews:       NewReviewService(db),
 		DocRepo:       persistence.DocumentRepo,
 		ImportService: NewImportService(cfg, persistence, persistence.ImportJobRepo),

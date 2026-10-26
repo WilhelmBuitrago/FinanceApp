@@ -36,7 +36,7 @@ func newTestRouter(t *testing.T) (http.Handler, *sql.DB) {
 		repositories.NewFinancialEventRepository(repoDB),
 		repositories.NewSourceEntryRepository(repoDB),
 		repositories.NewCategoryRepository(repoDB),
-		app.NewMovementService(sqlDB),
+		app.NewMovementService(sqlDB, app.NewReviewService(sqlDB)),
 		app.NewReviewService(sqlDB),
 		nil,
 		nil)

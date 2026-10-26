@@ -82,6 +82,67 @@ func (q *Queries) DeleteMovement(ctx context.Context, id string) error {
 	return err
 }
 
+const findMovementsByNaturalKey = `-- name: FindMovementsByNaturalKey :many
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at
+FROM movements
+WHERE account_id = ?1
+  AND movement_date = ?2
+  AND amount_minor = ?3
+  AND (description IS NULL OR description = ?4 OR ?4 = '')
+ORDER BY created_at DESC
+`
+
+type FindMovementsByNaturalKeyParams struct {
+	AccountID          string         `json:"account_id"`
+	MovementDate       string         `json:"movement_date"`
+	AmountMinor        int64          `json:"amount_minor"`
+	RequestDescription sql.NullString `json:"request_description"`
+}
+
+// The manual-entry identity: same account, date and amount, with a
+// description that matches the row or is empty on the request's side.
+// One query replaces loading the whole movements table into the handler
+// to hunt a duplicate.
+func (q *Queries) FindMovementsByNaturalKey(ctx context.Context, arg FindMovementsByNaturalKeyParams) ([]Movement, error) {
+	rows, err := q.db.QueryContext(ctx, findMovementsByNaturalKey,
+		arg.AccountID,
+		arg.MovementDate,
+		arg.AmountMinor,
+		arg.RequestDescription,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Movement
+	for rows.Next() {
+		var i Movement
+		if err := rows.Scan(
+			&i.ID,
+			&i.FinancialEventID,
+			&i.AccountID,
+			&i.SourceEntryID,
+			&i.MovementDate,
+			&i.AmountMinor,
+			&i.Description,
+			&i.Status,
+			&i.MetadataJson,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getMovement = `-- name: GetMovement :one
 SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at FROM movements WHERE id = ?
 `
