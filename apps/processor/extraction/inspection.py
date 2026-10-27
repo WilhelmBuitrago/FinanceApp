@@ -1,7 +1,7 @@
 import hashlib
 import os
 
-from extraction._fitz import _get_fitz
+from extraction._fitz import open_pdf
 
 
 def sha256_file(path):
@@ -54,8 +54,7 @@ def inspect_document(doc, path):
 
 
 def inspect_pdf(path):
-    fitz = _get_fitz()
-    doc = fitz.open(path)
+    doc = open_pdf(path)
     try:
         return inspect_document(doc, path)
     finally:

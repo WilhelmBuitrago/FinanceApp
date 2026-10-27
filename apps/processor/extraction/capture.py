@@ -7,15 +7,14 @@ between both and closes it when done. The individual functions remain for
 callers that need only one half (the silent retry re-extracts alone).
 """
 
-from extraction._fitz import _get_fitz
+from extraction._fitz import open_pdf
 from extraction.extractor import extract_pages
 from extraction.inspection import inspect_document
 
 
 def inspect_and_extract(path):
     """Inspect and extract in a single pass over the statement."""
-    fitz = _get_fitz()
-    doc = fitz.open(path)
+    doc = open_pdf(path)
     try:
         inspection = inspect_document(doc, path)
         extraction = extract_pages(doc)

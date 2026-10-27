@@ -61,11 +61,16 @@ def test_normalize_amount_rejects_unparseable_values():
         raise AssertionError(f"expected ValueError for amount {bad!r}")
 
 
-def test_normalize_amount_whitespace_is_a_known_gap():
-    # Whitespace-only currently normalizes to 0: the empty check runs before
-    # the strip, so '   ' slips through as a zero amount. Pinned here so the
-    # gap cannot change silently; the real fix belongs in normalize_amount.
-    assert normalize_amount('   ') == 0
+def test_normalize_amount_whitespace_raises():
+    # Whitespace-only used to normalize to 0: the empty check ran before
+    # the strip, so '   ' slipped through as a zero amount. A line with no
+    # digits is not an amount; the parser parks nothing silently.
+    for bad in ('', '   ', '\t', '$'):
+        try:
+            normalize_amount(bad)
+        except ValueError:
+            continue
+        raise AssertionError(f"expected ValueError for amount {bad!r}")
 
 
 def test_identical_occurrences_stay_independent():
@@ -123,7 +128,7 @@ if __name__ == "__main__":
     test_normalize_date_requires_a_parseable_period()
     test_normalize_amount_colombian_format()
     test_normalize_amount_rejects_unparseable_values()
-    test_normalize_amount_whitespace_is_a_known_gap()
+    test_normalize_amount_whitespace_raises()
     test_identical_occurrences_stay_independent()
     test_processing_id_is_not_financial_identity()
     test_review_item_preserves_the_raw_for_humans()

@@ -89,6 +89,11 @@ def normalize_amount(amount_original: str) -> int:
     # Colombian format: dots as thousands, comma as decimal
     # Remove thousands separators
     s_no_thousands = s_clean.replace('.', '')
+    # A line with no digits left is not an amount: the empty check runs on
+    # the raw string, so a whitespace-only value used to reach the int
+    # fallback and normalize to zero — a lie the pipeline would persist.
+    if not s_no_thousands:
+        raise ValueError("No digits in amount: " + repr(amount_original))
     # Replace decimal comma with dot for parsing
     if ',' in s_no_thousands:
         int_part, _dec_part = s_no_thousands.split(',', 1)
