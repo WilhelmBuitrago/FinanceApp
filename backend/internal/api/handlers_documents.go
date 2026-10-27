@@ -7,7 +7,7 @@ import (
 // Read-only traceability chain: Movement -> Financial Event -> Source Entry -> Document
 
 func (rt *router) listDocuments(w http.ResponseWriter, r *http.Request) {
-	documents, err := rt.docRepo.List(r.Context())
+	documents, err := rt.docRepo.List(r.Context(), listLimit(r))
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "failed to list documents")
 		return
@@ -17,7 +17,7 @@ func (rt *router) listDocuments(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *router) recentDocuments(w http.ResponseWriter, r *http.Request) {
-	docs, err := rt.docRepo.List(r.Context())
+	docs, err := rt.docRepo.List(r.Context(), listLimit(r))
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "failed to list documents")
 		return

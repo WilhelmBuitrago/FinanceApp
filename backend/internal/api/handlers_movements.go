@@ -27,7 +27,7 @@ type transferWriter interface {
 }
 
 func (rt *router) listMovements(w http.ResponseWriter, r *http.Request) {
-	movements, err := rt.movementRepo.ListWithCategory(r.Context())
+	movements, err := rt.movementRepo.ListWithCategory(r.Context(), listLimit(r))
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "failed to list movements")
 		return

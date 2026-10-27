@@ -58,11 +58,14 @@ func (r *DocumentRepository) GetByID(ctx context.Context, id string) (domain.Doc
 	return mapDBDocumentToDomain(dbDoc), nil
 }
 
-func (r *DocumentRepository) ListByAccount(ctx context.Context, accountID string) ([]domain.Document, error) {
+func (r *DocumentRepository) ListByAccount(ctx context.Context, accountID string, limit int) ([]domain.Document, error) {
 	if r.db.Querier == nil {
 		return nil, ErrUnavailable
 	}
-	dbDocs, err := r.db.Querier.ListDocumentsByAccount(ctx, toNullString(&accountID))
+	dbDocs, err := r.db.Querier.ListDocumentsByAccount(ctx, db.ListDocumentsByAccountParams{
+		AccountID: toNullString(&accountID),
+		Limit:     int64(limit),
+	})
 	if err != nil {
 		return nil, translateError(err)
 	}
@@ -73,11 +76,11 @@ func (r *DocumentRepository) ListByAccount(ctx context.Context, accountID string
 	return out, nil
 }
 
-func (r *DocumentRepository) List(ctx context.Context) ([]domain.Document, error) {
+func (r *DocumentRepository) List(ctx context.Context, limit int) ([]domain.Document, error) {
 	if r.db.Querier == nil {
 		return nil, ErrUnavailable
 	}
-	dbDocs, err := r.db.Querier.ListDocumentsAll(ctx)
+	dbDocs, err := r.db.Querier.ListDocumentsAll(ctx, int64(limit))
 	if err != nil {
 		return nil, translateError(err)
 	}

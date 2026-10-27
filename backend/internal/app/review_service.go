@@ -68,9 +68,9 @@ func (s *ReviewService) Submit(ctx context.Context, kind string, payload any, so
 }
 
 // ListPending returns the queue for the UI.
-func (s *ReviewService) ListPending(ctx context.Context) ([]repositories.ReviewItemRecord, error) {
+func (s *ReviewService) ListPending(ctx context.Context, limit int) ([]repositories.ReviewItemRecord, error) {
 	repo := repositories.NewReviewItemsRepository(&repositories.DB{Querier: db.New(s.db)})
-	return repo.ListPending(ctx)
+	return repo.ListPending(ctx, limit)
 }
 
 // Resolve applies the human's decision: marks the item resolved first (a

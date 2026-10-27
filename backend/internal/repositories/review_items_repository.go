@@ -42,11 +42,11 @@ func (r *ReviewItemsRepository) Create(ctx context.Context, id string, kind stri
 	})
 }
 
-func (r *ReviewItemsRepository) ListPending(ctx context.Context) ([]ReviewItemRecord, error) {
+func (r *ReviewItemsRepository) ListPending(ctx context.Context, limit int) ([]ReviewItemRecord, error) {
 	if r.db.Querier == nil {
 		return nil, ErrUnavailable
 	}
-	rows, err := r.db.Querier.ListPendingReviewItems(ctx)
+	rows, err := r.db.Querier.ListPendingReviewItems(ctx, int64(limit))
 	if err != nil {
 		return nil, translateError(err)
 	}

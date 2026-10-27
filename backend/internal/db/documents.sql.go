@@ -112,11 +112,11 @@ func (q *Queries) GetDocument(ctx context.Context, id string) (Document, error) 
 }
 
 const listDocumentsAll = `-- name: ListDocumentsAll :many
-SELECT id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at FROM documents ORDER BY document_date DESC
+SELECT id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at FROM documents ORDER BY document_date DESC LIMIT ?1
 `
 
-func (q *Queries) ListDocumentsAll(ctx context.Context) ([]Document, error) {
-	rows, err := q.db.QueryContext(ctx, listDocumentsAll)
+func (q *Queries) ListDocumentsAll(ctx context.Context, limit int64) ([]Document, error) {
+	rows, err := q.db.QueryContext(ctx, listDocumentsAll, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -154,11 +154,16 @@ func (q *Queries) ListDocumentsAll(ctx context.Context) ([]Document, error) {
 }
 
 const listDocumentsByAccount = `-- name: ListDocumentsByAccount :many
-SELECT id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at FROM documents WHERE account_id = ? ORDER BY document_date DESC
+SELECT id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at FROM documents WHERE account_id = ? ORDER BY document_date DESC LIMIT ?2
 `
 
-func (q *Queries) ListDocumentsByAccount(ctx context.Context, accountID sql.NullString) ([]Document, error) {
-	rows, err := q.db.QueryContext(ctx, listDocumentsByAccount, accountID)
+type ListDocumentsByAccountParams struct {
+	AccountID sql.NullString `json:"account_id"`
+	Limit     int64          `json:"limit"`
+}
+
+func (q *Queries) ListDocumentsByAccount(ctx context.Context, arg ListDocumentsByAccountParams) ([]Document, error) {
+	rows, err := q.db.QueryContext(ctx, listDocumentsByAccount, arg.AccountID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}

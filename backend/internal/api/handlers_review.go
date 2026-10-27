@@ -14,7 +14,7 @@ import (
 // reviewResolver is satisfied by app.ReviewService. Same rule as
 // movementWriter: api cannot import app, so the transaction owner is injected.
 type reviewResolver interface {
-	ListPending(ctx context.Context) ([]repositories.ReviewItemRecord, error)
+	ListPending(ctx context.Context, limit int) ([]repositories.ReviewItemRecord, error)
 	Submit(ctx context.Context, kind string, payload any, sourceEntryID *string) (string, error)
 	Kind(ctx context.Context, itemID string) (string, error)
 	Resolve(ctx context.Context, itemID string, description string, amountMinor int64, date string, eventType string, accountID string, categoryID *string) (domain.Movement, error)
@@ -23,7 +23,7 @@ type reviewResolver interface {
 }
 
 func (rt *router) listReviewEntries(w http.ResponseWriter, r *http.Request) {
-	entries, err := rt.reviews.ListPending(r.Context())
+	entries, err := rt.reviews.ListPending(r.Context(), listLimit(r))
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "failed to load review queue")
 		return

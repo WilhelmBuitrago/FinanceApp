@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"financeapp/backend/internal/log"
 	"financeapp/backend/internal/repositories"
@@ -48,4 +49,30 @@ func writeRepoError(w http.ResponseWriter, err error) {
 	default:
 		writeJSONError(w, http.StatusInternalServerError, "internal error")
 	}
+}
+
+/* Listing limits. The queries used to load whole tables into memory on
+   every request: fine at hundreds of rows on one account, and the shape
+   of a stalled server the day the history grows. A listing now returns
+   at most defaultListLimit rows unless the caller asks for a specific
+   one (?limit=), clamped to a sane band. */
+
+const (
+	defaultListLimit = 500
+	maxListLimit     = 5000
+)
+
+// listLimit reads the listing's cap from the request, clamped to the
+// allowed band. A malformed or absent value silently falls back to the
+// default: the parameter shapes size, never admission.
+func listLimit(r *http.Request) int {
+	raw := r.URL.Query().Get("limit")
+	n, err := strconv.Atoi(raw)
+	if err != nil || n <= 0 {
+		return defaultListLimit
+	}
+	if n > maxListLimit {
+		return maxListLimit
+	}
+	return n
 }

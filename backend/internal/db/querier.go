@@ -45,21 +45,21 @@ type Querier interface {
 	ListAccountsAll(ctx context.Context) ([]Account, error)
 	ListCategories(ctx context.Context, status string) ([]Category, error)
 	ListComponentsByMovement(ctx context.Context, movementID string) ([]MovementComponent, error)
-	ListDocumentsAll(ctx context.Context) ([]Document, error)
-	ListDocumentsByAccount(ctx context.Context, accountID sql.NullString) ([]Document, error)
+	ListDocumentsAll(ctx context.Context, limit int64) ([]Document, error)
+	ListDocumentsByAccount(ctx context.Context, arg ListDocumentsByAccountParams) ([]Document, error)
 	ListFinancialEventsByType(ctx context.Context, eventType string) ([]FinancialEvent, error)
 	ListInstallmentPlansByAccount(ctx context.Context, accountID string) ([]InstallmentPlan, error)
 	ListInstallmentsByPlan(ctx context.Context, installmentPlanID string) ([]Installment, error)
-	ListMovementsAll(ctx context.Context) ([]Movement, error)
+	ListMovementsAll(ctx context.Context, limit int64) ([]Movement, error)
 	ListMovementsByAccount(ctx context.Context, accountID string) ([]Movement, error)
-	ListMovementsByAccountWithEventAndCategory(ctx context.Context, accountID string) ([]ListMovementsByAccountWithEventAndCategoryRow, error)
+	ListMovementsByAccountWithEventAndCategory(ctx context.Context, arg ListMovementsByAccountWithEventAndCategoryParams) ([]ListMovementsByAccountWithEventAndCategoryRow, error)
 	ListMovementsByCategory(ctx context.Context, categoryID sql.NullString) ([]Movement, error)
 	// Every movement listing needs the category of its financial event: one
 	// join replaces the two per-row lookups the handlers used to do. A
 	// transfer leg also carries the account of its counterpart, so the two
 	// legs of one transfer read as one decision.
-	ListMovementsWithEventAndCategory(ctx context.Context) ([]ListMovementsWithEventAndCategoryRow, error)
-	ListPendingReviewItems(ctx context.Context) ([]ReviewItem, error)
+	ListMovementsWithEventAndCategory(ctx context.Context, limit int64) ([]ListMovementsWithEventAndCategoryRow, error)
+	ListPendingReviewItems(ctx context.Context, limit int64) ([]ReviewItem, error)
 	ListRelationsByEvent(ctx context.Context, arg ListRelationsByEventParams) ([]EventRelation, error)
 	ListRelationsByMovement(ctx context.Context, arg ListRelationsByMovementParams) ([]MovementRelation, error)
 	ListReviewRequiredByDocument(ctx context.Context, documentID string) ([]SourceEntry, error)

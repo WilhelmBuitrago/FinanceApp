@@ -48,7 +48,7 @@ func newReviewTestDB(t *testing.T) (*sql.DB, *repositories.Persistence, string) 
 // pendingItemID returns the id of the only pending item of the given kind.
 func pendingItemID(t *testing.T, service *app.ReviewService, kind string) string {
 	t.Helper()
-	items, err := service.ListPending(context.Background())
+	items, err := service.ListPending(context.Background(), 500)
 	if err != nil {
 		t.Fatalf("list pending: %v", err)
 	}
@@ -117,7 +117,7 @@ func TestReviewService_ExtractionResolve_CreatesMovementAndResolves(t *testing.T
 	}
 
 	// No pending items left and the source entry is resolved too.
-	items, _ := service.ListPending(ctx)
+	items, _ := service.ListPending(ctx, 500)
 	if len(items) != 0 {
 		t.Fatalf("queue should be empty, got %d", len(items))
 	}

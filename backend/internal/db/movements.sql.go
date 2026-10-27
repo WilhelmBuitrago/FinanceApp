@@ -167,11 +167,11 @@ func (q *Queries) GetMovement(ctx context.Context, id string) (Movement, error) 
 }
 
 const listMovementsAll = `-- name: ListMovementsAll :many
-SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at FROM movements ORDER BY created_at DESC
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at FROM movements ORDER BY created_at DESC LIMIT ?1
 `
 
-func (q *Queries) ListMovementsAll(ctx context.Context) ([]Movement, error) {
-	rows, err := q.db.QueryContext(ctx, listMovementsAll)
+func (q *Queries) ListMovementsAll(ctx context.Context, limit int64) ([]Movement, error) {
+	rows, err := q.db.QueryContext(ctx, listMovementsAll, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -261,8 +261,13 @@ LEFT JOIN movements cm
        ON cm.id = CASE WHEN mr.movement_id_a = m.id THEN mr.movement_id_b ELSE mr.movement_id_a END
 LEFT JOIN accounts ca ON ca.id = cm.account_id
 WHERE m.account_id = ?
-ORDER BY m.created_at DESC
+ORDER BY m.created_at DESC LIMIT ?2
 `
+
+type ListMovementsByAccountWithEventAndCategoryParams struct {
+	AccountID string `json:"account_id"`
+	Limit     int64  `json:"limit"`
+}
 
 type ListMovementsByAccountWithEventAndCategoryRow struct {
 	ID                     string         `json:"id"`
@@ -283,8 +288,8 @@ type ListMovementsByAccountWithEventAndCategoryRow struct {
 	CounterpartAccountName sql.NullString `json:"counterpart_account_name"`
 }
 
-func (q *Queries) ListMovementsByAccountWithEventAndCategory(ctx context.Context, accountID string) ([]ListMovementsByAccountWithEventAndCategoryRow, error) {
-	rows, err := q.db.QueryContext(ctx, listMovementsByAccountWithEventAndCategory, accountID)
+func (q *Queries) ListMovementsByAccountWithEventAndCategory(ctx context.Context, arg ListMovementsByAccountWithEventAndCategoryParams) ([]ListMovementsByAccountWithEventAndCategoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, listMovementsByAccountWithEventAndCategory, arg.AccountID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -382,7 +387,7 @@ LEFT JOIN movement_relations mr
 LEFT JOIN movements cm
        ON cm.id = CASE WHEN mr.movement_id_a = m.id THEN mr.movement_id_b ELSE mr.movement_id_a END
 LEFT JOIN accounts ca ON ca.id = cm.account_id
-ORDER BY m.created_at DESC
+ORDER BY m.created_at DESC LIMIT ?1
 `
 
 type ListMovementsWithEventAndCategoryRow struct {
@@ -408,8 +413,8 @@ type ListMovementsWithEventAndCategoryRow struct {
 // join replaces the two per-row lookups the handlers used to do. A
 // transfer leg also carries the account of its counterpart, so the two
 // legs of one transfer read as one decision.
-func (q *Queries) ListMovementsWithEventAndCategory(ctx context.Context) ([]ListMovementsWithEventAndCategoryRow, error) {
-	rows, err := q.db.QueryContext(ctx, listMovementsWithEventAndCategory)
+func (q *Queries) ListMovementsWithEventAndCategory(ctx context.Context, limit int64) ([]ListMovementsWithEventAndCategoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, listMovementsWithEventAndCategory, limit)
 	if err != nil {
 		return nil, err
 	}

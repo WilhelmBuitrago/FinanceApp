@@ -123,11 +123,11 @@ func (r *MovementRepository) ListComponents(ctx context.Context, movementID stri
 	return out, nil
 }
 
-func (r *MovementRepository) List(ctx context.Context) ([]domain.Movement, error) {
+func (r *MovementRepository) List(ctx context.Context, limit int) ([]domain.Movement, error) {
 	if r.db.Querier == nil {
 		return nil, ErrUnavailable
 	}
-	dbMvs, err := r.db.Querier.ListMovementsAll(ctx)
+	dbMvs, err := r.db.Querier.ListMovementsAll(ctx, int64(limit))
 	if err != nil {
 		return nil, translateError(err)
 	}
@@ -141,11 +141,11 @@ func (r *MovementRepository) List(ctx context.Context) ([]domain.Movement, error
 // ListWithCategory returns every movement joined with the category of its
 // financial event: the listings need both, and one join replaces the two
 // per-row lookups they used to make.
-func (r *MovementRepository) ListWithCategory(ctx context.Context) ([]domain.MovementWithCategory, error) {
+func (r *MovementRepository) ListWithCategory(ctx context.Context, limit int) ([]domain.MovementWithCategory, error) {
 	if r.db.Querier == nil {
 		return nil, ErrUnavailable
 	}
-	rows, err := r.db.Querier.ListMovementsWithEventAndCategory(ctx)
+	rows, err := r.db.Querier.ListMovementsWithEventAndCategory(ctx, int64(limit))
 	if err != nil {
 		return nil, translateError(err)
 	}
@@ -157,11 +157,14 @@ func (r *MovementRepository) ListWithCategory(ctx context.Context) ([]domain.Mov
 }
 
 // ListByAccountWithCategory is ListWithCategory scoped to one account.
-func (r *MovementRepository) ListByAccountWithCategory(ctx context.Context, accountID string) ([]domain.MovementWithCategory, error) {
+func (r *MovementRepository) ListByAccountWithCategory(ctx context.Context, accountID string, limit int) ([]domain.MovementWithCategory, error) {
 	if r.db.Querier == nil {
 		return nil, ErrUnavailable
 	}
-	rows, err := r.db.Querier.ListMovementsByAccountWithEventAndCategory(ctx, accountID)
+	rows, err := r.db.Querier.ListMovementsByAccountWithEventAndCategory(ctx, db.ListMovementsByAccountWithEventAndCategoryParams{
+		AccountID: accountID,
+		Limit:     int64(limit),
+	})
 	if err != nil {
 		return nil, translateError(err)
 	}

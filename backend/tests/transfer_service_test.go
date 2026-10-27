@@ -124,7 +124,7 @@ func TestTransfer_RollsBackEverythingWhenALegFails(t *testing.T) {
 		t.Fatal("a transfer with an unknown destination must fail")
 	}
 
-	movements, err := repos.movements.List(context.Background())
+	movements, err := repos.movements.List(context.Background(), 500)
 	if err != nil {
 		t.Fatalf("list movements: %v", err)
 	}
@@ -154,7 +154,7 @@ func TestTransfer_RejectsTheSameAccountOnBothSides(t *testing.T) {
 	if _, err := service.Transfer(context.Background(), transferCmd("acc-a", "acc-a", 250000)); err == nil {
 		t.Fatal("a transfer from an account to itself must be rejected")
 	}
-	movements, _ := repos.movements.List(context.Background())
+	movements, _ := repos.movements.List(context.Background(), 500)
 	if len(movements) != 0 {
 		t.Error("a rejected transfer must not write anything")
 	}

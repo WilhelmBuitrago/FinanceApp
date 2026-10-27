@@ -79,11 +79,11 @@ const listPendingReviewItems = `-- name: ListPendingReviewItems :many
 SELECT id, kind, payload_json, source_entry_id, status, created_at, resolved_at
 FROM review_items
 WHERE status = 'PENDING'
-ORDER BY created_at
+ORDER BY created_at LIMIT ?1
 `
 
-func (q *Queries) ListPendingReviewItems(ctx context.Context) ([]ReviewItem, error) {
-	rows, err := q.db.QueryContext(ctx, listPendingReviewItems)
+func (q *Queries) ListPendingReviewItems(ctx context.Context, limit int64) ([]ReviewItem, error) {
+	rows, err := q.db.QueryContext(ctx, listPendingReviewItems, limit)
 	if err != nil {
 		return nil, err
 	}

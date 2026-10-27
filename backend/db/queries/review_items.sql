@@ -9,7 +9,7 @@ INSERT INTO review_items (
 SELECT id, kind, payload_json, source_entry_id, status, created_at, resolved_at
 FROM review_items
 WHERE status = 'PENDING'
-ORDER BY created_at;
+ORDER BY created_at LIMIT sqlc.arg(limit);
 
 -- name: GetReviewItem :one
 SELECT id, kind, payload_json, source_entry_id, status, created_at, resolved_at

@@ -106,7 +106,7 @@ func (rt *router) getAccount(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *router) listAccountMovements(w http.ResponseWriter, r *http.Request) {
-	movements, err := rt.movementRepo.ListByAccountWithCategory(r.Context(), r.PathValue("id"))
+	movements, err := rt.movementRepo.ListByAccountWithCategory(r.Context(), r.PathValue("id"), listLimit(r))
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "failed to list movements")
 		return
@@ -126,7 +126,7 @@ func (rt *router) listAccountMovements(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *router) listAccountDocuments(w http.ResponseWriter, r *http.Request) {
-	documents, err := rt.docRepo.ListByAccount(r.Context(), r.PathValue("id"))
+	documents, err := rt.docRepo.ListByAccount(r.Context(), r.PathValue("id"), listLimit(r))
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "failed to list documents")
 		return
