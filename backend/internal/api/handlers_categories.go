@@ -30,7 +30,7 @@ func (rt *router) createCategory(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "invalid body")
 		return
 	}
-	now := timeNowUTC()
+	now := domain.NowRFC3339()
 	cat := domain.Category{
 		ID:           req.ID,
 		Name:         req.Name,

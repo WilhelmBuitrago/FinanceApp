@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 type UploadResponse struct {
@@ -99,7 +98,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 	sha := fmt.Sprintf("%x", hasher.Sum(nil))
 
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := domain.NowRFC3339()
 	docID := "doc_" + sha[:8]
 	inst := *acc.Institution
 	document := domain.Document{
@@ -136,7 +135,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	started := time.Now().UTC().Format(time.RFC3339)
+	started := domain.NowRFC3339()
 	job.Status = "PROCESSING"
 	job.StartedAt = &started
 	if _, err := h.jobRepo.Update(r.Context(), job); err != nil {
@@ -150,7 +149,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := run(r.Context(), dstPath, accountID)
 	if err != nil {
-		finished := time.Now().UTC().Format(time.RFC3339)
+		finished := domain.NowRFC3339()
 		job.Status = "ERROR"
 		job.FinishedAt = &finished
 		e := err.Error()
@@ -173,7 +172,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	doc, err := h.docRepo.GetByID(r.Context(), docID)
 	if err == nil {
 		doc.Status = "PROCESSED"
-		doc.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+		doc.UpdatedAt = domain.NowRFC3339()
 		if _, err := h.docRepo.Update(r.Context(), doc); err != nil {
 			log.Error(fmt.Sprintf("document status update to PROCESSED failed: %v", err))
 		}
@@ -186,7 +185,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.imports.Import(r.Context(), jobID); err != nil {
-		finished := time.Now().UTC().Format(time.RFC3339)
+		finished := domain.NowRFC3339()
 		job.Status = "FAILED"
 		job.FinishedAt = &finished
 		e := err.Error()
@@ -202,7 +201,7 @@ func (h *UploadHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	docUpd, err := h.docRepo.GetByID(r.Context(), docID)
 	if err == nil {
 		docUpd.Status = "IMPORTED"
-		docUpd.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+		docUpd.UpdatedAt = domain.NowRFC3339()
 		if _, err := h.docRepo.Update(r.Context(), docUpd); err != nil {
 			log.Error(fmt.Sprintf("document status update to IMPORTED failed: %v", err))
 		}

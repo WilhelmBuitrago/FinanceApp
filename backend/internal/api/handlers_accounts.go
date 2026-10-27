@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"financeapp/backend/internal/domain"
 )
@@ -56,7 +55,7 @@ func (rt *router) createAccount(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "id required")
 		return
 	}
-	now := timeNowUTC()
+	now := domain.NowRFC3339()
 	meta := req.MetadataJson
 	if req.ValidationData != "" {
 		// store validation data masked in metadata for now
@@ -133,9 +132,4 @@ func (rt *router) listAccountDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	encodeJSON(w, documents)
-}
-
-// timeNowUTC is the shared RFC3339 UTC timestamp helper for handlers.
-func timeNowUTC() string {
-	return time.Now().UTC().Format(time.RFC3339)
 }

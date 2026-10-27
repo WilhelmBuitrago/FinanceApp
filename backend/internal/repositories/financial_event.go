@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"time"
 
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/domain"
@@ -95,7 +94,7 @@ func (r *FinancialEventRepository) SetCategory(ctx context.Context, eventID stri
 	if r.db.Querier == nil {
 		return ErrUnavailable
 	}
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := domain.NowRFC3339()
 	_, err := r.db.Querier.UpdateFinancialEventCategory(ctx, db.UpdateFinancialEventCategoryParams{
 		ID:         eventID,
 		CategoryID: toNullString(categoryID),

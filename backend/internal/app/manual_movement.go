@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/domain"
@@ -59,7 +58,7 @@ func (s *MovementService) CreateManual(ctx context.Context, cmd domain.ManualMov
 		}
 	}
 
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := domain.NowRFC3339()
 	feID := domain.NewID("fe_manual")
 	var catID *string
 	if cmd.CategoryID != "" {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/db"
@@ -139,7 +138,7 @@ func (s *ImportService) Import(ctx context.Context, jobID string) error {
 	mvRepo := repositories.NewMovementRepository(repoDB)
 	reviewItemsRepo := repositories.NewReviewItemsRepository(repoDB)
 
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := domain.NowRFC3339()
 
 	// Prevent re-import
 	log.Info("Import: updating job status to IMPORTING")

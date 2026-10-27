@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -61,7 +60,7 @@ func (s *ReviewService) Submit(ctx context.Context, kind string, payload any, so
 	}
 	id := uuid.NewString()
 	repo := repositories.NewReviewItemsRepository(&repositories.DB{Querier: db.New(s.db)})
-	if err := repo.Create(ctx, id, kind, strPtr(string(payloadJSON)), sourceEntryID, time.Now().UTC().Format(time.RFC3339)); err != nil {
+	if err := repo.Create(ctx, id, kind, strPtr(string(payloadJSON)), sourceEntryID, domain.NowRFC3339()); err != nil {
 		return "", fmt.Errorf("park review item: %w", err)
 	}
 	return id, nil
@@ -89,7 +88,7 @@ func (s *ReviewService) Resolve(ctx context.Context, itemID string, description 
 		}
 	}()
 
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := domain.NowRFC3339()
 	txQuerier := db.New(tx)
 	itemsRepo := repositories.NewReviewItemsRepository(&repositories.DB{Querier: txQuerier})
 
@@ -151,7 +150,7 @@ func (s *ReviewService) Kind(ctx context.Context, itemID string) (string, error)
 // Discard parks an item as discarded: the human decided it is not real.
 func (s *ReviewService) Discard(ctx context.Context, itemID string) error {
 	repo := repositories.NewReviewItemsRepository(&repositories.DB{Querier: db.New(s.db)})
-	return repo.Discard(ctx, itemID, time.Now().UTC().Format(time.RFC3339))
+	return repo.Discard(ctx, itemID, domain.NowRFC3339())
 }
 
 // documentPeriodPayload is what a DOCUMENT_PERIOD item carries: the raw
@@ -188,7 +187,7 @@ func (s *ReviewService) ResolvePeriod(ctx context.Context, itemID string, month,
 		}
 	}()
 
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := domain.NowRFC3339()
 	txQuerier := db.New(tx)
 	itemsRepo := repositories.NewReviewItemsRepository(&repositories.DB{Querier: txQuerier})
 
@@ -307,7 +306,7 @@ func toNullString(s *string) sql.NullString {
 }
 
 func createMovementFromCorrection(ctx context.Context, q db.Querier, correction ReviewCorrection) (domain.Movement, error) {
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := domain.NowRFC3339()
 	fe := domain.FinancialEvent{
 		ID:                 uuid.NewString(),
 		EventType:          correction.Type,
@@ -343,7 +342,7 @@ func applyCategoryDecision(ctx context.Context, q db.Querier, item repositories.
 	if err != nil {
 		return fmt.Errorf("movement not found: %w", err)
 	}
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := domain.NowRFC3339()
 	affected, err := q.UpdateFinancialEventCategory(ctx, db.UpdateFinancialEventCategoryParams{
 		ID:         mv.FinancialEventID,
 		CategoryID: toNullString(correction.CategoryID),
@@ -363,5 +362,5 @@ func markSourceEntryResolved(ctx context.Context, q db.Querier, item repositorie
 		return nil
 	}
 	repo := repositories.NewSourceEntryRepository(&repositories.DB{Querier: q})
-	return repo.Resolve(ctx, *item.SourceEntryID, &correction.Description, &correction.AmountMinor, &correction.Date, time.Now().UTC().Format(time.RFC3339))
+	return repo.Resolve(ctx, *item.SourceEntryID, &correction.Description, &correction.AmountMinor, &correction.Date, domain.NowRFC3339())
 }

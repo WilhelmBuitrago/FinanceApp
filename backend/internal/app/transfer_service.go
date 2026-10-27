@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"financeapp/backend/internal/db"
 	"financeapp/backend/internal/domain"
@@ -57,7 +56,7 @@ func (s *TransferService) Transfer(ctx context.Context, cmd domain.TransferComma
 	movementRepo := repositories.NewMovementRepository(repoDB)
 	relationRepo := repositories.NewRelationRepository(repoDB)
 
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := domain.NowRFC3339()
 	eventID := domain.NewID("fe_transfer")
 	originID := domain.NewID("mv_transfer_out")
 	destinationID := domain.NewID("mv_transfer_in")
