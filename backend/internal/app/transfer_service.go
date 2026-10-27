@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -122,7 +123,9 @@ func (s *TransferService) Transfer(ctx context.Context, cmd domain.TransferComma
 
 // DeleteMovement removes a movement, transfer-aware: deleting either leg
 // deletes both legs and the relation that binds them, because the
-// transfer is one decision. A movement with no counterpart follows the
+// transfer is one decision. The financial event goes with its last
+// movement: an event no movement references is a ghost the listings
+// would serve forever. A movement with no counterpart follows the
 // ordinary path.
 func (s *TransferService) DeleteMovement(ctx context.Context, movementID string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -134,6 +137,18 @@ func (s *TransferService) DeleteMovement(ctx context.Context, movementID string)
 	repoDB := &repositories.DB{Querier: db.New(tx)}
 	relationRepo := repositories.NewRelationRepository(repoDB)
 	movementRepo := repositories.NewMovementRepository(repoDB)
+
+	// The event id must be read before the legs go: the cleanup below
+	// asks whether any movement still belongs to it. A movement that is
+	// already gone keeps the contract the delete has always had: the
+	// second delete of the same id is a no-op, not a 404.
+	target, err := movementRepo.GetByID(ctx, movementID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrNotFound) {
+			return tx.Commit()
+		}
+		return err
+	}
 
 	relations, err := relationRepo.ListMovementRelations(ctx, movementID)
 	if err != nil {
@@ -155,6 +170,24 @@ func (s *TransferService) DeleteMovement(ctx context.Context, movementID string)
 		}
 	}
 	if err := movementRepo.Delete(ctx, movementID); err != nil {
+		return err
+	}
+
+	querier := db.New(tx)
+	remaining, err := querier.CountMovementsByEvent(ctx, target.FinancialEventID)
+	if err != nil {
+		return fmt.Errorf("count remaining movements: %w", err)
+	}
+	if remaining > 0 {
+		return tx.Commit()
+	}
+	if err := querier.DeleteEventRelationsByEvent(ctx, db.DeleteEventRelationsByEventParams{
+		EventIDA: target.FinancialEventID,
+		EventIDB: target.FinancialEventID,
+	}); err != nil {
+		return err
+	}
+	if err := querier.DeleteFinancialEvent(ctx, target.FinancialEventID); err != nil {
 		return err
 	}
 	return tx.Commit()

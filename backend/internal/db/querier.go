@@ -10,6 +10,9 @@ import (
 )
 
 type Querier interface {
+	// A financial event is the decision one or more movements belong to: the
+	// delete path asks whether the event still has a leg before removing it.
+	CountMovementsByEvent(ctx context.Context, financialEventID string) (int64, error)
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error)
 	CreateDocument(ctx context.Context, arg CreateDocumentParams) (Document, error)
@@ -24,6 +27,8 @@ type Querier interface {
 	CreateReviewItem(ctx context.Context, arg CreateReviewItemParams) error
 	CreateSourceEntry(ctx context.Context, arg CreateSourceEntryParams) (SourceEntry, error)
 	DeleteCategory(ctx context.Context, id string) error
+	DeleteEventRelationsByEvent(ctx context.Context, arg DeleteEventRelationsByEventParams) error
+	DeleteFinancialEvent(ctx context.Context, id string) error
 	DeleteMovement(ctx context.Context, id string) error
 	DeleteMovementRelation(ctx context.Context, id string) error
 	DiscardReviewItem(ctx context.Context, arg DiscardReviewItemParams) (int64, error)

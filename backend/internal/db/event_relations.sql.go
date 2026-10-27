@@ -65,6 +65,20 @@ func (q *Queries) CreateEventRelation(ctx context.Context, arg CreateEventRelati
 	return i, err
 }
 
+const deleteEventRelationsByEvent = `-- name: DeleteEventRelationsByEvent :exec
+DELETE FROM event_relations WHERE event_id_a = ? OR event_id_b = ?
+`
+
+type DeleteEventRelationsByEventParams struct {
+	EventIDA string `json:"event_id_a"`
+	EventIDB string `json:"event_id_b"`
+}
+
+func (q *Queries) DeleteEventRelationsByEvent(ctx context.Context, arg DeleteEventRelationsByEventParams) error {
+	_, err := q.db.ExecContext(ctx, deleteEventRelationsByEvent, arg.EventIDA, arg.EventIDB)
+	return err
+}
+
 const listRelationsByEvent = `-- name: ListRelationsByEvent :many
 SELECT id, event_id_a, event_id_b, relation_type, status, confidence, reason, created_at, updated_at FROM event_relations WHERE event_id_a = ? OR event_id_b = ?
 `

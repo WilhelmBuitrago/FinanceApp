@@ -10,6 +10,19 @@ import (
 	"database/sql"
 )
 
+const countMovementsByEvent = `-- name: CountMovementsByEvent :one
+SELECT COUNT(*) FROM movements WHERE financial_event_id = ?
+`
+
+// A financial event is the decision one or more movements belong to: the
+// delete path asks whether the event still has a leg before removing it.
+func (q *Queries) CountMovementsByEvent(ctx context.Context, financialEventID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countMovementsByEvent, financialEventID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createFinancialEvent = `-- name: CreateFinancialEvent :one
 INSERT INTO financial_events (
     id,
@@ -71,6 +84,15 @@ func (q *Queries) CreateFinancialEvent(ctx context.Context, arg CreateFinancialE
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const deleteFinancialEvent = `-- name: DeleteFinancialEvent :exec
+DELETE FROM financial_events WHERE id = ?
+`
+
+func (q *Queries) DeleteFinancialEvent(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteFinancialEvent, id)
+	return err
 }
 
 const getFinancialEvent = `-- name: GetFinancialEvent :one
