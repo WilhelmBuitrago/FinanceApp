@@ -94,6 +94,34 @@ describe('AddMovementDrawer', () => {
   });
 });
 
+/* Amount entry: the field is free text and a Colombian writes the
+   decimal comma. parseFloat read "25,5" as 25 and the backend stored
+   2500 for a 2550 movement; the parser reads both conventions and
+   refuses what it cannot read. */
+
+describe('AddMovementDrawer amounts', () => {
+  it('sends the centavos of a comma decimal instead of dropping the comma', async () => {
+    vi.mocked(createMovement).mockResolvedValue({ id: 'mv_comma' });
+    setup();
+    fireEvent.change(screen.getByLabelText(/Cantidad/), { target: { value: '25,5' } });
+    fireEvent.change(screen.getByLabelText(/Fecha/), { target: { value: '2026-10-01' } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Aceptar' }).closest('form')!);
+
+    await vi.waitFor(() => expect(createMovement).toHaveBeenCalledTimes(1));
+    expect(createMovement).toHaveBeenCalledWith(expect.objectContaining({ amount_minor: 2550 }));
+  });
+
+  it('refuses an amount it cannot read instead of guessing', () => {
+    setup();
+    fireEvent.change(screen.getByLabelText(/Cantidad/), { target: { value: 'doce mil' } });
+    fireEvent.change(screen.getByLabelText(/Fecha/), { target: { value: '2026-10-01' } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Aceptar' }).closest('form')!);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Cantidad debe ser positiva');
+    expect(createMovement).not.toHaveBeenCalled();
+  });
+});
+
 /* Transfers: the destination field only exists for them, the amount
    stays positive (the backend derives the signs), and a transfer
    carries no category. */

@@ -4,6 +4,8 @@ import { ApiError, apiErrorDetail } from '../api/client';
 import { invalidateCollections } from '../lib/dataBus';
 import { createMovement } from '../api/movements';
 import { getCategories } from '../api/categories';
+import { formatMoney } from '../lib/formatMoney';
+import { parseAmountMinor } from '../lib/amount';
 import type { Category, CategoryOption } from '../types/category';
 import type { Account } from '../types/account';
 
@@ -61,8 +63,12 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
           onSubmit={async (e) => {
             e.preventDefault();
             setError(null);
-            const amount = Number(parseFloat(form.cantidad).toFixed(2));
-            if (!amount || amount <= 0) {
+            // parseAmountMinor reads the amount the way a Colombian writes
+            // it ("25,5" is twenty-five and a half) and hands the integer
+            // centavos the ledger speaks; parseFloat read the comma away and
+            // silently divided the amount by ten.
+            const amountMinor = parseAmountMinor(form.cantidad);
+            if (amountMinor === null || amountMinor <= 0) {
               setError('Cantidad debe ser positiva');
               return;
             }
@@ -81,10 +87,10 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               }
             }
             const sign = form.tipo === 'Egreso' ? -1 : 1;
-            const amountMinor = Math.round(amount * 100) * sign;
+            const signedMinor = amountMinor * sign;
             try {
               await createMovement({
-                amount_minor: amountMinor,
+                amount_minor: signedMinor,
                 type: isTransfer ? 'TRANSFER' : form.tipo === 'Ingreso' ? 'INCOME' : 'EXPENSE',
                 account_id: effectiveCuenta,
                 ...(isTransfer ? { to_account_id: form.destino } : {}),
@@ -100,7 +106,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
                 // The backend parks the duplicate in the review queue; the UI
                 // only notifies (no client-side queue to lose).
                 onDuplicate(
-                  `Movimiento duplicado detectado el ${form.fecha} por $${amount}. Quedó en Revisión.`,
+                  `Movimiento duplicado detectado el ${form.fecha} por ${formatMoney(signedMinor)}. Quedó en Revisión.`,
                 );
                 onClose();
                 return;
@@ -124,9 +130,8 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               </label>
               <input
                 id="add-movement-amount"
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 required
                 value={form.cantidad}
                 onChange={(e) => setForm({ ...form, cantidad: e.target.value })}
