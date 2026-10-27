@@ -3,7 +3,6 @@ package tests
 import (
 	"context"
 	"database/sql"
-	"path/filepath"
 	"testing"
 
 	"financeapp/backend/internal/app"
@@ -25,15 +24,11 @@ type transferRepos struct {
 
 func transferEnv(t *testing.T) (*app.TransferService, transferRepos, *sql.DB) {
 	t.Helper()
-	sqlDB, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "transfer.db"))
-	if err != nil {
-		t.Fatalf("open db: %v", err)
-	}
+	sqlDB := openTestSQLite(t, "transfer.db")
 	if err := db.Apply(sqlDB); err != nil {
 		t.Fatalf("apply migrations: %v", err)
 	}
 	repoDB := &repositories.DB{Querier: db.New(sqlDB)}
-	t.Cleanup(func() { _ = sqlDB.Close() })
 	return app.NewTransferService(sqlDB), transferRepos{
 		accounts:  repositories.NewAccountRepository(repoDB),
 		movements: repositories.NewMovementRepository(repoDB),

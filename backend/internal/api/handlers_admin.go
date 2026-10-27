@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,6 +8,8 @@ import (
 	"time"
 
 	_ "modernc.org/sqlite"
+
+	"financeapp/backend/internal/db"
 )
 
 // adminPurge deletes every domain table directly on the SQLite database the
@@ -25,7 +26,7 @@ func (rt *router) adminPurge(w http.ResponseWriter, r *http.Request) {
 			_ = f.Close()
 		}
 	}
-	sqlDB, err := sql.Open("sqlite", dbPath)
+	sqlDB, err := db.OpenSQLite(dbPath)
 	if err != nil {
 		logErr("open failed " + err.Error())
 		writeJSONObject(w, http.StatusInternalServerError, map[string]string{"error": "purge failed", "detail": err.Error()})

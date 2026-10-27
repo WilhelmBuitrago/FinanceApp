@@ -60,14 +60,15 @@ func (s *MovementService) CreateManual(ctx context.Context, cmd domain.ManualMov
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
-	feID := fmt.Sprintf("fe_manual_%d", time.Now().UnixNano())
+	feID := domain.NewID("fe_manual")
 	var catID *string
 	if cmd.CategoryID != "" {
 		catID = &cmd.CategoryID
 	}
-	// ToAccountID arrives but is not written yet: the cross-account
-	// transfer is relation scaffolding, and this path records the income
-	// or expense side exactly as the manual form submits it.
+	// ToAccountID never reaches this path with a value: a TRANSFER with a
+	// destination is written by TransferService (two legs, one relation)
+	// before CreateManual is reached; this path records the income or
+	// expense side exactly as the manual form submits it.
 	fe := domain.FinancialEvent{
 		ID:                 feID,
 		EventType:          cmd.Type,
@@ -79,7 +80,7 @@ func (s *MovementService) CreateManual(ctx context.Context, cmd domain.ManualMov
 		CreatedAt:          now,
 		UpdatedAt:          now,
 	}
-	mvID := fmt.Sprintf("mv_manual_%d", time.Now().UnixNano())
+	mvID := domain.NewID("mv_manual")
 	mv := domain.Movement{
 		ID:               mvID,
 		FinancialEventID: feID,

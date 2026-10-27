@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
 	"os/signal"
@@ -55,7 +54,7 @@ func main() {
 	}
 	log.Info("Python runtime ready")
 
-	sqlDB, err := sql.Open("sqlite", cfg.DatabasePath)
+	sqlDB, err := db.OpenSQLite(cfg.DatabasePath)
 	if err != nil {
 		fatal("failed to open database", err)
 	}

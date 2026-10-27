@@ -57,10 +57,9 @@ func (s *TransferService) Transfer(ctx context.Context, cmd domain.TransferComma
 	relationRepo := repositories.NewRelationRepository(repoDB)
 
 	now := time.Now().UTC().Format(time.RFC3339)
-	nonce := time.Now().UnixNano()
-	eventID := fmt.Sprintf("fe_transfer_%d", nonce)
-	originID := fmt.Sprintf("mv_transfer_out_%d", nonce)
-	destinationID := fmt.Sprintf("mv_transfer_in_%d", nonce)
+	eventID := domain.NewID("fe_transfer")
+	originID := domain.NewID("mv_transfer_out")
+	destinationID := domain.NewID("mv_transfer_in")
 
 	description := cmd.Description
 	event := domain.FinancialEvent{
@@ -98,7 +97,7 @@ func (s *TransferService) Transfer(ctx context.Context, cmd domain.TransferComma
 	}
 
 	relation := domain.MovementRelation{
-		ID:           fmt.Sprintf("rel_transfer_%d", nonce),
+		ID:           domain.NewID("rel_transfer"),
 		MovementIDA:  originID,
 		MovementIDB:  destinationID,
 		RelationType: "TRANSFER_COUNTERPART",
