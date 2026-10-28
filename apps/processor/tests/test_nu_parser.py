@@ -101,11 +101,11 @@ def test_normalization():
     assert d2 == '2026-03-15'
     # Amount
     a = normalize_amount('+700.000,00')
-    assert a == 700000
+    assert a == 70000000
     a2 = normalize_amount('-$765.000,00')
-    assert a2 == -765000
+    assert a2 == -76500000
     a3 = normalize_amount('+5.500,00')
-    assert a3 == 5500
+    assert a3 == 550000
     print('normalization ok')
 
 

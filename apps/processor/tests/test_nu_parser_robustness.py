@@ -79,7 +79,7 @@ def test_real_format_parses_unchanged():
     assert first.date_original == "10 abr", first.date_original
     assert first.description_original == "Enviaste a Wilhelm David Buitrago Garcia"
     assert first.amount_original == "-$100.000,00"
-    assert first.amount_normalized == -100000, first.amount_normalized
+    assert first.amount_normalized == -10000000, first.amount_normalized
 
 
 def test_amount_variant_line_is_parked():
@@ -143,7 +143,7 @@ Rendimiento total de tu cuenta
     doc = run_parser(extract)
     assert len(doc.movements) == 1, f"date with year must parse, got {len(doc.movements)}"
     assert doc.movements[0].date_original == "10 abr 2026", doc.movements[0].date_original
-    assert doc.movements[0].amount_normalized == 16500
+    assert doc.movements[0].amount_normalized == 1650000
 
 
 def test_manifest_absent_is_tolerated():
@@ -163,7 +163,7 @@ def test_manifest_absent_is_tolerated():
         )
         doc = NuAccountParser("t", base_path=str(base)).parse()
         assert len(doc.movements) == 1, f"expected 1 movement, got {len(doc.movements)}"
-        assert doc.movements[0].amount_normalized == 1000
+        assert doc.movements[0].amount_normalized == 100000
     finally:
         shutil.rmtree(base, ignore_errors=True)
 

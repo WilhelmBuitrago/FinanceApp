@@ -103,7 +103,7 @@ Rendimiento total de tu cuenta
     assert doc.review_required[0].date_original == "14 abr"
     assert "date" in doc.review_required[0].reason.lower()
     # The amount normalized fine and travels with the parked item.
-    assert doc.review_required[0].amount_normalized == 16500, doc.review_required[0].amount_normalized
+    assert doc.review_required[0].amount_normalized == 1650000, doc.review_required[0].amount_normalized
     # The document period is still parked, independently.
     assert len(doc.document_review) == 1
 

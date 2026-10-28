@@ -69,9 +69,16 @@ def normalize_date(period_str: str, date_original: str) -> str:
 
 def normalize_amount(amount_original: str) -> int:
     """
-    Normalize amount string to integer pesos.
-    Example: '+$700.000,00' -> 700000
-             '-$765.000,00' -> -765000
+    Normalize amount string to integer centavos.
+
+    The ledger's unit is the centavo (amount_minor) and the UI divides by
+    100 to render pesos: this must return the same unit the manual path
+    writes. It used to return whole pesos and drop the decimals, so an
+    imported statement landed a hundred times small and lost its cents.
+
+    Example: '+$700.000,00' -> 70000000
+             '-$765.000,00' -> -76500000
+             '+$700.000,50' -> 70000050
     """
     if not amount_original:
         raise ValueError("Empty amount")
@@ -87,19 +94,21 @@ def normalize_amount(amount_original: str) -> int:
     s_clean = s_clean.replace(' ', '')
 
     # Colombian format: dots as thousands, comma as decimal
-    # Remove thousands separators
     s_no_thousands = s_clean.replace('.', '')
     # A line with no digits left is not an amount: the empty check runs on
     # the raw string, so a whitespace-only value used to reach the int
     # fallback and normalize to zero — a lie the pipeline would persist.
     if not s_no_thousands:
         raise ValueError("No digits in amount: " + repr(amount_original))
-    # Replace decimal comma with dot for parsing
+    # Keep both parts: the integer pesos and the cents the statement
+    # actually carries. The int fallback used to drop the cents entirely.
     if ',' in s_no_thousands:
-        int_part, _dec_part = s_no_thousands.split(',', 1)
-        # Keep only integer pesos, ignore cents
-        value = int(int_part) if int_part else 0
+        int_part, dec_part = s_no_thousands.split(',', 1)
+        pesos = int(int_part) if int_part else 0
+        cents = int((dec_part + '00')[:2]) if dec_part else 0
+        value = pesos * 100 + cents
     else:
-        value = int(s_no_thousands) if s_no_thousands else 0
+        value = (int(s_no_thousands) if s_no_thousands else 0) * 100
 
+    return sign * value
     return sign * value

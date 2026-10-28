@@ -13,19 +13,19 @@ INSERT INTO movements (
     updated_at
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-) RETURNING id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at;
+) RETURNING id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos;
 
 -- name: GetMovement :one
-SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at FROM movements WHERE id = ?;
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos FROM movements WHERE id = ?;
 
 -- name: ListMovementsAll :many
-SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at FROM movements ORDER BY created_at DESC LIMIT sqlc.arg(limit);
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos FROM movements ORDER BY created_at DESC LIMIT sqlc.arg(limit);
 
 -- name: ListMovementsByAccount :many
-SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at FROM movements WHERE account_id = ? ORDER BY created_at DESC;
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos FROM movements WHERE account_id = ? ORDER BY created_at DESC;
 
 -- name: ListMovementsByCategory :many
-SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at
+SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at, m.amount_scaled_to_centavos
 FROM movements m
 JOIN financial_events fe ON fe.id = m.financial_event_id
 WHERE fe.category_id = ?
@@ -84,7 +84,7 @@ DELETE FROM movements WHERE id = ?;
 -- description that matches the row or is empty on the request's side.
 -- One query replaces loading the whole movements table into the handler
 -- to hunt a duplicate.
-SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos
 FROM movements
 WHERE account_id = sqlc.arg(account_id)
   AND movement_date = sqlc.arg(movement_date)

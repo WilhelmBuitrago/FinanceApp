@@ -43,11 +43,11 @@ def test_normalize_date_requires_a_parseable_period():
 
 
 def test_normalize_amount_colombian_format():
-    assert normalize_amount('+700.000,00') == 700000
-    assert normalize_amount('-$765.000,00') == -765000
-    assert normalize_amount('+5.500,00') == 5500
-    assert normalize_amount('-$1.234.567,89') == -1234567
-    assert normalize_amount('700') == 700
+    assert normalize_amount('+700.000,00') == 70000000
+    assert normalize_amount('-$765.000,00') == -76500000
+    assert normalize_amount('+5.500,00') == 550000
+    assert normalize_amount('-$1.234.567,89') == -123456789
+    assert normalize_amount('700') == 70000
 
 
 def test_normalize_amount_rejects_unparseable_values():

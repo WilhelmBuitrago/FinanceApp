@@ -120,17 +120,18 @@ type InstallmentPlan struct {
 }
 
 type Movement struct {
-	ID               string         `json:"id"`
-	FinancialEventID string         `json:"financial_event_id"`
-	AccountID        string         `json:"account_id"`
-	SourceEntryID    sql.NullString `json:"source_entry_id"`
-	MovementDate     string         `json:"movement_date"`
-	AmountMinor      int64          `json:"amount_minor"`
-	Description      sql.NullString `json:"description"`
-	Status           string         `json:"status"`
-	MetadataJson     sql.NullString `json:"metadata_json"`
-	CreatedAt        string         `json:"created_at"`
-	UpdatedAt        string         `json:"updated_at"`
+	ID                     string         `json:"id"`
+	FinancialEventID       string         `json:"financial_event_id"`
+	AccountID              string         `json:"account_id"`
+	SourceEntryID          sql.NullString `json:"source_entry_id"`
+	MovementDate           string         `json:"movement_date"`
+	AmountMinor            int64          `json:"amount_minor"`
+	Description            sql.NullString `json:"description"`
+	Status                 string         `json:"status"`
+	MetadataJson           sql.NullString `json:"metadata_json"`
+	CreatedAt              string         `json:"created_at"`
+	UpdatedAt              string         `json:"updated_at"`
+	AmountScaledToCentavos int64          `json:"amount_scaled_to_centavos"`
 }
 
 type MovementComponent struct {
@@ -167,25 +168,26 @@ type ReviewItem struct {
 }
 
 type SourceEntry struct {
-	ID                    string         `json:"id"`
-	DocumentID            string         `json:"document_id"`
-	SourceReference       sql.NullString `json:"source_reference"`
-	RawDescription        sql.NullString `json:"raw_description"`
-	RawAmountMinor        sql.NullInt64  `json:"raw_amount_minor"`
-	RawDate               sql.NullString `json:"raw_date"`
-	NormalizedDescription sql.NullString `json:"normalized_description"`
-	NormalizedAmountMinor sql.NullInt64  `json:"normalized_amount_minor"`
-	NormalizedDate        sql.NullString `json:"normalized_date"`
-	PageNumber            sql.NullInt64  `json:"page_number"`
-	RowNumber             sql.NullInt64  `json:"row_number"`
-	Section               sql.NullString `json:"section"`
-	ExtractionID          sql.NullString `json:"extraction_id"`
-	MetadataJson          sql.NullString `json:"metadata_json"`
-	CreatedAt             string         `json:"created_at"`
-	UpdatedAt             string         `json:"updated_at"`
-	ReviewStatus          string         `json:"review_status"`
-	SourceKey             sql.NullString `json:"source_key"`
-	CorrectedDescription  sql.NullString `json:"corrected_description"`
-	CorrectedAmountMinor  sql.NullInt64  `json:"corrected_amount_minor"`
-	CorrectedDate         sql.NullString `json:"corrected_date"`
+	ID                         string         `json:"id"`
+	DocumentID                 string         `json:"document_id"`
+	SourceReference            sql.NullString `json:"source_reference"`
+	RawDescription             sql.NullString `json:"raw_description"`
+	RawAmountMinor             sql.NullInt64  `json:"raw_amount_minor"`
+	RawDate                    sql.NullString `json:"raw_date"`
+	NormalizedDescription      sql.NullString `json:"normalized_description"`
+	NormalizedAmountMinor      sql.NullInt64  `json:"normalized_amount_minor"`
+	NormalizedDate             sql.NullString `json:"normalized_date"`
+	PageNumber                 sql.NullInt64  `json:"page_number"`
+	RowNumber                  sql.NullInt64  `json:"row_number"`
+	Section                    sql.NullString `json:"section"`
+	ExtractionID               sql.NullString `json:"extraction_id"`
+	MetadataJson               sql.NullString `json:"metadata_json"`
+	CreatedAt                  string         `json:"created_at"`
+	UpdatedAt                  string         `json:"updated_at"`
+	ReviewStatus               string         `json:"review_status"`
+	SourceKey                  sql.NullString `json:"source_key"`
+	CorrectedDescription       sql.NullString `json:"corrected_description"`
+	CorrectedAmountMinor       sql.NullInt64  `json:"corrected_amount_minor"`
+	CorrectedDate              sql.NullString `json:"corrected_date"`
+	NormalizedScaledToCentavos int64          `json:"normalized_scaled_to_centavos"`
 }

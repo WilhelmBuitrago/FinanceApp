@@ -72,7 +72,9 @@ func (r *SourceEntryRepository) ListByDocument(ctx context.Context, documentID s
 	}
 	out := make([]domain.SourceEntry, 0, len(dbSEs))
 	for _, s := range dbSEs {
-		out = append(out, mapDBSourceEntryToDomain(s))
+		// sqlc unifies the row and the model when the query selects every
+		// column: the conversion keeps one mapper for both shapes.
+		out = append(out, mapDBSourceEntryToDomain(db.SourceEntry(s)))
 	}
 	return out, nil
 }

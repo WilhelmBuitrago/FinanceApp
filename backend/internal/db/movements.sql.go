@@ -25,7 +25,7 @@ INSERT INTO movements (
     updated_at
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-) RETURNING id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at
+) RETURNING id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos
 `
 
 type CreateMovementParams struct {
@@ -69,6 +69,7 @@ func (q *Queries) CreateMovement(ctx context.Context, arg CreateMovementParams) 
 		&i.MetadataJson,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AmountScaledToCentavos,
 	)
 	return i, err
 }
@@ -83,7 +84,7 @@ func (q *Queries) DeleteMovement(ctx context.Context, id string) error {
 }
 
 const findMovementsByNaturalKey = `-- name: FindMovementsByNaturalKey :many
-SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos
 FROM movements
 WHERE account_id = ?1
   AND movement_date = ?2
@@ -129,6 +130,7 @@ func (q *Queries) FindMovementsByNaturalKey(ctx context.Context, arg FindMovemen
 			&i.MetadataJson,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.AmountScaledToCentavos,
 		); err != nil {
 			return nil, err
 		}
@@ -144,7 +146,7 @@ func (q *Queries) FindMovementsByNaturalKey(ctx context.Context, arg FindMovemen
 }
 
 const getMovement = `-- name: GetMovement :one
-SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at FROM movements WHERE id = ?
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos FROM movements WHERE id = ?
 `
 
 func (q *Queries) GetMovement(ctx context.Context, id string) (Movement, error) {
@@ -162,12 +164,13 @@ func (q *Queries) GetMovement(ctx context.Context, id string) (Movement, error) 
 		&i.MetadataJson,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AmountScaledToCentavos,
 	)
 	return i, err
 }
 
 const listMovementsAll = `-- name: ListMovementsAll :many
-SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at FROM movements ORDER BY created_at DESC LIMIT ?1
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos FROM movements ORDER BY created_at DESC LIMIT ?1
 `
 
 func (q *Queries) ListMovementsAll(ctx context.Context, limit int64) ([]Movement, error) {
@@ -191,6 +194,7 @@ func (q *Queries) ListMovementsAll(ctx context.Context, limit int64) ([]Movement
 			&i.MetadataJson,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.AmountScaledToCentavos,
 		); err != nil {
 			return nil, err
 		}
@@ -206,7 +210,7 @@ func (q *Queries) ListMovementsAll(ctx context.Context, limit int64) ([]Movement
 }
 
 const listMovementsByAccount = `-- name: ListMovementsByAccount :many
-SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at FROM movements WHERE account_id = ? ORDER BY created_at DESC
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos FROM movements WHERE account_id = ? ORDER BY created_at DESC
 `
 
 func (q *Queries) ListMovementsByAccount(ctx context.Context, accountID string) ([]Movement, error) {
@@ -230,6 +234,7 @@ func (q *Queries) ListMovementsByAccount(ctx context.Context, accountID string) 
 			&i.MetadataJson,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.AmountScaledToCentavos,
 		); err != nil {
 			return nil, err
 		}
@@ -333,7 +338,7 @@ func (q *Queries) ListMovementsByAccountWithEventAndCategory(ctx context.Context
 }
 
 const listMovementsByCategory = `-- name: ListMovementsByCategory :many
-SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at
+SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at, m.amount_scaled_to_centavos
 FROM movements m
 JOIN financial_events fe ON fe.id = m.financial_event_id
 WHERE fe.category_id = ?
@@ -361,6 +366,7 @@ func (q *Queries) ListMovementsByCategory(ctx context.Context, categoryID sql.Nu
 			&i.MetadataJson,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.AmountScaledToCentavos,
 		); err != nil {
 			return nil, err
 		}

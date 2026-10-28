@@ -32,7 +32,7 @@ INSERT INTO source_entries (
     updated_at
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-) RETURNING id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date
+) RETURNING id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date, normalized_scaled_to_centavos
 `
 
 type CreateSourceEntryParams struct {
@@ -100,12 +100,13 @@ func (q *Queries) CreateSourceEntry(ctx context.Context, arg CreateSourceEntryPa
 		&i.CorrectedDescription,
 		&i.CorrectedAmountMinor,
 		&i.CorrectedDate,
+		&i.NormalizedScaledToCentavos,
 	)
 	return i, err
 }
 
 const getSourceEntry = `-- name: GetSourceEntry :one
-SELECT id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date FROM source_entries WHERE id = ?
+SELECT id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date, normalized_scaled_to_centavos FROM source_entries WHERE id = ?
 `
 
 func (q *Queries) GetSourceEntry(ctx context.Context, id string) (SourceEntry, error) {
@@ -133,12 +134,13 @@ func (q *Queries) GetSourceEntry(ctx context.Context, id string) (SourceEntry, e
 		&i.CorrectedDescription,
 		&i.CorrectedAmountMinor,
 		&i.CorrectedDate,
+		&i.NormalizedScaledToCentavos,
 	)
 	return i, err
 }
 
 const listReviewRequiredByDocument = `-- name: ListReviewRequiredByDocument :many
-SELECT id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date FROM source_entries WHERE document_id = ? AND review_status = 'REVIEW_REQUIRED' ORDER BY row_number
+SELECT id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date, normalized_scaled_to_centavos FROM source_entries WHERE document_id = ? AND review_status = 'REVIEW_REQUIRED' ORDER BY row_number
 `
 
 func (q *Queries) ListReviewRequiredByDocument(ctx context.Context, documentID string) ([]SourceEntry, error) {
@@ -172,6 +174,7 @@ func (q *Queries) ListReviewRequiredByDocument(ctx context.Context, documentID s
 			&i.CorrectedDescription,
 			&i.CorrectedAmountMinor,
 			&i.CorrectedDate,
+			&i.NormalizedScaledToCentavos,
 		); err != nil {
 			return nil, err
 		}
@@ -187,7 +190,7 @@ func (q *Queries) ListReviewRequiredByDocument(ctx context.Context, documentID s
 }
 
 const listSourceEntriesByDocument = `-- name: ListSourceEntriesByDocument :many
-SELECT id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date FROM source_entries WHERE document_id = ?
+SELECT id, document_id, source_reference, raw_description, raw_amount_minor, raw_date, normalized_description, normalized_amount_minor, normalized_date, page_number, row_number, section, extraction_id, metadata_json, created_at, updated_at, review_status, source_key, corrected_description, corrected_amount_minor, corrected_date, normalized_scaled_to_centavos FROM source_entries WHERE document_id = ?
 `
 
 func (q *Queries) ListSourceEntriesByDocument(ctx context.Context, documentID string) ([]SourceEntry, error) {
@@ -221,6 +224,7 @@ func (q *Queries) ListSourceEntriesByDocument(ctx context.Context, documentID st
 			&i.CorrectedDescription,
 			&i.CorrectedAmountMinor,
 			&i.CorrectedDate,
+			&i.NormalizedScaledToCentavos,
 		); err != nil {
 			return nil, err
 		}
