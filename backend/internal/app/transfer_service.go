@@ -39,6 +39,22 @@ func (s *TransferService) Transfer(ctx context.Context, cmd domain.TransferComma
 		return domain.TransferOutcome{}, domain.ErrTransferAmount
 	}
 
+	// The currency check reads both accounts before the transaction: a
+	// transfer does not write accounts, and reading them inside the
+	// transaction adds round-trips to a writer that already serializes.
+	accountRepo := repositories.NewAccountRepository(&repositories.DB{Querier: db.New(s.db)})
+	origin, err := accountRepo.GetByID(ctx, cmd.OriginID)
+	if err != nil {
+		return domain.TransferOutcome{}, err
+	}
+	destination, err := accountRepo.GetByID(ctx, cmd.DestinationID)
+	if err != nil {
+		return domain.TransferOutcome{}, err
+	}
+	if origin.Currency != destination.Currency {
+		return domain.TransferOutcome{}, domain.ErrTransferCurrencyMismatch
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return domain.TransferOutcome{}, fmt.Errorf("begin tx: %w", err)

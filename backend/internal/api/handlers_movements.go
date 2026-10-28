@@ -101,6 +101,10 @@ func (rt *router) createMovement(w http.ResponseWriter, r *http.Request) {
 				writeJSONError(w, http.StatusBadRequest, "the transfer amount must be positive")
 				return
 			}
+			if errors.Is(err, domain.ErrTransferCurrencyMismatch) {
+				writeJSONError(w, http.StatusBadRequest, "a transfer needs both accounts in the same currency")
+				return
+			}
 			log.Info(fmt.Sprintf("[MOVEMENT CREATE] transfer failed: %v", err))
 			writeRepoError(w, err)
 			return

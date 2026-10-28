@@ -165,7 +165,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
               >
                 {accounts.map((a) => (
                   <option key={a.ID} value={a.ID}>
-                    {a.Name}
+                    {a.Name} ({a.Currency ?? 'COP'})
                   </option>
                 ))}
               </select>
@@ -186,7 +186,7 @@ export function AddMovementDrawer({ accounts, onClose, onDuplicate }: Props) {
                     .filter((a) => a.ID !== effectiveCuenta)
                     .map((a) => (
                       <option key={a.ID} value={a.ID}>
-                        {a.Name}
+                        {a.Name} ({a.Currency ?? 'COP'})
                       </option>
                     ))}
                 </select>

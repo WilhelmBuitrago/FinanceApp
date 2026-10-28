@@ -155,6 +155,18 @@ function setupTransfer(onDuplicate = vi.fn(), onClose = vi.fn()) {
 }
 
 describe('AddMovementDrawer transfers', () => {
+  it('names the currency of every account it offers', () => {
+    // Colombia for years, but the day a second money exists the drawer
+    // must not offer two accounts that look interchangeable.
+    setupTransfer();
+
+    fireEvent.change(screen.getByLabelText(/Tipo/), { target: { value: 'Transferencia' } });
+    const options = screen.getByLabelText(/Cuenta destino/).querySelectorAll('option');
+    const labels = Array.from(options).map((o) => (o as HTMLOptionElement).textContent);
+    expect(labels.join(' ')).toMatch(/Ahorros \(COP\)/);
+    expect(labels.join(' ')).not.toMatch(/Nu/);
+  });
+
   it('offers the destination field only for a transfer', () => {
     setupTransfer();
 

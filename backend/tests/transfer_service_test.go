@@ -200,6 +200,28 @@ func TestTransfer_DeletingALegDeletesTheWholeTransfer(t *testing.T) {
 	}
 }
 
+func TestTransfer_RejectsAccountsInDifferentCurrencies(t *testing.T) {
+	service, repos, sqlDB := transferEnv(t)
+	defer func() { _ = sqlDB.Close() }()
+	seedAccount(t, repos, "acc-cur-origin")
+	now := "2026-10-26T00:00:00Z"
+	if _, err := repos.accounts.Create(context.Background(), domain.Account{
+		ID: "acc-cur-usd", UserID: "u", Name: "US", AccountType: "BANK_ACCOUNT",
+		Currency: "USD", Status: "ACTIVE", Institution: strPtr("NU"),
+		CreatedAt: now, UpdatedAt: now,
+	}); err != nil {
+		t.Fatalf("seed usd account: %v", err)
+	}
+
+	if _, err := service.Transfer(context.Background(), transferCmd("acc-cur-origin", "acc-cur-usd", 250000)); err == nil {
+		t.Fatal("a transfer between accounts of different currencies must be refused")
+	}
+	movements, _ := repos.movements.List(context.Background(), 500)
+	if len(movements) != 0 {
+		t.Error("a refused transfer must not write anything")
+	}
+}
+
 func TestTransfer_DeletingAPlainMovementStillWorks(t *testing.T) {
 	service, repos, _ := transferEnv(t)
 	seedAccount(t, repos, "acc-a")

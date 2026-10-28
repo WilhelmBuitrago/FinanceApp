@@ -104,13 +104,14 @@ func TestTransferEndpoint_StaysOutOfTheDistributions(t *testing.T) {
 
 func TestTransferEndpoint_RejectsBadRequestsWithoutWritingAnything(t *testing.T) {
 	cases := []struct {
-		name string
-		body string
+		name     string
+		body     string
+		wantCode int
 	}{
-		{"same account on both sides", `{"account_id":"acc-x","to_account_id":"acc-x","amount_minor":250000,"type":"TRANSFER","date":"2026-10-26"}`},
-		{"unknown destination", `{"account_id":"acc-x","to_account_id":"acc-nope","amount_minor":250000,"type":"TRANSFER","date":"2026-10-26"}`},
-		{"zero amount", `{"account_id":"acc-x","to_account_id":"acc-y","amount_minor":0,"type":"TRANSFER","date":"2026-10-26"}`},
-		{"negative amount", `{"account_id":"acc-x","to_account_id":"acc-y","amount_minor":-250000,"type":"TRANSFER","date":"2026-10-26"}`},
+		{"same account on both sides", `{"account_id":"acc-x","to_account_id":"acc-x","amount_minor":250000,"type":"TRANSFER","date":"2026-10-26"}`, http.StatusBadRequest},
+		{"unknown destination", `{"account_id":"acc-x","to_account_id":"acc-nope","amount_minor":250000,"type":"TRANSFER","date":"2026-10-26"}`, http.StatusNotFound},
+		{"zero amount", `{"account_id":"acc-x","to_account_id":"acc-y","amount_minor":0,"type":"TRANSFER","date":"2026-10-26"}`, http.StatusBadRequest},
+		{"negative amount", `{"account_id":"acc-x","to_account_id":"acc-y","amount_minor":-250000,"type":"TRANSFER","date":"2026-10-26"}`, http.StatusBadRequest},
 	}
 
 	router, sqlDB := newTestRouter(t)
@@ -120,12 +121,16 @@ func TestTransferEndpoint_RejectsBadRequestsWithoutWritingAnything(t *testing.T)
 			t.Fatalf("setup account %s: %d %s", acc, code, body)
 		}
 	}
+	// A second account in another money: the currency policy has a case to refuse.
+	if code, body := hydrationDo(t, router, http.MethodPost, "/accounts", `{"id":"acc-cur-usd","user_id":"u","name":"US","account_type":"BANK_ACCOUNT","currency":"USD","institution":"NU"}`); code != http.StatusCreated {
+		t.Fatalf("setup usd account: %d %s", code, body)
+	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			code, body := postTransfer(t, router, tc.body)
-			if code != http.StatusBadRequest {
-				t.Errorf("expected 400, got %d: %s", code, body)
+			if code != tc.wantCode {
+				t.Errorf("expected %d, got %d: %s", tc.wantCode, code, body)
 			}
 		})
 	}

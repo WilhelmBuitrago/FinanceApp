@@ -12,6 +12,11 @@ var ErrTransferToSelf = errors.New("transfer origin and destination must differ"
 // the amount is the value that moves, and its signs are derived.
 var ErrTransferAmount = errors.New("transfer amount must be positive")
 
+// ErrTransferCurrencyMismatch is the policy two accounts with different
+// monies break: the amount would be copied as if the currencies matched,
+// a silent corruption the day a second one exists.
+var ErrTransferCurrencyMismatch = errors.New("transfer needs both accounts in the same currency")
+
 // TransferCommand is a transfer between own accounts: one decision with
 // two legs. The amount is submitted positive; the service derives the
 // signs (it leaves the origin, it enters the destination).
