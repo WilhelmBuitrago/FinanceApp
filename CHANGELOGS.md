@@ -5,7 +5,7 @@ Todos los cambios notables de FinanceApp se registran acá. El formato sigue
 semántico. La versión **pública** es la del último release de GitHub; `developer`
 puede contener trabajo completo aún sin publicar.
 
-## [0.1.1] — completa en `developer`, pendiente de publicación
+## [0.1.1] — Optimización y corrección de errores
 
 Ronda de endurecimiento a producción sobre los tres componentes. Sin cambios de
 alcance de producto: lo que funcionaba sigue funcionando igual; lo que estaba
@@ -73,11 +73,6 @@ roto, duplicado o sin verificar quedó corregido y pineado con tests.
   `src/test/` con estructura espejada).
 - Batería en verde: `npm run build`, `npm run lint`, `npm test`,
   `npx prettier --check .`.
-
-### Repositorio
-
-- `AGENTS.md` §7 documenta la batería obligatoria por componente, con evidencia.
-- Todos los componentes declarados en 0.1.1; release aún sin publicar.
 
 ## [0.1.0] — primer release público (Windows MSI)
 
