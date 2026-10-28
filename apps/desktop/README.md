@@ -152,7 +152,7 @@ mostrar la ventana. Es el componente que el usuario final ejecuta.
 
 - Versión del paquete: **0.1.1**. Stack: Tauri 2, React 18, Vite 8, TypeScript 5,
   Tailwind 4, react-router-dom 7.
-- `npm run build` **verde** (2026-10-24): `tsc --noEmit && vite build`, sin
+- `npm run build` **verde** (2026-10-28): `tsc --noEmit && vite build`, sin
   errores ni warnings. Regla dura (AGENTS.md): el build del front es siempre
   `npm run build`, nunca `vite build` pelado. El gate de types cubre también
   los configs (`tsconfig.json` incluye `vite.config.ts` y `vitest.config.ts`).

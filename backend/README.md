@@ -108,7 +108,7 @@ Versión del componente: **0.1.1**.
 
 ## Estado
 
-- **Verde, verificado el 2026-10-23**: `go build ./...`, `go vet ./...`,
+- **Verde, verificado el 2026-10-28**: `go build ./...`, `go vet ./...`,
   `go test ./...` ✅ (suite completa en `tests/`), `gofmt`/`goimports` sin
   diferencias, `golangci-lint` 0 findings, `sqlc diff` = 0.
 - Migraciones **0001–0008** aplicadas en ese orden; cola de revisión con

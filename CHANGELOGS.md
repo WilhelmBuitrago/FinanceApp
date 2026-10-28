@@ -17,6 +17,10 @@ roto, duplicado o sin verificar quedó corregido y pineado con tests.
   ítem para cualquier entrada (`CATEGORY`); ahora valida por tipo
   (`ReviewService.Kind`), con tests de contrato
   (`movement_category_resolve_test.go`, `delete_movement_test.go`).
+- **Corregido**: `POST /review/entries/{id}/resolve` ahora permite descripción
+  vacía en ítems `DUPLICATE`/`EXTRACTION` y loguea rechazos 400 con motivo
+  (`account_id/date` faltantes, tipo inválido, cuerpo inválido); `category_id`
+  llega al handler para los movimientos a crear.
 - **Refactor**: los handlers pasaron de `sql.Open` directo a los repositories
   (`SetCategory` / `CategoryRepository.Delete` + query sqlc `DeleteCategory`);
   `sqlc diff` limpio. `adminPurge` conserva su conexión cruda a propósito.
@@ -47,6 +51,10 @@ roto, duplicado o sin verificar quedó corregido y pineado con tests.
 - **Corregido**: la campana del dashboard se suscribe a la colección `review`
   por el bus de invalidación (antes leía solo al montar la página), pineado con
   test.
+- **Agregado**: selector de categoría en `ReviewMovementCard` para ítems
+  `DUPLICATE`/`EXTRACTION`, filtrado por tipo de movimiento, y envío de
+  `category_id` en `resolveReviewMovement`; `description` ahora opcional en el
+  contrato de API.
 - **Agregado**: bus de invalidación compartido (`lib/dataBus`) — reemplaza las
   4 recargas completas tras mutaciones y el evento `review-queue-changed`;
   cliente HTTP único con trazadura; hooks de lista y recurso unificados
