@@ -12,7 +12,10 @@ interface Props {
   payload: ReviewPayload;
   form: Record<string, string>;
   accounts: Account[];
+  categories: { id: string; name: string; type: string }[];
+  selectedCategoryId: string;
   onChange: (patch: Record<string, string>) => void;
+  onCategoryChange: (value: string) => void;
   onSubmit: () => void;
   onDiscard: () => void;
 }
@@ -22,7 +25,10 @@ export function ReviewMovementCard({
   payload: p,
   form: f,
   accounts,
+  categories,
+  selectedCategoryId,
   onChange,
+  onCategoryChange,
   onSubmit,
   onDiscard,
 }: Props) {
@@ -92,6 +98,25 @@ export function ReviewMovementCard({
                 {a.Name}
               </option>
             ))}
+          </select>
+        </div>
+        <div className="flex gap-2">
+          <select
+            value={selectedCategoryId}
+            onChange={(e) => onCategoryChange(e.target.value)}
+            className="w-full border rounded px-2 py-1 bg-black text-white"
+          >
+            <option value="">Sin categoría</option>
+            {categories
+              .filter((c) => {
+                const movementType = f.type ?? p.type ?? 'EXPENSE';
+                return c.type === movementType || c.type === '';
+              })
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
           </select>
         </div>
         <div className="flex gap-2">

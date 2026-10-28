@@ -78,6 +78,7 @@ export function useReviewQueue() {
         : (p.amount_minor ?? 0);
     const type = f.type ?? p.type ?? 'EXPENSE';
     const accountId = f.account ?? p.account_id ?? '';
+    const categoryId = selectedCat[item.ID] || null;
     if (!date || !accountId || !type) {
       setNotice('Completá fecha, monto y cuenta para confirmar');
       return;
@@ -89,6 +90,7 @@ export function useReviewQueue() {
         date,
         type,
         account_id: accountId,
+        category_id: categoryId,
       });
       dropItem(item.ID);
     } catch (err) {

@@ -90,7 +90,10 @@ export default function ReviewPage() {
                 payload={p}
                 form={f}
                 accounts={accounts}
+                categories={categories}
+                selectedCategoryId={selectedCat[item.ID] || ''}
                 onChange={(patch) => setField(item.ID, patch)}
+                onCategoryChange={(value) => setSelectedCat((s) => ({ ...s, [item.ID]: value }))}
                 onSubmit={() => resolveMovement(item)}
                 onDiscard={() => discard(item)}
               />

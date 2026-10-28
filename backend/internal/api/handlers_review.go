@@ -43,6 +43,7 @@ func (rt *router) resolveReviewEntry(w http.ResponseWriter, r *http.Request) {
 		CategoryID  *string `json:"category_id,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Info(fmt.Sprintf("[REVIEW RESOLVE] id=%s invalid body err=%v", id, err))
 		writeJSONError(w, http.StatusBadRequest, "invalid body")
 		return
 	}
@@ -57,13 +58,15 @@ func (rt *router) resolveReviewEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if kind != "CATEGORY" {
-		if req.AccountID == "" || req.Date == "" || req.Description == "" {
-			writeJSONError(w, http.StatusBadRequest, "account_id, date and description are required")
+		if req.AccountID == "" || req.Date == "" {
+			log.Info(fmt.Sprintf("[REVIEW RESOLVE] id=%s missing required fields account_id or date", id))
+			writeJSONError(w, http.StatusBadRequest, "account_id and date are required")
 			return
 		}
 		// The event_type CHECK in the schema accepts INCOME and EXPENSE: validate
 		// here so the caller gets a clear message instead of a constraint crash.
 		if req.Type != "INCOME" && req.Type != "EXPENSE" {
+			log.Info(fmt.Sprintf("[REVIEW RESOLVE] id=%s invalid type %q", id, req.Type))
 			writeJSONError(w, http.StatusBadRequest, "type must be INCOME or EXPENSE")
 			return
 		}
@@ -104,10 +107,12 @@ func (rt *router) resolveReviewPeriod(w http.ResponseWriter, r *http.Request) {
 		Year  int `json:"year"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Info(fmt.Sprintf("[REVIEW PERIOD] id=%s invalid body err=%v", id, err))
 		writeJSONError(w, http.StatusBadRequest, "invalid body")
 		return
 	}
 	if req.Month < 1 || req.Month > 12 || req.Year < 2000 || req.Year > 2100 {
+		log.Info(fmt.Sprintf("[REVIEW PERIOD] id=%s invalid month/year %d/%d", id, req.Month, req.Year))
 		writeJSONError(w, http.StatusBadRequest, "month 1-12 and a four-digit year are required")
 		return
 	}

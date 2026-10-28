@@ -19,15 +19,16 @@ export async function getReviewEntries(): Promise<ReviewItem[]> {
 }
 
 // Resolving an EXTRACTION/DUPLICATE item writes the corrected movement:
-// the handler requires all of these fields (400 otherwise).
+// the handler requires account_id and date; description is optional.
 export async function resolveReviewMovement(
   id: string,
   fields: {
-    description: string;
+    description?: string;
     amount_minor: number;
     date: string;
     type: string;
     account_id: string;
+    category_id?: string | null;
   },
 ): Promise<Movement> {
   return apiPost<Movement>(`/review/entries/${id}/resolve`, fields);
