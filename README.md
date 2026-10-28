@@ -93,8 +93,7 @@ Windows x64. La última versión está en
 [Releases](https://github.com/WilhelmBuitrago/FinanceApp/releases/latest).
 
 - **v0.1.1** — versión actual del código: ronda de endurecimiento a producción
-  sobre backend, processor y desktop. Completa en `developer`, pendiente de
-  publicar (el tag y el release los dispara el mantenedor).
+  sobre backend, processor y desktop. 
 - **v0.1.0** — último release público (Windows MSI).
 
 El detalle de cambios, versión por versión, está en [CHANGELOGS.md](CHANGELOGS.md).
