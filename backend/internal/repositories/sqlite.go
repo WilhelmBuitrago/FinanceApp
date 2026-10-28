@@ -4,18 +4,7 @@ import (
 	"financeapp/backend/internal/db"
 )
 
+// DB bundles the sqlc querier shared by every repository.
 type DB struct {
 	Querier db.Querier
-}
-
-func NewSQLiteRepository(dbPath string) (*DB, error) {
-	// Stub initialization. In production, open sqlite connection here.
-	// Example with modernc.org/sqlite:
-	// sqlDB, err := sql.Open("sqlite", dbPath)
-	// if err != nil { return nil, err }
-	// ...
-	// For now return empty DB to satisfy compilation.
-	return &DB{
-		Querier: nil,
-	}, nil
 }

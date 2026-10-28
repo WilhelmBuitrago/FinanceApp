@@ -6,45 +6,77 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 type Querier interface {
+	// A financial event is the decision one or more movements belong to: the
+	// delete path asks whether the event still has a leg before removing it.
+	CountMovementsByEvent(ctx context.Context, financialEventID string) (int64, error)
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error)
 	CreateDocument(ctx context.Context, arg CreateDocumentParams) (Document, error)
 	CreateEventRelation(ctx context.Context, arg CreateEventRelationParams) (EventRelation, error)
 	CreateFinancialEvent(ctx context.Context, arg CreateFinancialEventParams) (FinancialEvent, error)
+	CreateImportJob(ctx context.Context, arg CreateImportJobParams) (ImportJob, error)
 	CreateInstallment(ctx context.Context, arg CreateInstallmentParams) (Installment, error)
 	CreateInstallmentPlan(ctx context.Context, arg CreateInstallmentPlanParams) (InstallmentPlan, error)
 	CreateMovement(ctx context.Context, arg CreateMovementParams) (Movement, error)
 	CreateMovementComponent(ctx context.Context, arg CreateMovementComponentParams) (MovementComponent, error)
 	CreateMovementRelation(ctx context.Context, arg CreateMovementRelationParams) (MovementRelation, error)
+	CreateReviewItem(ctx context.Context, arg CreateReviewItemParams) error
 	CreateSourceEntry(ctx context.Context, arg CreateSourceEntryParams) (SourceEntry, error)
+	DeleteCategory(ctx context.Context, id string) error
+	DeleteEventRelationsByEvent(ctx context.Context, arg DeleteEventRelationsByEventParams) error
+	DeleteFinancialEvent(ctx context.Context, id string) error
+	DeleteMovement(ctx context.Context, id string) error
+	DeleteMovementRelation(ctx context.Context, id string) error
+	DiscardReviewItem(ctx context.Context, arg DiscardReviewItemParams) (int64, error)
+	// The manual-entry identity: same account, date and amount, with a
+	// description that matches the row or is empty on the request's side.
+	// One query replaces loading the whole movements table into the handler
+	// to hunt a duplicate.
+	FindMovementsByNaturalKey(ctx context.Context, arg FindMovementsByNaturalKeyParams) ([]Movement, error)
 	GetAccount(ctx context.Context, id string) (Account, error)
 	GetCategory(ctx context.Context, id string) (Category, error)
 	GetDocument(ctx context.Context, id string) (Document, error)
-	GetEventRelation(ctx context.Context, id string) (EventRelation, error)
 	GetFinancialEvent(ctx context.Context, id string) (FinancialEvent, error)
-	GetInstallment(ctx context.Context, id string) (Installment, error)
+	GetImportJob(ctx context.Context, id string) (ImportJob, error)
 	GetInstallmentPlan(ctx context.Context, id string) (InstallmentPlan, error)
 	GetMovement(ctx context.Context, id string) (Movement, error)
-	GetMovementRelation(ctx context.Context, id string) (MovementRelation, error)
+	GetReviewItem(ctx context.Context, id string) (ReviewItem, error)
 	GetSourceEntry(ctx context.Context, id string) (SourceEntry, error)
 	ListAccounts(ctx context.Context, userID string) ([]Account, error)
 	ListAccountsAll(ctx context.Context) ([]Account, error)
 	ListCategories(ctx context.Context, status string) ([]Category, error)
 	ListComponentsByMovement(ctx context.Context, movementID string) ([]MovementComponent, error)
-	ListDocumentsAll(ctx context.Context) ([]Document, error)
-	ListDocumentsByAccount(ctx context.Context, accountID interface{}) ([]Document, error)
+	ListDocumentsAll(ctx context.Context, limit int64) ([]Document, error)
+	ListDocumentsByAccount(ctx context.Context, arg ListDocumentsByAccountParams) ([]Document, error)
 	ListFinancialEventsByType(ctx context.Context, eventType string) ([]FinancialEvent, error)
 	ListInstallmentPlansByAccount(ctx context.Context, accountID string) ([]InstallmentPlan, error)
 	ListInstallmentsByPlan(ctx context.Context, installmentPlanID string) ([]Installment, error)
-	ListMovementsAll(ctx context.Context) ([]Movement, error)
+	ListMovementsAll(ctx context.Context, limit int64) ([]Movement, error)
 	ListMovementsByAccount(ctx context.Context, accountID string) ([]Movement, error)
-	DeleteMovement(ctx context.Context, id string) error
+	ListMovementsByAccountWithEventAndCategory(ctx context.Context, arg ListMovementsByAccountWithEventAndCategoryParams) ([]ListMovementsByAccountWithEventAndCategoryRow, error)
+	ListMovementsByCategory(ctx context.Context, categoryID sql.NullString) ([]Movement, error)
+	// Every movement listing needs the category of its financial event: one
+	// join replaces the two per-row lookups the handlers used to do. A
+	// transfer leg also carries the account of its counterpart, so the two
+	// legs of one transfer read as one decision.
+	ListMovementsWithEventAndCategory(ctx context.Context, limit int64) ([]ListMovementsWithEventAndCategoryRow, error)
+	ListPendingReviewItems(ctx context.Context, limit int64) ([]ReviewItem, error)
 	ListRelationsByEvent(ctx context.Context, arg ListRelationsByEventParams) ([]EventRelation, error)
 	ListRelationsByMovement(ctx context.Context, arg ListRelationsByMovementParams) ([]MovementRelation, error)
+	ListReviewRequiredByDocument(ctx context.Context, documentID string) ([]SourceEntry, error)
 	ListSourceEntriesByDocument(ctx context.Context, documentID string) ([]SourceEntry, error)
+	ResolveReviewItem(ctx context.Context, arg ResolveReviewItemParams) (int64, error)
+	ResolveReviewItemsBySourceEntry(ctx context.Context, arg ResolveReviewItemsBySourceEntryParams) (int64, error)
+	ResolveSourceEntry(ctx context.Context, arg ResolveSourceEntryParams) (int64, error)
+	ResolveSourceEntryDerivedDate(ctx context.Context, arg ResolveSourceEntryDerivedDateParams) error
+	UpdateDocument(ctx context.Context, arg UpdateDocumentParams) (Document, error)
+	UpdateDocumentPeriod(ctx context.Context, arg UpdateDocumentPeriodParams) (Document, error)
+	UpdateFinancialEventCategory(ctx context.Context, arg UpdateFinancialEventCategoryParams) (int64, error)
+	UpdateImportJob(ctx context.Context, arg UpdateImportJobParams) (ImportJob, error)
 }
 
 var _ Querier = (*Queries)(nil)

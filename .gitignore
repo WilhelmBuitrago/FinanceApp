@@ -14,7 +14,7 @@
 *.sqlite3
 *.sql
 !/backend/internal/db/migrations/*.sql
-!/backend/db/migrations/*.sql
+!/backend/db/queries/*.sql
 
 # ==================================================
 # Private data and generated artifacts (root only)
@@ -38,6 +38,8 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+htmlcov/
+.coverage
 .venv/
 venv/
 
@@ -48,6 +50,9 @@ node_modules/
 dist/
 coverage/
 .npm/
+*.tsbuildinfo
+.eslintcache
+.cache/
 
 # ==================================================
 # Rust / Tauri
@@ -66,6 +71,8 @@ Thumbs.db
 .idea/
 .codegraph/
 .atl/
+graphify-out/
+odd/
 
 # ==================================================
 # Temporary files and logs
@@ -81,12 +88,9 @@ Thumbs.db
 # Private project documentation
 # ==================================================
 /FinanceApp.md
-/docs/experiments/
-/docs/domain/
-/docs/decisions/
-/docs/architecture/
-/docs/api/
-/docs/*.md
+# Agent operating contract: internal rules, never published. It stays on
+# disk for the tools that load it; git only stopped tracking it.
+/AGENTS.md
 /backend/docs/architecture/
 
 
@@ -95,6 +99,10 @@ Thumbs.db
 # ==================================================
 *.exe
 *.dll
+
+# Local runtime and build outputs (carpetas operativas del backend)
+backend/logs/
+backend/out/
 
 # ==================================================
 # Skills

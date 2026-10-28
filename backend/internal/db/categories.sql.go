@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createCategory = `-- name: CreateCategory :one
@@ -24,13 +25,13 @@ INSERT INTO categories (
 `
 
 type CreateCategoryParams struct {
-	ID           string      `json:"id"`
-	Name         string      `json:"name"`
-	ParentID     interface{} `json:"parent_id"`
-	CategoryType interface{} `json:"category_type"`
-	Status       string      `json:"status"`
-	CreatedAt    string      `json:"created_at"`
-	UpdatedAt    string      `json:"updated_at"`
+	ID           string         `json:"id"`
+	Name         string         `json:"name"`
+	ParentID     sql.NullString `json:"parent_id"`
+	CategoryType sql.NullString `json:"category_type"`
+	Status       string         `json:"status"`
+	CreatedAt    string         `json:"created_at"`
+	UpdatedAt    string         `json:"updated_at"`
 }
 
 func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error) {
@@ -54,6 +55,15 @@ func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) 
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const deleteCategory = `-- name: DeleteCategory :exec
+DELETE FROM categories WHERE id = ?
+`
+
+func (q *Queries) DeleteCategory(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteCategory, id)
+	return err
 }
 
 const getCategory = `-- name: GetCategory :one

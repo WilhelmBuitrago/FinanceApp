@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createDocument = `-- name: CreateDocument :one
@@ -31,20 +32,20 @@ INSERT INTO documents (
 `
 
 type CreateDocumentParams struct {
-	ID           string      `json:"id"`
-	AccountID    interface{} `json:"account_id"`
-	DocumentType string      `json:"document_type"`
-	Institution  interface{} `json:"institution"`
-	DocumentName interface{} `json:"document_name"`
-	PeriodStart  interface{} `json:"period_start"`
-	PeriodEnd    interface{} `json:"period_end"`
-	DocumentDate interface{} `json:"document_date"`
-	FileHash     interface{} `json:"file_hash"`
-	SourceUri    interface{} `json:"source_uri"`
-	Status       string      `json:"status"`
-	MetadataJson interface{} `json:"metadata_json"`
-	CreatedAt    string      `json:"created_at"`
-	UpdatedAt    string      `json:"updated_at"`
+	ID           string         `json:"id"`
+	AccountID    sql.NullString `json:"account_id"`
+	DocumentType string         `json:"document_type"`
+	Institution  sql.NullString `json:"institution"`
+	DocumentName sql.NullString `json:"document_name"`
+	PeriodStart  sql.NullString `json:"period_start"`
+	PeriodEnd    sql.NullString `json:"period_end"`
+	DocumentDate sql.NullString `json:"document_date"`
+	FileHash     sql.NullString `json:"file_hash"`
+	SourceUri    sql.NullString `json:"source_uri"`
+	Status       string         `json:"status"`
+	MetadataJson sql.NullString `json:"metadata_json"`
+	CreatedAt    string         `json:"created_at"`
+	UpdatedAt    string         `json:"updated_at"`
 }
 
 func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) (Document, error) {
@@ -111,11 +112,11 @@ func (q *Queries) GetDocument(ctx context.Context, id string) (Document, error) 
 }
 
 const listDocumentsAll = `-- name: ListDocumentsAll :many
-SELECT id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at FROM documents ORDER BY document_date DESC
+SELECT id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at FROM documents ORDER BY document_date DESC LIMIT ?1
 `
 
-func (q *Queries) ListDocumentsAll(ctx context.Context) ([]Document, error) {
-	rows, err := q.db.QueryContext(ctx, listDocumentsAll)
+func (q *Queries) ListDocumentsAll(ctx context.Context, limit int64) ([]Document, error) {
+	rows, err := q.db.QueryContext(ctx, listDocumentsAll, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -153,11 +154,16 @@ func (q *Queries) ListDocumentsAll(ctx context.Context) ([]Document, error) {
 }
 
 const listDocumentsByAccount = `-- name: ListDocumentsByAccount :many
-SELECT id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at FROM documents WHERE account_id = ? ORDER BY document_date DESC
+SELECT id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at FROM documents WHERE account_id = ? ORDER BY document_date DESC LIMIT ?2
 `
 
-func (q *Queries) ListDocumentsByAccount(ctx context.Context, accountID interface{}) ([]Document, error) {
-	rows, err := q.db.QueryContext(ctx, listDocumentsByAccount, accountID)
+type ListDocumentsByAccountParams struct {
+	AccountID sql.NullString `json:"account_id"`
+	Limit     int64          `json:"limit"`
+}
+
+func (q *Queries) ListDocumentsByAccount(ctx context.Context, arg ListDocumentsByAccountParams) ([]Document, error) {
+	rows, err := q.db.QueryContext(ctx, listDocumentsByAccount, arg.AccountID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -192,4 +198,78 @@ func (q *Queries) ListDocumentsByAccount(ctx context.Context, accountID interfac
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateDocument = `-- name: UpdateDocument :one
+UPDATE documents SET status = ?, updated_at = ?
+WHERE id = ?
+RETURNING id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at
+`
+
+type UpdateDocumentParams struct {
+	Status    string `json:"status"`
+	UpdatedAt string `json:"updated_at"`
+	ID        string `json:"id"`
+}
+
+func (q *Queries) UpdateDocument(ctx context.Context, arg UpdateDocumentParams) (Document, error) {
+	row := q.db.QueryRowContext(ctx, updateDocument, arg.Status, arg.UpdatedAt, arg.ID)
+	var i Document
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.DocumentType,
+		&i.Institution,
+		&i.DocumentName,
+		&i.PeriodStart,
+		&i.PeriodEnd,
+		&i.DocumentDate,
+		&i.FileHash,
+		&i.SourceUri,
+		&i.Status,
+		&i.MetadataJson,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateDocumentPeriod = `-- name: UpdateDocumentPeriod :one
+UPDATE documents SET period_start = ?, period_end = ?, updated_at = ?
+WHERE id = ?
+RETURNING id, account_id, document_type, institution, document_name, period_start, period_end, document_date, file_hash, source_uri, status, metadata_json, created_at, updated_at
+`
+
+type UpdateDocumentPeriodParams struct {
+	PeriodStart sql.NullString `json:"period_start"`
+	PeriodEnd   sql.NullString `json:"period_end"`
+	UpdatedAt   string         `json:"updated_at"`
+	ID          string         `json:"id"`
+}
+
+func (q *Queries) UpdateDocumentPeriod(ctx context.Context, arg UpdateDocumentPeriodParams) (Document, error) {
+	row := q.db.QueryRowContext(ctx, updateDocumentPeriod,
+		arg.PeriodStart,
+		arg.PeriodEnd,
+		arg.UpdatedAt,
+		arg.ID,
+	)
+	var i Document
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.DocumentType,
+		&i.Institution,
+		&i.DocumentName,
+		&i.PeriodStart,
+		&i.PeriodEnd,
+		&i.DocumentDate,
+		&i.FileHash,
+		&i.SourceUri,
+		&i.Status,
+		&i.MetadataJson,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

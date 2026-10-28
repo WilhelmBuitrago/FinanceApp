@@ -5,30 +5,37 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"os"
 
 	"financeapp/backend/internal/api"
+	"financeapp/backend/internal/config"
 	"financeapp/backend/internal/log"
 	"financeapp/backend/internal/repositories"
 )
 
 type Application struct {
-	DB           *sql.DB
-	Persistence  *repositories.Persistence
+	Cfg           config.Config
+	DB            *sql.DB
+	Persistence   *repositories.Persistence
 	ImportJobRepo *repositories.ImportJobRepo
-	DocRepo      *repositories.DocumentRepository
+	DocRepo       *repositories.DocumentRepository
 	ImportService *ImportService
-	Server       *http.Server
+	Movements     *MovementService
+	Transfers     *TransferService
+	Reviews       *ReviewService
+	Server        *http.Server
 }
 
-func New(db *sql.DB, persistence *repositories.Persistence) *Application {
-	importJobRepo := repositories.NewImportJobRepo(db)
+func New(cfg config.Config, db *sql.DB, persistence *repositories.Persistence) *Application {
 	return &Application{
-		DB:           db,
-		Persistence:  persistence,
-		ImportJobRepo: importJobRepo,
-		DocRepo:      persistence.DocumentRepo,
-		ImportService: NewImportService(persistence, importJobRepo),
+		Cfg:           cfg,
+		DB:            db,
+		Persistence:   persistence,
+		ImportJobRepo: persistence.ImportJobRepo,
+		Movements:     NewMovementService(db, NewReviewService(db)),
+		Transfers:     NewTransferService(db),
+		Reviews:       NewReviewService(db),
+		DocRepo:       persistence.DocumentRepo,
+		ImportService: NewImportService(cfg, persistence, persistence.ImportJobRepo),
 	}
 }
 
@@ -39,13 +46,8 @@ func (a *Application) Start(ctx context.Context) error {
 		return fmt.Errorf("health check failed: %w", err)
 	}
 	log.Info("Health check ok")
-	router := api.NewRouter(a.DocRepo, a.ImportJobRepo, a.Persistence.AccountRepo, a.Persistence.MovementRepo, a.Persistence.FinancialEventRepo, a.Persistence.SourceEntryRepo, a.Persistence.CategoryRepo, func(ctx context.Context, id string) error {
-		return a.ImportService.Import(ctx, id)
-	})
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8081"
-	}
+	router := api.NewRouter(a.Cfg, a.DocRepo, a.ImportJobRepo, a.Persistence.AccountRepo, a.Persistence.MovementRepo, a.Persistence.FinancialEventRepo, a.Persistence.SourceEntryRepo, a.Persistence.CategoryRepo, a.Movements, a.Transfers, a.Reviews, a.ImportService, api.RunProcessor)
+	port := a.Cfg.Port
 	addr := ":" + port
 	a.Server = &http.Server{
 		Addr:    addr,
@@ -53,14 +55,11 @@ func (a *Application) Start(ctx context.Context) error {
 	}
 	go func() {
 		log.Info(fmt.Sprintf("HTTP server listening on %s", addr))
-		fmt.Printf("HTTP server listening on %s\n", addr)
 		if err := a.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Error(fmt.Sprintf("server error: %v", err))
-			fmt.Printf("server error: %v\n", err)
 		}
 	}()
 	log.Info("Application started")
-	fmt.Println("Application started")
 	return nil
 }
 
@@ -81,7 +80,6 @@ func (a *Application) Stop(ctx context.Context) error {
 		log.Info("Database closed")
 	}
 	log.Info("Application stopped")
-	fmt.Println("Application stopped")
 	return nil
 }
 

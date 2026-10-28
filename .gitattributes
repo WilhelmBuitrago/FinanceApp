@@ -1,0 +1,23 @@
+# Line endings: LF everywhere in the repository.
+* text=auto eol=lf
+
+# Binary assets: never convert or diff.
+*.png binary
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.pdf binary
+*.zip binary
+*.7z binary
+*.exe binary
+*.dll binary
+*.msi binary
+*.pyc binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.eot binary
+*.sig binary

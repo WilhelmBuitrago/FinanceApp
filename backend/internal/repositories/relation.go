@@ -11,6 +11,11 @@ type RelationRepository struct {
 	db *DB
 }
 
+// RelationRepository links the two legs of a transfer between own
+// accounts (and the events a document parse relates). The transfer
+// path is in production through app.TransferService; the event
+// relations still wait for their feature.
+
 func NewRelationRepository(db *DB) *RelationRepository {
 	return &RelationRepository{db: db}
 }
@@ -25,8 +30,8 @@ func (r *RelationRepository) CreateMovementRelation(ctx context.Context, rel dom
 		MovementIDB:  rel.MovementIDB,
 		RelationType: rel.RelationType,
 		Status:       rel.Status,
-		Confidence:   toInterfaceFloat64(rel.Confidence),
-		Reason:       toInterface(rel.Reason),
+		Confidence:   toNullFloat64(rel.Confidence),
+		Reason:       toNullString(rel.Reason),
 		CreatedAt:    rel.CreatedAt,
 		UpdatedAt:    rel.UpdatedAt,
 	}
@@ -47,8 +52,8 @@ func (r *RelationRepository) CreateEventRelation(ctx context.Context, rel domain
 		EventIDB:     rel.EventIDB,
 		RelationType: rel.RelationType,
 		Status:       rel.Status,
-		Confidence:   toInterfaceFloat64(rel.Confidence),
-		Reason:       toInterface(rel.Reason),
+		Confidence:   toNullFloat64(rel.Confidence),
+		Reason:       toNullString(rel.Reason),
 		CreatedAt:    rel.CreatedAt,
 		UpdatedAt:    rel.UpdatedAt,
 	}
@@ -59,11 +64,12 @@ func (r *RelationRepository) CreateEventRelation(ctx context.Context, rel domain
 	return mapDBEventRelationToDomain(dbRel), nil
 }
 
-func (r *RelationRepository) ListMovementRelations(ctx context.Context, movementID string, direction string) ([]domain.MovementRelation, error) {
+// ListMovementRelations returns every relation a movement takes part in,
+// incoming or outgoing (the query matches either side).
+func (r *RelationRepository) ListMovementRelations(ctx context.Context, movementID string) ([]domain.MovementRelation, error) {
 	if r.db.Querier == nil {
 		return nil, ErrUnavailable
 	}
-	// Simplified: list by movement_id_a
 	params := db.ListRelationsByMovementParams{
 		MovementIDA: movementID,
 		MovementIDB: movementID,
@@ -98,57 +104,41 @@ func (r *RelationRepository) ListEventRelations(ctx context.Context, eventID str
 	return out, nil
 }
 
+// DeleteMovementRelation removes one relation row. The transfer delete
+// needs it explicit: the relation outlives neither of its legs.
+func (r *RelationRepository) DeleteMovementRelation(ctx context.Context, id string) error {
+	if r.db.Querier == nil {
+		return ErrUnavailable
+	}
+	if err := r.db.Querier.DeleteMovementRelation(ctx, id); err != nil {
+		return translateError(err)
+	}
+	return nil
+}
+
 func mapDBMovementRelationToDomain(r db.MovementRelation) domain.MovementRelation {
-	floatPtr := func(v interface{}) *float64 {
-		if v == nil {
-			return nil
-		}
-		f := v.(float64)
-		return &f
-	}
-	strPtr := func(v interface{}) *string {
-		if v == nil {
-			return nil
-		}
-		s := v.(string)
-		return &s
-	}
 	return domain.MovementRelation{
 		ID:           r.ID,
 		MovementIDA:  r.MovementIDA,
 		MovementIDB:  r.MovementIDB,
 		RelationType: r.RelationType,
 		Status:       r.Status,
-		Confidence:   floatPtr(r.Confidence),
-		Reason:       strPtr(r.Reason),
+		Confidence:   fromNullFloat64(r.Confidence),
+		Reason:       fromNullString(r.Reason),
 		CreatedAt:    r.CreatedAt,
 		UpdatedAt:    r.UpdatedAt,
 	}
 }
 
 func mapDBEventRelationToDomain(r db.EventRelation) domain.EventRelation {
-	floatPtr := func(v interface{}) *float64 {
-		if v == nil {
-			return nil
-		}
-		f := v.(float64)
-		return &f
-	}
-	strPtr := func(v interface{}) *string {
-		if v == nil {
-			return nil
-		}
-		s := v.(string)
-		return &s
-	}
 	return domain.EventRelation{
 		ID:           r.ID,
 		EventIDA:     r.EventIDA,
 		EventIDB:     r.EventIDB,
 		RelationType: r.RelationType,
 		Status:       r.Status,
-		Confidence:   floatPtr(r.Confidence),
-		Reason:       strPtr(r.Reason),
+		Confidence:   fromNullFloat64(r.Confidence),
+		Reason:       fromNullString(r.Reason),
 		CreatedAt:    r.CreatedAt,
 		UpdatedAt:    r.UpdatedAt,
 	}

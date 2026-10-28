@@ -8,11 +8,14 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
 import { SkeletonRows } from '../components/ui/SkeletonRows';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { PageWithDrawer } from '../app/layout/PageWithDrawer';
+import { tableHead, tableHeadRight } from '../components/ui/table';
 import { useAccounts } from '../hooks/useAccounts';
 import { useResource } from '../hooks/useResource';
 import { accountTypeLabel } from '../lib/accountType';
+import { invalidateCollections } from '../lib/dataBus';
 import { formatDate } from '../lib/formatDate';
-import { formatSignedMoney } from '../lib/formatMoney';
+import { formatSignedMoney, signedAmountClass } from '../lib/formatMoney';
 import type { Movement } from '../types/movement';
 
 /* Cuenta individual — the account as a financial entity: identity, its real
@@ -21,13 +24,10 @@ import type { Movement } from '../types/movement';
    not yet registered shows the honest "sin ficha" state — no invented
    entity, no 404 round-trip. Its movements and documents are real. */
 
-const tableHead = 'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
-
 export default function AccountDetailPage() {
   const { id = '' } = useParams();
 
-  const [refreshKey, setRefreshKey] = useState(0);
-  const accounts = useAccounts(refreshKey);
+  const accounts = useAccounts();
   const movements = useResource(id || null, getAccountMovements);
   const documents = useResource(id || null, getAccountDocuments);
 
@@ -55,22 +55,18 @@ export default function AccountDetailPage() {
   const accountName = account?.Name ?? null;
 
   return (
-    <div
-      className={`space-y-8 transition-[padding] duration-[220ms] ease-out-tk ${
-        selected ? 'pr-[calc(min(440px,40vw)_+_16px)]' : ''
-      }`}
-    >
+    <PageWithDrawer open={selected !== null} className="space-y-8">
       {/* Identidad de la cuenta */}
       {accounts.loading ? (
         <div className="h-14 w-72 animate-pulse rounded-tk bg-interactive" aria-hidden="true" />
       ) : accounts.error ? (
         <ErrorState
           message="No se pudo cargar la cuenta desde el servidor."
-          onRetry={() => setRefreshKey((k) => k + 1)}
+          onRetry={() => invalidateCollections('accounts', 'movements', 'documents')}
         />
       ) : account ? (
         <header className="space-y-3">
-          <h1 className="text-[1.75rem] font-semibold tracking-tight text-ink">{account.Name}</h1>
+          <h1 className="text-headline font-semibold tracking-tight text-ink">{account.Name}</h1>
           <div className="flex flex-wrap items-center gap-2 text-body text-ink-2">
             <span>{accountTypeLabel(account.AccountType)}</span>
             <span aria-hidden="true">·</span>
@@ -89,7 +85,9 @@ export default function AccountDetailPage() {
           <p className="flex flex-wrap items-center gap-2 text-body text-ink-2">
             <span className="font-mono text-meta text-ink-3">{id}</span>
             <span aria-hidden="true">·</span>
-            <span>Referenciada por la actividad importada, pero aún no existe como entidad registrada.</span>
+            <span>
+              Referenciada por la actividad importada, pero aún no existe como entidad registrada.
+            </span>
           </p>
         </header>
       )}
@@ -104,7 +102,10 @@ export default function AccountDetailPage() {
         <section aria-label="Movimientos de la cuenta" className="space-y-2">
           <SectionHeader
             title={`Movimientos${movements.status === 'ready' ? ` (${movementList.length})` : ''}`}
-            action={{ to: `/transactions?cuenta=${encodeURIComponent(id)}`, label: 'Ver en Movimientos' }}
+            action={{
+              to: `/transactions?cuenta=${encodeURIComponent(id)}`,
+              label: 'Ver en Movimientos',
+            }}
           />
           {movements.status === 'loading' ? (
             <SkeletonRows rows={5} />
@@ -119,7 +120,7 @@ export default function AccountDetailPage() {
               description="Esta cuenta todavía no tiene movimientos registrados."
             />
           ) : (
-            <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
+            <div className="overflow-x-auto rounded-card border border-line bg-surface">
               <table
                 className="w-full text-body"
                 onKeyDown={(e) => {
@@ -138,7 +139,7 @@ export default function AccountDetailPage() {
                     <th className={`${tableHead} w-24`}>Fecha</th>
                     <th className={tableHead}>Descripción</th>
                     <th className={`${tableHead} w-32`}>Categoría</th>
-                    <th className={`${tableHead.replace('text-left', 'text-right')} w-32`}>Monto</th>
+                    <th className={`${tableHeadRight} w-32`}>Monto</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -152,7 +153,7 @@ export default function AccountDetailPage() {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') setSelected(mv);
                         }}
-                        aria-label={`${formatDate(mv.MovementDate)} — ${mv.Description ?? 'Sin descripción'} — ${formatSignedMoney(mv.AmountMinor)}`}
+                        aria-label={`${formatDate(mv.MovementDate)} — ${mv.Description ?? 'Sin descripción'} — ${formatSignedMoney(mv.AmountMinor, mv.currency)}`}
                         className={`relative cursor-pointer border-t border-line/60 transition-colors duration-[120ms] hover:bg-interactive focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${
                           isSelected ? 'bg-accent-wash' : ''
                         }`}
@@ -174,11 +175,9 @@ export default function AccountDetailPage() {
                         </td>
                         <td className="truncate px-3 py-2 text-ink-2">{mv.categoryName || '—'}</td>
                         <td
-                          className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${
-                            mv.AmountMinor > 0 ? 'text-pos' : mv.AmountMinor < 0 ? 'text-neg' : 'text-ink'
-                          }`}
+                          className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${signedAmountClass(mv.AmountMinor)}`}
                         >
-                          {formatSignedMoney(mv.AmountMinor)}
+                          {formatSignedMoney(mv.AmountMinor, mv.currency)}
                         </td>
                       </tr>
                     );
@@ -208,7 +207,7 @@ export default function AccountDetailPage() {
               description="Esta cuenta todavía no tiene documentos asociados."
             />
           ) : (
-            <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
+            <div className="overflow-x-auto rounded-card border border-line bg-surface">
               <table className="w-full text-body">
                 <thead className="bg-raised">
                   <tr>
@@ -242,9 +241,9 @@ export default function AccountDetailPage() {
 
       <DetailDrawer
         movement={selected}
-        accountName={selected ? accountName ?? selected.AccountID : null}
+        accountName={selected ? (accountName ?? selected.AccountID) : null}
         onClose={() => setSelected(null)}
       />
-    </div>
+    </PageWithDrawer>
   );
 }

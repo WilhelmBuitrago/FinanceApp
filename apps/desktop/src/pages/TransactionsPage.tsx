@@ -2,14 +2,20 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAccounts } from '../hooks/useAccounts';
 import { useMovements } from '../hooks/useMovements';
+import { useAccountNames } from '../hooks/useAccountNames';
+import { invalidateCollections } from '../lib/dataBus';
 import { formatDate } from '../lib/formatDate';
-import { formatSignedMoney } from '../lib/formatMoney';
+import { formatSignedMoney, signedAmountClass } from '../lib/formatMoney';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { IconClose, IconSearch } from '../components/icons';
+import { selectClassAuto } from '../components/FormField';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
 import { SkeletonRows } from '../components/ui/SkeletonRows';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { secondaryButton } from '../components/ui/buttons';
+import { tableHead, tableHeadRight } from '../components/ui/table';
+import { PageWithDrawer } from '../app/layout/PageWithDrawer';
 import type { Movement } from '../types/movement';
 
 /* Movimientos — the product's main query screen.
@@ -24,11 +30,9 @@ const MOVEMENT_STATUS_LABELS: Record<string, string> = {
   REVERSED: 'Revertidos',
 };
 
-const tableHead = 'px-3 py-1.5 text-left font-medium uppercase tracking-[0.08em] text-meta text-ink-3';
-
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex h-7 items-center gap-1.5 rounded-[8px] border border-line bg-surface px-2 text-meta text-ink-2">
+    <span className="inline-flex h-7 items-center gap-1.5 rounded-tk border border-line bg-surface px-2 text-meta text-ink-2">
       {label}
       <button
         onClick={onRemove}
@@ -41,12 +45,6 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
   );
 }
 
-const secondaryButton =
-  'inline-flex h-8 items-center rounded-[8px] border border-line bg-raised px-3 text-body font-medium text-ink transition-colors duration-[120ms] hover:bg-interactive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
-
-const selectClass =
-  'h-8 rounded-[8px] border border-line bg-bg px-2 text-body text-ink focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
-
 export default function TransactionsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get('q') ?? '';
@@ -58,17 +56,18 @@ export default function TransactionsPage() {
     if (value) next.set(key, value);
     else next.delete(key);
     setSearchParams(next, { replace: true });
+    // A different filter set invalidates the open drawer's row.
+    setSelected(null);
   };
-  const clearFilters = () => setSearchParams(new URLSearchParams(), { replace: true });
+  const clearFilters = () => {
+    setSearchParams(new URLSearchParams(), { replace: true });
+    setSelected(null);
+  };
 
   const movements = useMovements();
   const accounts = useAccounts();
 
-  const accountNames = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const account of accounts.data ?? []) map.set(account.ID, account.Name);
-    return map;
-  }, [accounts.data]);
+  const accountNames = useAccountNames(accounts);
 
   /* Every documented record stays an independent row — filter only, never merge. */
   const filtered = useMemo(() => {
@@ -85,7 +84,8 @@ export default function TransactionsPage() {
   const accountOptions = useMemo(() => {
     const map = new Map<string, string>();
     for (const mv of movements.data ?? []) {
-      if (!map.has(mv.AccountID)) map.set(mv.AccountID, accountNames.get(mv.AccountID) ?? mv.AccountID);
+      if (!map.has(mv.AccountID))
+        map.set(mv.AccountID, accountNames.get(mv.AccountID) ?? mv.AccountID);
     }
     return [...map.entries()].map(([id, label]) => ({ id, label }));
   }, [movements.data, accountNames]);
@@ -119,20 +119,11 @@ export default function TransactionsPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // Close the drawer when the filters change underneath it
-  useEffect(() => {
-    setSelected(null);
-  }, [q, cuenta, estado]);
-
   const filtersActive = q !== '' || cuenta !== '' || estado !== '';
   const total = movements.data?.length ?? 0;
 
   return (
-    <div
-      className={`transition-[padding] duration-[220ms] ease-out-tk ${
-        selected ? 'pr-[calc(min(440px,40vw)_+_16px)]' : ''
-      }`}
-    >
+    <PageWithDrawer open={selected !== null}>
       {/* Toolbar: search + filters + count */}
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <div className="relative">
@@ -153,7 +144,7 @@ export default function TransactionsPage() {
           value={cuenta}
           onChange={(e) => setParam('cuenta', e.target.value)}
           aria-label="Filtrar por cuenta"
-          className={selectClass}
+          className={selectClassAuto}
         >
           <option value="">Todas las cuentas</option>
           {accountOptions.map((opt) => (
@@ -166,7 +157,7 @@ export default function TransactionsPage() {
           value={estado}
           onChange={(e) => setParam('estado', e.target.value)}
           aria-label="Filtrar por estado"
-          className={selectClass}
+          className={selectClassAuto}
         >
           <option value="">Todos los estados</option>
           {statusOptions.map((s) => (
@@ -211,7 +202,7 @@ export default function TransactionsPage() {
       ) : movements.error ? (
         <ErrorState
           message="No se pudo cargar los movimientos desde el servidor."
-          onRetry={() => window.location.reload()}
+          onRetry={() => invalidateCollections('movements', 'accounts')}
         />
       ) : total === 0 ? (
         <EmptyState
@@ -255,7 +246,7 @@ export default function TransactionsPage() {
                 <th className={`${tableHead} w-32`}>Categoría</th>
                 <th className={`${tableHead} w-40`}>Cuenta</th>
                 {showEstado && <th className={`${tableHead} w-28`}>Estado</th>}
-                <th className={`${tableHead.replace('text-left', 'text-right')} w-32`}>Monto</th>
+                <th className={`${tableHeadRight} w-32`}>Monto</th>
               </tr>
             </thead>
             <tbody>
@@ -269,24 +260,31 @@ export default function TransactionsPage() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') setSelected(mv);
                     }}
-                    aria-label={`${formatDate(mv.MovementDate)} — ${mv.Description ?? 'Sin descripción'} — ${formatSignedMoney(mv.AmountMinor)}`}
+                    aria-label={`${formatDate(mv.MovementDate)} — ${mv.Description ?? 'Sin descripción'} — ${formatSignedMoney(mv.AmountMinor, mv.currency)}`}
                     className={`relative cursor-pointer border-t border-line/60 transition-colors duration-[120ms] hover:bg-interactive focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${
                       isSelected ? 'bg-accent-wash' : ''
                     }`}
                   >
                     {isSelected && (
-                      <span className="absolute bottom-0 left-0 top-0 w-[2px] bg-accent" aria-hidden="true" />
+                      <span
+                        className="absolute bottom-0 left-0 top-0 w-[2px] bg-accent"
+                        aria-hidden="true"
+                      />
                     )}
                     <td className="whitespace-nowrap px-3 py-2 text-meta text-ink-3">
                       {formatDate(mv.MovementDate)}
                     </td>
-                    <td className="w-full max-w-0 truncate px-3 py-2 text-ink" title={mv.Description ?? undefined}>
+                    <td
+                      className="w-full max-w-0 truncate px-3 py-2 text-ink"
+                      title={mv.Description ?? undefined}
+                    >
                       {mv.Description ?? '—'}
                     </td>
-                    <td className="truncate px-3 py-2 text-ink-2">
-                      {(mv as any).categoryName ?? '—'}
-                    </td>
-                    <td className="truncate px-3 py-2 text-ink-2" title={accountNames.get(mv.AccountID) ?? undefined}>
+                    <td className="truncate px-3 py-2 text-ink-2">{mv.categoryName || '—'}</td>
+                    <td
+                      className="truncate px-3 py-2 text-ink-2"
+                      title={accountNames.get(mv.AccountID) ?? undefined}
+                    >
                       {accountNames.get(mv.AccountID) ?? '—'}
                     </td>
                     {showEstado && (
@@ -295,11 +293,9 @@ export default function TransactionsPage() {
                       </td>
                     )}
                     <td
-                      className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${
-                        mv.AmountMinor > 0 ? 'text-pos' : mv.AmountMinor < 0 ? 'text-neg' : 'text-ink'
-                      }`}
+                      className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${signedAmountClass(mv.AmountMinor)}`}
                     >
-                      {formatSignedMoney(mv.AmountMinor)}
+                      {formatSignedMoney(mv.AmountMinor, mv.currency)}
                     </td>
                   </tr>
                 );
@@ -311,9 +307,9 @@ export default function TransactionsPage() {
 
       <DetailDrawer
         movement={selected}
-        accountName={selected ? accountNames.get(selected.AccountID) ?? null : null}
+        accountName={selected ? (accountNames.get(selected.AccountID) ?? null) : null}
         onClose={() => setSelected(null)}
       />
-    </div>
+    </PageWithDrawer>
   );
 }

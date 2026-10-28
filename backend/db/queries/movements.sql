@@ -1,0 +1,93 @@
+-- name: CreateMovement :one
+INSERT INTO movements (
+    id,
+    financial_event_id,
+    account_id,
+    source_entry_id,
+    movement_date,
+    amount_minor,
+    description,
+    status,
+    metadata_json,
+    created_at,
+    updated_at
+) VALUES (
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+) RETURNING id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos;
+
+-- name: GetMovement :one
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos FROM movements WHERE id = ?;
+
+-- name: ListMovementsAll :many
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos FROM movements ORDER BY created_at DESC LIMIT sqlc.arg(limit);
+
+-- name: ListMovementsByAccount :many
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos FROM movements WHERE account_id = ? ORDER BY created_at DESC;
+
+-- name: ListMovementsByCategory :many
+SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at, m.amount_scaled_to_centavos
+FROM movements m
+JOIN financial_events fe ON fe.id = m.financial_event_id
+WHERE fe.category_id = ?
+ORDER BY m.created_at DESC;
+
+-- name: ListMovementsWithEventAndCategory :many
+-- Every movement listing needs the category of its financial event: one
+-- join replaces the two per-row lookups the handlers used to do. A
+-- transfer leg also carries the account of its counterpart, so the two
+-- legs of one transfer read as one decision.
+SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at,
+       fe.event_type,
+       fe.category_id,
+       c.name AS category_name,
+       ma.currency AS account_currency,
+       ca.id AS counterpart_account_id,
+       ca.name AS counterpart_account_name
+FROM movements m
+JOIN financial_events fe ON fe.id = m.financial_event_id
+LEFT JOIN accounts ma ON ma.id = m.account_id
+LEFT JOIN categories c ON c.id = fe.category_id
+LEFT JOIN movement_relations mr
+       ON mr.relation_type = 'TRANSFER_COUNTERPART'
+       AND (mr.movement_id_a = m.id OR mr.movement_id_b = m.id)
+LEFT JOIN movements cm
+       ON cm.id = CASE WHEN mr.movement_id_a = m.id THEN mr.movement_id_b ELSE mr.movement_id_a END
+LEFT JOIN accounts ca ON ca.id = cm.account_id
+ORDER BY m.created_at DESC LIMIT sqlc.arg(limit);
+
+-- name: ListMovementsByAccountWithEventAndCategory :many
+SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_date, m.amount_minor, m.description, m.status, m.metadata_json, m.created_at, m.updated_at,
+       fe.event_type,
+       fe.category_id,
+       c.name AS category_name,
+       ma.currency AS account_currency,
+       ca.id AS counterpart_account_id,
+       ca.name AS counterpart_account_name
+FROM movements m
+JOIN financial_events fe ON fe.id = m.financial_event_id
+LEFT JOIN accounts ma ON ma.id = m.account_id
+LEFT JOIN categories c ON c.id = fe.category_id
+LEFT JOIN movement_relations mr
+       ON mr.relation_type = 'TRANSFER_COUNTERPART'
+       AND (mr.movement_id_a = m.id OR mr.movement_id_b = m.id)
+LEFT JOIN movements cm
+       ON cm.id = CASE WHEN mr.movement_id_a = m.id THEN mr.movement_id_b ELSE mr.movement_id_a END
+LEFT JOIN accounts ca ON ca.id = cm.account_id
+WHERE m.account_id = ?
+ORDER BY m.created_at DESC LIMIT sqlc.arg(limit);
+
+-- name: DeleteMovement :exec
+DELETE FROM movements WHERE id = ?;
+
+-- name: FindMovementsByNaturalKey :many
+-- The manual-entry identity: same account, date and amount, with a
+-- description that matches the row or is empty on the request's side.
+-- One query replaces loading the whole movements table into the handler
+-- to hunt a duplicate.
+SELECT id, financial_event_id, account_id, source_entry_id, movement_date, amount_minor, description, status, metadata_json, created_at, updated_at, amount_scaled_to_centavos
+FROM movements
+WHERE account_id = sqlc.arg(account_id)
+  AND movement_date = sqlc.arg(movement_date)
+  AND amount_minor = sqlc.arg(amount_minor)
+  AND (description IS NULL OR description = sqlc.arg(request_description) OR sqlc.arg(request_description) = '')
+ORDER BY created_at DESC;

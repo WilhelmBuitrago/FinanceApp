@@ -6,25 +6,58 @@ import (
 	"strings"
 )
 
-func toInterface(s *string) interface{} {
+func toNullString(s *string) sql.NullString {
 	if s == nil {
-		return nil
+		return sql.NullString{}
 	}
-	return *s
+	return sql.NullString{String: *s, Valid: true}
 }
 
-func toInterfaceInt64(i *int64) interface{} {
+func fromNullString(ns sql.NullString) *string {
+	if !ns.Valid {
+		return nil
+	}
+	v := ns.String
+	return &v
+}
+
+// fromNullStringValue reads a nullable column as a plain string: the
+// hydrated movement rows branch on an empty value for "no category".
+func fromNullStringValue(ns sql.NullString) string {
+	if ns.Valid {
+		return ns.String
+	}
+	return ""
+}
+
+func toNullInt64(i *int64) sql.NullInt64 {
 	if i == nil {
-		return nil
+		return sql.NullInt64{}
 	}
-	return *i
+	return sql.NullInt64{Int64: *i, Valid: true}
 }
 
-func toInterfaceFloat64(f *float64) interface{} {
-	if f == nil {
+func fromNullInt64(ni sql.NullInt64) *int64 {
+	if !ni.Valid {
 		return nil
 	}
-	return *f
+	v := ni.Int64
+	return &v
+}
+
+func toNullFloat64(f *float64) sql.NullFloat64 {
+	if f == nil {
+		return sql.NullFloat64{}
+	}
+	return sql.NullFloat64{Float64: *f, Valid: true}
+}
+
+func fromNullFloat64(nf sql.NullFloat64) *float64 {
+	if !nf.Valid {
+		return nil
+	}
+	v := nf.Float64
+	return &v
 }
 
 func translateError(err error) error {

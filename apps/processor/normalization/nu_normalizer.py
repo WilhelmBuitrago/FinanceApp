@@ -1,7 +1,6 @@
 """Normalization utilities for Nu Account documents."""
 
 import re
-from datetime import datetime
 
 _MONTH_MAP = {
     'ene': '01', 'jan': '01',
@@ -18,23 +17,32 @@ _MONTH_MAP = {
     'dic': '12', 'dec': '12',
 }
 
+
 def normalize_date(period_str: str, date_original: str) -> str:
     """
-    Normalize movement date using period month/year.
-    period_str example: '01 - 31 MAR 2026'
-    date_original example: '01 mar'
-    Returns ISO date 'YYYY-MM-DD'.
-    """
-    # Extract year and month from period
-    m = re.search(r'([A-Za-z]{3})\s+(\d{4})', period_str)
-    if not m:
-        raise ValueError(f"Unable to parse period: {period_str}")
-    period_month_abbr = m.group(1).lower()
-    year = m.group(2)
+    Normalize movement date to ISO 'YYYY-MM-DD'.
 
-    period_month_num = _MONTH_MAP.get(period_month_abbr[:3])
-    if not period_month_num:
-        raise ValueError(f"Unknown month in period: {period_month_abbr}")
+    The year comes from the movement's own date when it carries one
+    ('14 abr 2026'); otherwise from the period ('01 - 30 ABR 2026').
+    The period is the fallback, not the only source: a movement that
+    states its own year normalizes even when the period is unreadable.
+    period_str example: '01 - 30 ABR 2026'
+    date_original example: '01 mar'
+    """
+    # Year: movement date first, period as fallback.
+    own_year = re.search(r'\b(?:19|20)\d{2}\b', date_original)
+    if own_year:
+        year = own_year.group(0)
+    else:
+        m = re.search(r'([A-Za-z]{3})\s+(\d{4})', period_str or '')
+        if not m:
+            raise ValueError(f"Unable to parse period: {period_str}")
+        year = m.group(2)
+
+    # Period month is only a fallback for movements whose date carries no
+    # recognizable month; extract it when the period has one.
+    pm = re.search(r'([A-Za-z]{3})\s+(\d{4})', period_str or '')
+    period_month_num = _MONTH_MAP.get(pm.group(1).lower()[:3]) if pm else None
 
     # Parse day and month from date_original
     dm = re.search(r'(\d{1,2})\s*([A-Za-z]{3})', date_original.lower())
@@ -52,15 +60,25 @@ def normalize_date(period_str: str, date_original: str) -> str:
 
     # Use month from date_original if known, otherwise period month
     month_num = date_month_num or period_month_num
+    if month_num is None:
+        raise ValueError(f"Unable to determine month for: {date_original}")
 
     day_str = f"{day:02d}"
     return f"{year}-{month_num}-{day_str}"
 
+
 def normalize_amount(amount_original: str) -> int:
     """
-    Normalize amount string to integer pesos.
-    Example: '+$700.000,00' -> 700000
-             '-$765.000,00' -> -765000
+    Normalize amount string to integer centavos.
+
+    The ledger's unit is the centavo (amount_minor) and the UI divides by
+    100 to render pesos: this must return the same unit the manual path
+    writes. It used to return whole pesos and drop the decimals, so an
+    imported statement landed a hundred times small and lost its cents.
+
+    Example: '+$700.000,00' -> 70000000
+             '-$765.000,00' -> -76500000
+             '+$700.000,50' -> 70000050
     """
     if not amount_original:
         raise ValueError("Empty amount")
@@ -76,14 +94,21 @@ def normalize_amount(amount_original: str) -> int:
     s_clean = s_clean.replace(' ', '')
 
     # Colombian format: dots as thousands, comma as decimal
-    # Remove thousands separators
     s_no_thousands = s_clean.replace('.', '')
-    # Replace decimal comma with dot for parsing
+    # A line with no digits left is not an amount: the empty check runs on
+    # the raw string, so a whitespace-only value used to reach the int
+    # fallback and normalize to zero — a lie the pipeline would persist.
+    if not s_no_thousands:
+        raise ValueError("No digits in amount: " + repr(amount_original))
+    # Keep both parts: the integer pesos and the cents the statement
+    # actually carries. The int fallback used to drop the cents entirely.
     if ',' in s_no_thousands:
         int_part, dec_part = s_no_thousands.split(',', 1)
-        # Keep only integer pesos, ignore cents
-        value = int(int_part) if int_part else 0
+        pesos = int(int_part) if int_part else 0
+        cents = int((dec_part + '00')[:2]) if dec_part else 0
+        value = pesos * 100 + cents
     else:
-        value = int(s_no_thousands) if s_no_thousands else 0
+        value = (int(s_no_thousands) if s_no_thousands else 0) * 100
 
+    return sign * value
     return sign * value

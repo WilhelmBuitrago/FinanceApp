@@ -24,8 +24,8 @@ func (r *CategoryRepository) Create(ctx context.Context, cat domain.Category) (d
 	params := db.CreateCategoryParams{
 		ID:           cat.ID,
 		Name:         cat.Name,
-		ParentID:     toInterface(cat.ParentID),
-		CategoryType: toInterface(cat.CategoryType),
+		ParentID:     toNullString(cat.ParentID),
+		CategoryType: toNullString(cat.CategoryType),
 		Status:       cat.Status,
 		CreatedAt:    cat.CreatedAt,
 		UpdatedAt:    cat.UpdatedAt,
@@ -66,26 +66,22 @@ func (r *CategoryRepository) List(ctx context.Context, status string) ([]domain.
 	return out, nil
 }
 
-func (r *CategoryRepository) Update(ctx context.Context, cat domain.Category) (domain.Category, error) {
-	return domain.Category{}, ErrInvalid
+// Delete removes a category row. Deleting a category that does not exist
+// affects zero rows and is not an error (SQLite semantics), matching the
+// HTTP layer's expectations.
+func (r *CategoryRepository) Delete(ctx context.Context, id string) error {
+	if r.db.Querier == nil {
+		return ErrUnavailable
+	}
+	return translateError(r.db.Querier.DeleteCategory(ctx, id))
 }
 
 func mapDBCategoryToDomain(c db.Category) domain.Category {
-	var parent *string
-	if c.ParentID != nil {
-		v := c.ParentID.(string)
-		parent = &v
-	}
-	var catType *string
-	if c.CategoryType != nil {
-		v := c.CategoryType.(string)
-		catType = &v
-	}
 	return domain.Category{
 		ID:           c.ID,
 		Name:         c.Name,
-		ParentID:     parent,
-		CategoryType: catType,
+		ParentID:     fromNullString(c.ParentID),
+		CategoryType: fromNullString(c.CategoryType),
 		Status:       c.Status,
 		CreatedAt:    c.CreatedAt,
 		UpdatedAt:    c.UpdatedAt,

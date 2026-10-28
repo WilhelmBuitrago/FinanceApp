@@ -24,3 +24,39 @@ type MovementComponent struct {
 	CreatedAt     string
 	UpdatedAt     string
 }
+
+// MovementWithCategory is a movement plus the category of its financial
+// event, hydrated by a single join. Every movement listing needs both,
+// and fetching them per row cost two queries per movement. A transfer
+// leg also carries the account of its counterpart: the two legs of one
+// transfer read as one decision.
+type MovementWithCategory struct {
+	Movement
+	CategoryID             string
+	CategoryName           string
+	EventType              string
+	AccountCurrency        string
+	CounterpartAccountName string
+}
+
+// ManualMovementCommand is the manual-creation input the API layer decoded
+// and validated, handed to the service that owns the policy (duplicate
+// detection, review parking, the atomic write).
+type ManualMovementCommand struct {
+	AccountID   string
+	AmountMinor int64
+	Type        string
+	ToAccountID string
+	Description string
+	Date        string
+	CategoryID  string
+	Force       bool
+}
+
+// ManualMovementOutcome is the result: either the created movement's id,
+// or the collision parked in the review queue for the human to decide.
+type ManualMovementOutcome struct {
+	ID             string
+	Duplicate      bool
+	ParkedReviewID string
+}

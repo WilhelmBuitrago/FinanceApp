@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { uploadDocument } from '../api/documents';
-import { ApiError } from '../api/client';
+import { getJob } from '../api/jobs';
+import { getReviewEntries, type ReviewItem } from '../api/review';
+import { invalidateCollections } from '../lib/dataBus';
+import { payloadOf } from '../lib/reviewPayload';
+import { apiErrorDetail } from '../api/client';
 import {
   DrawerBody,
   DrawerCloseButton,
@@ -22,16 +26,74 @@ import type { Account } from '../types/account';
 interface ImportDocumentDrawerProps {
   accounts: Account[];
   onClose: () => void;
-  onImported: () => void;
+  onFinished: () => void;
 }
 
-export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDocumentDrawerProps) {
+export function ImportDocumentDrawer({ accounts, onClose, onFinished }: ImportDocumentDrawerProps) {
+  // The polling effect runs once per upload; the close callback arrives as
+  // a fresh closure each render, so it travels through a ref instead of
+  // joining the deps (which would restart the poll on every render).
+  const onFinishedRef = useRef(onFinished);
+  useEffect(() => {
+    onFinishedRef.current = onFinished;
+  }, [onFinished]);
   const [accountId, setAccountId] = useState(accounts[0]?.ID ?? '');
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadResult, setUploadResult] = useState<{document_id:string; job_id:string; processing_id?:string}|null>(null);
+  const [uploadResult, setUploadResult] = useState<{
+    document_id: string;
+    job_id: string;
+    processing_id?: string;
+  } | null>(null);
+  const [jobState, setJobState] = useState<'RUNNING' | 'SUCCESS' | 'FAILED' | null>(null);
+  const [reviewCount, setReviewCount] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // After an upload, poll the job until it reaches a terminal state and then
+  // report what landed in the human-review queue for this document: the user
+  // learns here, not by browsing to Revisión.
+  useEffect(() => {
+    if (!uploadResult) return;
+    let cancelled = false;
+    let attempts = 0;
+    const tick = async () => {
+      try {
+        const job = await getJob(uploadResult.job_id);
+        if (cancelled) return;
+        if (job.Status === 'SUCCESS' || job.Status === 'FAILED') {
+          setJobState(job.Status);
+          const items = await getReviewEntries().catch(() => [] as ReviewItem[]);
+          if (cancelled) return;
+          // The parked payload names its document: which of the queue items
+          // BELONG to this import.
+          const mine = (items || []).filter(
+            (it) => payloadOf(it).document_id === uploadResult.document_id,
+          );
+          setReviewCount(mine.length);
+          // An import lands documents, movements, aggregates and possibly
+          // review items: every screen showing them refetches through the
+          // bus (this replaces the window event the badge used to need).
+          invalidateCollections('documents', 'movements', 'dashboard', 'review');
+          onFinishedRef.current();
+          return;
+        }
+      } catch {
+        /* job still processing or transient error: retry */
+      }
+      if (cancelled) return;
+      attempts += 1;
+      if (attempts >= 20) {
+        setJobState('FAILED');
+        return;
+      }
+      setTimeout(tick, 1500);
+    };
+    tick();
+    return () => {
+      cancelled = true;
+    };
+  }, [uploadResult]);
 
   const submit = async () => {
     if (!accountId || !file) return;
@@ -42,27 +104,14 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
     const entity = account?.Institution ?? undefined;
     try {
       const result = await uploadDocument(accountId, file, entity);
+      // The job starts running the moment the upload lands: set in the
+      // event handler, not synced from the effect (react-hooks flags the
+      // effect version, and it buys nothing).
       setUploadResult(result);
+      setJobState('RUNNING');
+      setReviewCount(null);
     } catch (err) {
-      let detail: string | undefined;
-      if (err instanceof ApiError) {
-        const r = err.response;
-        if (typeof r === 'object' && r && 'error' in (r as any)) {
-          detail = (r as any).error;
-        } else if (typeof r === 'string') {
-          try {
-            const parsed = JSON.parse(r);
-            if (parsed && typeof parsed === 'object' && 'error' in parsed) {
-              detail = parsed.error;
-            } else {
-              detail = r;
-            }
-          } catch {
-            detail = r;
-          }
-        }
-      }
-      setError(detail ?? 'No se pudo importar el documento.');
+      setError(apiErrorDetail(err) ?? 'No se pudo importar el documento.');
     } finally {
       setSubmitting(false);
     }
@@ -159,16 +208,30 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
                   aria-dropeffect="execute"
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 rounded-md bg-raised p-2 text-ink-3 group-[.is-dragging]:text-accent`}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
+                    <div
+                      className={`mt-0.5 rounded-sm bg-raised p-2 text-ink-3 group-[.is-dragging]:text-accent`}
+                    >
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
                       </svg>
                     </div>
                     <div className="min-w-0 flex-1">
                       {file ? (
                         <>
-                          <p className="text-body text-ink font-medium truncate" title={file.name}>{file.name}</p>
+                          <p className="text-body text-ink font-medium truncate" title={file.name}>
+                            {file.name}
+                          </p>
                           <p className="text-meta text-ink-3">{(file.size / 1024).toFixed(0)} KB</p>
                         </>
                       ) : (
@@ -195,7 +258,10 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
 
             <div aria-live="polite" aria-atomic="true" className="space-y-3">
               {error && (
-                <div className="rounded-tk border border-neg/30 bg-neg/10 px-3 py-2 text-body text-neg" role="alert">
+                <div
+                  className="rounded-tk border border-neg/30 bg-neg/10 px-3 py-2 text-body text-neg"
+                  role="alert"
+                >
                   <p className="font-medium">No se pudo importar</p>
                   <p className="text-meta">{error}</p>
                 </div>
@@ -204,27 +270,69 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
                 <div className="rounded-tk border border-line bg-raised px-4 py-3 space-y-3">
                   <div className="flex items-start gap-3">
                     <span className="mt-0.5 text-pos">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <polyline points="20 6 9 17 4 12"/>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </span>
                     <div>
                       <p className="text-body font-medium text-ink">Documento recibido</p>
-                      <p className="text-meta text-ink-3">El extracto se ha enviado a la cuenta seleccionada. Puedes seguir su estado en Documentos.</p>
+                      <p className="text-meta text-ink-3">
+                        El extracto se ha enviado a la cuenta seleccionada. Puedes seguir su estado
+                        en Documentos.
+                      </p>
                     </div>
                   </div>
                   <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-meta">
                     <dt className="text-ink-3">Documento</dt>
-                    <dd className="text-ink"><CopyId id={uploadResult.document_id} /></dd>
+                    <dd className="text-ink">
+                      <CopyId id={uploadResult.document_id} />
+                    </dd>
                     <dt className="text-ink-3">Trabajo</dt>
-                    <dd className="text-ink"><CopyId id={uploadResult.job_id} /></dd>
+                    <dd className="text-ink">
+                      <CopyId id={uploadResult.job_id} />
+                    </dd>
                     {uploadResult.processing_id && (
                       <>
                         <dt className="text-ink-3">Procesamiento</dt>
-                        <dd className="text-ink"><CopyId id={uploadResult.processing_id} /></dd>
+                        <dd className="text-ink">
+                          <CopyId id={uploadResult.processing_id} />
+                        </dd>
                       </>
                     )}
                   </dl>
+                  {/* Import outcome: what the pipeline parked for a human. */}
+                  {jobState === 'RUNNING' && (
+                    <p className="text-meta text-ink-3">Procesando el extracto…</p>
+                  )}
+                  {jobState === 'FAILED' && (
+                    <p className="text-body text-neg">
+                      El procesamiento falló.Revisá el documento en Documentos.
+                    </p>
+                  )}
+                  {jobState === 'SUCCESS' &&
+                    reviewCount !== null &&
+                    (reviewCount > 0 ? (
+                      <p className="text-body text-ink">
+                        {reviewCount} movimiento(s) requieren verificación.{' '}
+                        <a href="/review" className="text-accent-strong underline">
+                          Ir a Revisión
+                        </a>
+                      </p>
+                    ) : (
+                      <p className="text-body text-ink-2">
+                        Extracto importado sin ítems pendientes.
+                      </p>
+                    ))}
                 </div>
               )}
             </div>
@@ -241,7 +349,10 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
                 </button>
               ) : (
                 <button
-                  onClick={() => { onImported(); onClose(); }}
+                  onClick={() => {
+                    onFinished();
+                    onClose();
+                  }}
                   className="inline-flex h-8 items-center justify-center rounded-tk bg-accent-strong px-3 text-body font-medium text-white transition-colors duration-[120ms] hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   Ver documentos
@@ -249,7 +360,11 @@ export function ImportDocumentDrawer({ accounts, onClose, onImported }: ImportDo
               )}
               {(error || uploadResult) && (
                 <button
-                  onClick={() => { setError(null); setUploadResult(null); setFile(null); }}
+                  onClick={() => {
+                    setError(null);
+                    setUploadResult(null);
+                    setFile(null);
+                  }}
                   className="inline-flex h-8 items-center justify-center rounded-tk border border-line px-3 text-body font-medium text-ink transition-colors duration-[120ms] hover:bg-interactive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   {uploadResult ? 'Importar otro' : 'Reiniciar'}

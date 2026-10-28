@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 
 import { CopyId } from './CopyId';
@@ -8,6 +7,7 @@ import {
   DrawerHeader,
   DrawerSectionLabel,
   DrawerShell,
+  KV,
 } from './DrawerShell';
 import { StatusBadge } from './ui/StatusBadge';
 import { formatDate } from '../lib/formatDate';
@@ -21,15 +21,6 @@ interface DocumentDrawerProps {
   document: Document | null;
   accountName: string | null;
   onClose: () => void;
-}
-
-function KV({ label, children }: { label: string; children?: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4 py-1">
-      <dt className="shrink-0 text-meta text-ink-3">{label}</dt>
-      <dd className="min-w-0 break-words text-right text-body text-ink">{children ?? '—'}</dd>
-    </div>
-  );
 }
 
 function fileNameFrom(sourceUri?: string | null): string | null {
@@ -88,9 +79,7 @@ export function DocumentDrawer({ document: doc, accountName, onClose }: Document
             </KV>
             <KV label="Hash">
               {doc.FileHash ? (
-                <span className="font-mono text-meta text-ink-3">
-                  {doc.FileHash.slice(0, 13)}…
-                </span>
+                <span className="font-mono text-meta text-ink-3">{doc.FileHash.slice(0, 13)}…</span>
               ) : (
                 '—'
               )}

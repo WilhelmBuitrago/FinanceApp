@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createMovementRelation = `-- name: CreateMovementRelation :one
@@ -26,15 +27,15 @@ INSERT INTO movement_relations (
 `
 
 type CreateMovementRelationParams struct {
-	ID           string      `json:"id"`
-	MovementIDA  string      `json:"movement_id_a"`
-	MovementIDB  string      `json:"movement_id_b"`
-	RelationType string      `json:"relation_type"`
-	Status       string      `json:"status"`
-	Confidence   interface{} `json:"confidence"`
-	Reason       interface{} `json:"reason"`
-	CreatedAt    string      `json:"created_at"`
-	UpdatedAt    string      `json:"updated_at"`
+	ID           string          `json:"id"`
+	MovementIDA  string          `json:"movement_id_a"`
+	MovementIDB  string          `json:"movement_id_b"`
+	RelationType string          `json:"relation_type"`
+	Status       string          `json:"status"`
+	Confidence   sql.NullFloat64 `json:"confidence"`
+	Reason       sql.NullString  `json:"reason"`
+	CreatedAt    string          `json:"created_at"`
+	UpdatedAt    string          `json:"updated_at"`
 }
 
 func (q *Queries) CreateMovementRelation(ctx context.Context, arg CreateMovementRelationParams) (MovementRelation, error) {
@@ -64,25 +65,13 @@ func (q *Queries) CreateMovementRelation(ctx context.Context, arg CreateMovement
 	return i, err
 }
 
-const getMovementRelation = `-- name: GetMovementRelation :one
-SELECT id, movement_id_a, movement_id_b, relation_type, status, confidence, reason, created_at, updated_at FROM movement_relations WHERE id = ?
+const deleteMovementRelation = `-- name: DeleteMovementRelation :exec
+DELETE FROM movement_relations WHERE id = ?
 `
 
-func (q *Queries) GetMovementRelation(ctx context.Context, id string) (MovementRelation, error) {
-	row := q.db.QueryRowContext(ctx, getMovementRelation, id)
-	var i MovementRelation
-	err := row.Scan(
-		&i.ID,
-		&i.MovementIDA,
-		&i.MovementIDB,
-		&i.RelationType,
-		&i.Status,
-		&i.Confidence,
-		&i.Reason,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+func (q *Queries) DeleteMovementRelation(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteMovementRelation, id)
+	return err
 }
 
 const listRelationsByMovement = `-- name: ListRelationsByMovement :many

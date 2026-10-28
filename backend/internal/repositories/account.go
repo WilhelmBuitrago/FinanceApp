@@ -26,11 +26,11 @@ func (r *AccountRepository) Create(ctx context.Context, acc domain.Account) (dom
 		UserID:          acc.UserID,
 		Name:            acc.Name,
 		AccountType:     acc.AccountType,
-		ParentAccountID: toInterface(acc.ParentAccountID),
+		ParentAccountID: toNullString(acc.ParentAccountID),
 		Currency:        acc.Currency,
 		Status:          acc.Status,
-		Institution:     toInterface(acc.Institution),
-		MetadataJson:    toInterface(acc.MetadataJson),
+		Institution:     toNullString(acc.Institution),
+		MetadataJson:    toNullString(acc.MetadataJson),
 		CreatedAt:       acc.CreatedAt,
 		UpdatedAt:       acc.UpdatedAt,
 	}
@@ -85,37 +85,17 @@ func (r *AccountRepository) List(ctx context.Context) ([]domain.Account, error) 
 	return out, nil
 }
 
-func (r *AccountRepository) Update(ctx context.Context, acc domain.Account) (domain.Account, error) {
-	// Update not implemented in SQL
-	return domain.Account{}, ErrInvalid
-}
-
 func mapDBAccountToDomain(a db.Account) domain.Account {
-	var parent *string
-	if a.ParentAccountID != nil {
-		v := a.ParentAccountID.(string)
-		parent = &v
-	}
-	var inst *string
-	if a.Institution != nil {
-		v := a.Institution.(string)
-		inst = &v
-	}
-	var meta *string
-	if a.MetadataJson != nil {
-		v := a.MetadataJson.(string)
-		meta = &v
-	}
 	return domain.Account{
 		ID:              a.ID,
 		UserID:          a.UserID,
 		Name:            a.Name,
 		AccountType:     a.AccountType,
-		ParentAccountID: parent,
+		ParentAccountID: fromNullString(a.ParentAccountID),
 		Currency:        a.Currency,
 		Status:          a.Status,
-		Institution:     inst,
-		MetadataJson:    meta,
+		Institution:     fromNullString(a.Institution),
+		MetadataJson:    fromNullString(a.MetadataJson),
 		CreatedAt:       a.CreatedAt,
 		UpdatedAt:       a.UpdatedAt,
 	}

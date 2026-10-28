@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createMovementComponent = `-- name: CreateMovementComponent :one
@@ -25,14 +26,14 @@ INSERT INTO movement_components (
 `
 
 type CreateMovementComponentParams struct {
-	ID            string      `json:"id"`
-	MovementID    string      `json:"movement_id"`
-	ComponentType string      `json:"component_type"`
-	AmountMinor   int64       `json:"amount_minor"`
-	Description   interface{} `json:"description"`
-	MetadataJson  interface{} `json:"metadata_json"`
-	CreatedAt     string      `json:"created_at"`
-	UpdatedAt     string      `json:"updated_at"`
+	ID            string         `json:"id"`
+	MovementID    string         `json:"movement_id"`
+	ComponentType string         `json:"component_type"`
+	AmountMinor   int64          `json:"amount_minor"`
+	Description   sql.NullString `json:"description"`
+	MetadataJson  sql.NullString `json:"metadata_json"`
+	CreatedAt     string         `json:"created_at"`
+	UpdatedAt     string         `json:"updated_at"`
 }
 
 func (q *Queries) CreateMovementComponent(ctx context.Context, arg CreateMovementComponentParams) (MovementComponent, error) {

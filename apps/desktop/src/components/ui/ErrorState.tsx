@@ -6,7 +6,10 @@ interface ErrorStateProps {
 /* Error state — what failed, in plain language (no status codes, no stack),
    plus a retry control when one is available. */
 
-export const ErrorState = ({ message = 'No se pudo cargar la información.', onRetry }: ErrorStateProps) => (
+export const ErrorState = ({
+  message = 'No se pudo cargar la información.',
+  onRetry,
+}: ErrorStateProps) => (
   <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
     <svg
       width="16"

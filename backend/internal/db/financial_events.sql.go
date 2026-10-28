@@ -7,7 +7,21 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
+
+const countMovementsByEvent = `-- name: CountMovementsByEvent :one
+SELECT COUNT(*) FROM movements WHERE financial_event_id = ?
+`
+
+// A financial event is the decision one or more movements belong to: the
+// delete path asks whether the event still has a leg before removing it.
+func (q *Queries) CountMovementsByEvent(ctx context.Context, financialEventID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countMovementsByEvent, financialEventID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
 
 const createFinancialEvent = `-- name: CreateFinancialEvent :one
 INSERT INTO financial_events (
@@ -28,17 +42,17 @@ INSERT INTO financial_events (
 `
 
 type CreateFinancialEventParams struct {
-	ID                 string      `json:"id"`
-	EventType          string      `json:"event_type"`
-	EventDate          interface{} `json:"event_date"`
-	Status             string      `json:"status"`
-	VerificationStatus string      `json:"verification_status"`
-	Description        interface{} `json:"description"`
-	CategoryID         interface{} `json:"category_id"`
-	Confidence         interface{} `json:"confidence"`
-	MetadataJson       interface{} `json:"metadata_json"`
-	CreatedAt          string      `json:"created_at"`
-	UpdatedAt          string      `json:"updated_at"`
+	ID                 string          `json:"id"`
+	EventType          string          `json:"event_type"`
+	EventDate          sql.NullString  `json:"event_date"`
+	Status             string          `json:"status"`
+	VerificationStatus string          `json:"verification_status"`
+	Description        sql.NullString  `json:"description"`
+	CategoryID         sql.NullString  `json:"category_id"`
+	Confidence         sql.NullFloat64 `json:"confidence"`
+	MetadataJson       sql.NullString  `json:"metadata_json"`
+	CreatedAt          string          `json:"created_at"`
+	UpdatedAt          string          `json:"updated_at"`
 }
 
 func (q *Queries) CreateFinancialEvent(ctx context.Context, arg CreateFinancialEventParams) (FinancialEvent, error) {
@@ -70,6 +84,15 @@ func (q *Queries) CreateFinancialEvent(ctx context.Context, arg CreateFinancialE
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const deleteFinancialEvent = `-- name: DeleteFinancialEvent :exec
+DELETE FROM financial_events WHERE id = ?
+`
+
+func (q *Queries) DeleteFinancialEvent(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteFinancialEvent, id)
+	return err
 }
 
 const getFinancialEvent = `-- name: GetFinancialEvent :one
@@ -132,4 +155,22 @@ func (q *Queries) ListFinancialEventsByType(ctx context.Context, eventType strin
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateFinancialEventCategory = `-- name: UpdateFinancialEventCategory :execrows
+UPDATE financial_events SET category_id = ?, updated_at = ? WHERE id = ?
+`
+
+type UpdateFinancialEventCategoryParams struct {
+	CategoryID sql.NullString `json:"category_id"`
+	UpdatedAt  string         `json:"updated_at"`
+	ID         string         `json:"id"`
+}
+
+func (q *Queries) UpdateFinancialEventCategory(ctx context.Context, arg UpdateFinancialEventCategoryParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, updateFinancialEventCategory, arg.CategoryID, arg.UpdatedAt, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }

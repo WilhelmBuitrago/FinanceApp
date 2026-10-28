@@ -1,15 +1,29 @@
 """CLI to run Nu Account parser benchmark."""
 
-import os
-import json
 import argparse
-from validation.benchmark import BenchmarkNuParser
+import json
+import os
+import sys
+from pathlib import Path
+
+# Run from any working directory: the processor packages live at the root.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from benchmarks.benchmarks import BenchmarkNuParser
 
 
 def discover_processing_ids(artifacts_path: str):
     if not os.path.isdir(artifacts_path):
         return []
     return [d for d in os.listdir(artifacts_path) if os.path.isdir(os.path.join(artifacts_path, d))]
+
+
+def resolve_path(repo_root: str, value: str) -> str:
+    """Absolute paths stay as they are; relative ones resolve against the
+    repository root, so the CLI works from any working directory."""
+    if os.path.isabs(value):
+        return os.path.abspath(value)
+    return os.path.join(repo_root, value)
 
 
 def main():
@@ -21,9 +35,9 @@ def main():
 
     # Resolve paths relative to repo root
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-    artifacts_path = os.path.abspath(args.artifacts) if os.path.isabs(args.artifacts) else os.path.join(repo_root, args.artifacts)
-    ground_truth_path = os.path.abspath(args.ground_truth) if os.path.isabs(args.ground_truth) else os.path.join(repo_root, args.ground_truth)
-    output_path = os.path.abspath(args.output) if os.path.isabs(args.output) else os.path.join(repo_root, args.output)
+    artifacts_path = resolve_path(repo_root, args.artifacts)
+    ground_truth_path = resolve_path(repo_root, args.ground_truth)
+    output_path = resolve_path(repo_root, args.output)
 
     processing_ids = discover_processing_ids(artifacts_path)
     if not processing_ids:

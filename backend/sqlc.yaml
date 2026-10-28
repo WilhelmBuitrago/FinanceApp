@@ -1,7 +1,10 @@
 version: "2"
 sql:
   - engine: "sqlite"
-    schema: "db/migrations/0001_initial_schema.sql"
+    schema:
+      # Glob on purpose: a new migration applies without touching this file
+      # (the applied migrations are also read from the directory at runtime).
+      - "internal/db/migrations/*.sql"
     queries: "db/queries"
     gen:
       go:

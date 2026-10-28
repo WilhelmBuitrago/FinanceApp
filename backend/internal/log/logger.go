@@ -4,18 +4,26 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
-var runID int
-var file *os.File
+// Guards every write to the shared log file: the HTTP server handles requests
+// in concurrent goroutines and all of them log.
+var (
+	mu    sync.Mutex
+	runID int
+	file  *os.File
+)
 
 func logWrite(msg string) {
+	mu.Lock()
+	defer mu.Unlock()
 	if file == nil {
 		return
 	}
 	ts := time.Now().Format("15:04:05")
-	fmt.Fprintf(file, "[%s] %s\n", ts, msg)
+	_, _ = fmt.Fprintf(file, "[%s] %s\n", ts, msg)
 }
 
 func InitRun(logDir string) (*os.File, error) {
@@ -28,28 +36,14 @@ func InitRun(logDir string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	mu.Lock()
+	defer mu.Unlock()
 	file = f
 	runID++
 	ts := time.Now().Format("15:04:05")
 	header := fmt.Sprintf("\n=== RUN %d %s %s ===\n", runID, date, ts)
-	f.WriteString(header)
+	_, _ = f.WriteString(header)
 	return f, nil
-}
-
-func Log(f *os.File, msg string) {
-	if f == nil {
-		return
-	}
-	ts := time.Now().Format("15:04:05")
-	fmt.Fprintf(f, "[%s] %s\n", ts, msg)
-}
-
-func LogMsg(msg string) {
-	if file == nil {
-		return
-	}
-	ts := time.Now().Format("15:04:05")
-	fmt.Fprintf(file, "[%s] %s\n", ts, msg)
 }
 
 func Info(msg string) {
@@ -62,8 +56,4 @@ func Warn(msg string) {
 
 func Error(msg string) {
 	logWrite("[ERROR] " + msg)
-}
-
-func Debug(msg string) {
-	logWrite("[DEBUG] " + msg)
 }

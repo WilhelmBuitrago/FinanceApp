@@ -1,37 +1,135 @@
-import os
+"""Real rules tests for the Nu Account processor.
 
-def test_nu_account_movement_section_boundaries():
-    # Regression tests for Nu Account structural rules discovered in S3
-    # These tests validate extraction rules without financial interpretation
-    rules = {
-        "start_marker": "Movimientos",
-        "end_marker": "Rendimiento total de tu cuenta",
-        "footer_marker": "Los rendimientos que genera tu cuenta los",
-        "summary_markers": [
-            "Resumen de tus movimientos",
-            "Tu dinero al inicio del mes",
-            "Lo que entró a tu cuenta",
-            "Lo que salió de tu cuenta",
-            "Tu dinero a final del mes"
-        ]
-    }
-    assert rules["start_marker"] == "Movimientos"
-    assert rules["end_marker"] == "Rendimiento total de tu cuenta"
-    
-def test_operations_independence():
-    # Two identical documentary occurrences must remain independent
-    op1 = {"date": "01 mar", "desc": "Recibiste de Rony Hernando Puche Navarro", "amount": "+700.000,00"}
-    op2 = {"date": "01 mar", "desc": "Recibiste de Rony Hernando Puche Navarro", "amount": "+65.000,00"}
-    # Different amounts => different
+Every case exercises production code (normalizer and parser constants), not
+fixtures defined in the test: the earlier version compared a local dictionary
+against itself and asserted nothing about the pipeline.
+"""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from normalization.nu_normalizer import normalize_amount, normalize_date
+from parser.nu_account import NuAccountParser, ParsedMovement, ReviewItem
+
+
+def test_parser_markers_match_nu_statement_layout():
+    # The markers the parser relies on are the ones the Nu statement uses.
+    assert NuAccountParser.START_MARKER == "Movimientos"
+    assert NuAccountParser.END_MARKER == "Rendimiento total de tu cuenta"
+    assert "rendimientos" in NuAccountParser.FOOTER_MARKER.lower()
+
+
+def test_normalize_date_spanish_and_english_months():
+    assert normalize_date('01 - 31 MAR 2026', '01 mar') == '2026-03-01'
+    assert normalize_date('01 - 31 MAR 2026', '15 mar') == '2026-03-15'
+    assert normalize_date('01 - 31 MAR 2026', '01 jan') == '2026-01-01'
+    assert normalize_date('01 - 31 MAR 2026', '05 dec') == '2026-12-05'
+
+
+def test_normalize_date_takes_month_from_the_movement():
+    # Period gives the year; the movement gives month and day.
+    assert normalize_date('01 - 31 MAR 2026', '10 ene') == '2026-01-10'
+
+
+def test_normalize_date_requires_a_parseable_period():
+    for bad_period in ('', 'sin año', 'MARZO'):
+        try:
+            normalize_date(bad_period, '01 mar')
+        except ValueError:
+            continue
+        raise AssertionError(f"expected ValueError for period {bad_period!r}")
+
+
+def test_normalize_amount_colombian_format():
+    assert normalize_amount('+700.000,00') == 70000000
+    assert normalize_amount('-$765.000,00') == -76500000
+    assert normalize_amount('+5.500,00') == 550000
+    assert normalize_amount('-$1.234.567,89') == -123456789
+    assert normalize_amount('700') == 70000
+
+
+def test_normalize_amount_rejects_unparseable_values():
+    # This is the case that used to abort a whole document: it must raise,
+    # so the parser can skip the single movement instead of the batch.
+    for bad in ('', 'abc', '+$--'):
+        try:
+            normalize_amount(bad)
+        except ValueError:
+            continue
+        raise AssertionError(f"expected ValueError for amount {bad!r}")
+
+
+def test_normalize_amount_whitespace_raises():
+    # Whitespace-only used to normalize to 0: the empty check ran before
+    # the strip, so '   ' slipped through as a zero amount. A line with no
+    # digits is not an amount; the parser parks nothing silently.
+    for bad in ('', '   ', '\t', '$'):
+        try:
+            normalize_amount(bad)
+        except ValueError:
+            continue
+        raise AssertionError(f"expected ValueError for amount {bad!r}")
+
+
+def test_identical_occurrences_stay_independent():
+    # Two identical documentary occurrences differ only in amount and must
+    # not collapse into one movement.
+    op1 = ParsedMovement(
+        date_original='01 mar', date_normalized='2026-03-01',
+        description_original='Recibiste de Rony Hernando Puche Navarro',
+        amount_original='+700.000,00', amount_normalized=700000,
+        page_number=1, sequence=1,
+    )
+    op2 = ParsedMovement(
+        date_original='01 mar', date_normalized='2026-03-01',
+        description_original='Recibiste de Rony Hernando Puche Navarro',
+        amount_original='+65.000,00', amount_normalized=65000,
+        page_number=1, sequence=2,
+    )
     assert op1 != op2
-    
-def test_processing_id_not_financial():
+    assert op1.amount_normalized != op2.amount_normalized
+    assert op1.sequence != op2.sequence
+
+
+def test_processing_id_is_not_financial_identity():
+    # processing_id is pipeline bookkeeping; financial identity lives in
+    # the movement and event.
     processing_id = "test-id"
-    # processing_id must not be confused with financial identity
     assert isinstance(processing_id, str)
 
+
+def test_review_item_preserves_the_raw_for_humans():
+    # A movement the parser cannot normalize must survive with its raw values
+    # and the exact reason: the human reviews against the PDF, not against a
+    # repaired (guessed) number.
+    item = ReviewItem(
+        date_original='12 mar',
+        description_original='Compra en almacén Éxito',
+        amount_original='+$--',
+        page_number=3,
+        reason='unparseable amount: invalid literal',
+    )
+    assert item.amount_original == '+$--'
+    assert item.reason.startswith('unparseable amount')
+    assert item.page_number == 3
+    # A movement parked for its AMOUNT carries no normalized amount (there
+    # is none to carry). A movement parked for its DATE does carry its
+    # amount, so the document-period resolution can import it once the
+    # year is confirmed.
+    assert item.amount_normalized == 0
+
+
 if __name__ == "__main__":
-    test_nu_account_movement_section_boundaries()
-    test_operations_independence()
-    test_processing_id_not_financial()
+    test_parser_markers_match_nu_statement_layout()
+    test_normalize_date_spanish_and_english_months()
+    test_normalize_date_takes_month_from_the_movement()
+    test_normalize_date_requires_a_parseable_period()
+    test_normalize_amount_colombian_format()
+    test_normalize_amount_rejects_unparseable_values()
+    test_normalize_amount_whitespace_raises()
+    test_identical_occurrences_stay_independent()
+    test_processing_id_is_not_financial_identity()
+    test_review_item_preserves_the_raw_for_humans()
     print("Regression tests passed")

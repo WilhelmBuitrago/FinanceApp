@@ -24,18 +24,20 @@ func (r *SourceEntryRepository) Create(ctx context.Context, se domain.SourceEntr
 	params := db.CreateSourceEntryParams{
 		ID:                    se.ID,
 		DocumentID:            se.DocumentID,
-		SourceReference:       toInterface(se.SourceReference),
-		RawDescription:        toInterface(se.RawDescription),
-		RawAmountMinor:        toInterfaceInt64(se.RawAmountMinor),
-		RawDate:               toInterface(se.RawDate),
-		NormalizedDescription: toInterface(se.NormalizedDescription),
-		NormalizedAmountMinor: toInterfaceInt64(se.NormalizedAmountMinor),
-		NormalizedDate:        toInterface(se.NormalizedDate),
-		PageNumber:            toInterfaceInt64(se.PageNumber),
-		RowNumber:             toInterfaceInt64(se.RowNumber),
-		Section:               toInterface(se.Section),
-		ExtractionID:          toInterface(se.ExtractionID),
-		MetadataJson:          toInterface(se.MetadataJson),
+		SourceReference:       toNullString(se.SourceReference),
+		RawDescription:        toNullString(se.RawDescription),
+		RawAmountMinor:        toNullInt64(se.RawAmountMinor),
+		RawDate:               toNullString(se.RawDate),
+		NormalizedDescription: toNullString(se.NormalizedDescription),
+		NormalizedAmountMinor: toNullInt64(se.NormalizedAmountMinor),
+		NormalizedDate:        toNullString(se.NormalizedDate),
+		PageNumber:            toNullInt64(se.PageNumber),
+		RowNumber:             toNullInt64(se.RowNumber),
+		Section:               toNullString(se.Section),
+		ExtractionID:          toNullString(se.ExtractionID),
+		ReviewStatus:          se.ReviewStatus,
+		SourceKey:             toNullString(se.SourceKey),
+		MetadataJson:          toNullString(se.MetadataJson),
 		CreatedAt:             se.CreatedAt,
 		UpdatedAt:             se.UpdatedAt,
 	}
@@ -70,45 +72,57 @@ func (r *SourceEntryRepository) ListByDocument(ctx context.Context, documentID s
 	}
 	out := make([]domain.SourceEntry, 0, len(dbSEs))
 	for _, s := range dbSEs {
-		out = append(out, mapDBSourceEntryToDomain(s))
+		// sqlc unifies the row and the model when the query selects every
+		// column: the conversion keeps one mapper for both shapes.
+		out = append(out, mapDBSourceEntryToDomain(db.SourceEntry(s)))
 	}
 	return out, nil
 }
 
-func (r *SourceEntryRepository) Update(ctx context.Context, se domain.SourceEntry) (domain.SourceEntry, error) {
-	return domain.SourceEntry{}, ErrInvalid
+// Resolve parks the human correction on the source entry. Zero rows
+// affected means the entry is no longer parked: ErrConflict, so a second
+// submission cannot apply the correction twice.
+func (r *SourceEntryRepository) Resolve(ctx context.Context, id string, correctedDescription *string, correctedAmountMinor *int64, correctedDate *string, updatedAt string) error {
+	if r.db.Querier == nil {
+		return ErrUnavailable
+	}
+	affected, err := r.db.Querier.ResolveSourceEntry(ctx, db.ResolveSourceEntryParams{
+		ID:                   id,
+		CorrectedDescription: toNullString(correctedDescription),
+		CorrectedAmountMinor: toNullInt64(correctedAmountMinor),
+		CorrectedDate:        toNullString(correctedDate),
+		UpdatedAt:            updatedAt,
+	})
+	if err != nil {
+		return translateError(err)
+	}
+	if affected == 0 {
+		return ErrConflict
+	}
+	return nil
 }
 
 func mapDBSourceEntryToDomain(s db.SourceEntry) domain.SourceEntry {
-	int64Ptr := func(v interface{}) *int64 {
-		if v == nil {
-			return nil
-		}
-		i := v.(int64)
-		return &i
-	}
-	strPtr := func(v interface{}) *string {
-		if v == nil {
-			return nil
-		}
-		sv := v.(string)
-		return &sv
-	}
 	return domain.SourceEntry{
 		ID:                    s.ID,
 		DocumentID:            s.DocumentID,
-		SourceReference:       strPtr(s.SourceReference),
-		RawDescription:        strPtr(s.RawDescription),
-		RawAmountMinor:        int64Ptr(s.RawAmountMinor),
-		RawDate:               strPtr(s.RawDate),
-		NormalizedDescription: strPtr(s.NormalizedDescription),
-		NormalizedAmountMinor: int64Ptr(s.NormalizedAmountMinor),
-		NormalizedDate:        strPtr(s.NormalizedDate),
-		PageNumber:            int64Ptr(s.PageNumber),
-		RowNumber:             int64Ptr(s.RowNumber),
-		Section:               strPtr(s.Section),
-		ExtractionID:          strPtr(s.ExtractionID),
-		MetadataJson:          strPtr(s.MetadataJson),
+		SourceReference:       fromNullString(s.SourceReference),
+		RawDescription:        fromNullString(s.RawDescription),
+		RawAmountMinor:        fromNullInt64(s.RawAmountMinor),
+		RawDate:               fromNullString(s.RawDate),
+		NormalizedDescription: fromNullString(s.NormalizedDescription),
+		NormalizedAmountMinor: fromNullInt64(s.NormalizedAmountMinor),
+		NormalizedDate:        fromNullString(s.NormalizedDate),
+		PageNumber:            fromNullInt64(s.PageNumber),
+		RowNumber:             fromNullInt64(s.RowNumber),
+		Section:               fromNullString(s.Section),
+		ExtractionID:          fromNullString(s.ExtractionID),
+		ReviewStatus:          s.ReviewStatus,
+		SourceKey:             fromNullString(s.SourceKey),
+		CorrectedDescription:  fromNullString(s.CorrectedDescription),
+		CorrectedAmountMinor:  fromNullInt64(s.CorrectedAmountMinor),
+		CorrectedDate:         fromNullString(s.CorrectedDate),
+		MetadataJson:          fromNullString(s.MetadataJson),
 		CreatedAt:             s.CreatedAt,
 		UpdatedAt:             s.UpdatedAt,
 	}

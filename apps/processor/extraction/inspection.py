@@ -1,21 +1,8 @@
 import hashlib
 import os
-import warnings
-import sys
-from io import StringIO
 
-def _get_fitz():
-    # Suppress deprecation warning from fitz -> pymupdf which prints to stdout
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
-    sys.stdout = StringIO()
-    sys.stderr = StringIO()
-    try:
-        import fitz
-    finally:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
-    return fitz
+from extraction._fitz import open_pdf
+
 
 def sha256_file(path):
     h = hashlib.sha256()
@@ -24,11 +11,12 @@ def sha256_file(path):
             h.update(chunk)
     return h.hexdigest()
 
-def inspect_pdf(path):
+
+def inspect_document(doc, path):
+    """Inspection over an already-open document: the caller owns the
+    handle (one pass shared with the extraction)."""
     size_bytes = os.path.getsize(path)
     sha256 = sha256_file(path)
-    fitz = _get_fitz()
-    doc = fitz.open(path)
     version = doc.metadata.get("format", "")
     page_count = doc.page_count
     pages = []
@@ -63,3 +51,11 @@ def inspect_pdf(path):
         },
         "warnings": warnings
     }
+
+
+def inspect_pdf(path):
+    doc = open_pdf(path)
+    try:
+        return inspect_document(doc, path)
+    finally:
+        doc.close()

@@ -24,13 +24,13 @@ func (r *FinancialEventRepository) Create(ctx context.Context, fe domain.Financi
 	params := db.CreateFinancialEventParams{
 		ID:                 fe.ID,
 		EventType:          fe.EventType,
-		EventDate:          toInterface(fe.EventDate),
+		EventDate:          toNullString(fe.EventDate),
 		Status:             fe.Status,
 		VerificationStatus: fe.VerificationStatus,
-		Description:        toInterface(fe.Description),
-		CategoryID:         toInterface(fe.CategoryID),
-		Confidence:         toInterfaceFloat64(fe.Confidence),
-		MetadataJson:       toInterface(fe.MetadataJson),
+		Description:        toNullString(fe.Description),
+		CategoryID:         toNullString(fe.CategoryID),
+		Confidence:         toNullFloat64(fe.Confidence),
+		MetadataJson:       toNullString(fe.MetadataJson),
 		CreatedAt:          fe.CreatedAt,
 		UpdatedAt:          fe.UpdatedAt,
 	}
@@ -70,36 +70,35 @@ func (r *FinancialEventRepository) ListByType(ctx context.Context, eventType str
 	return out, nil
 }
 
-func (r *FinancialEventRepository) Update(ctx context.Context, fe domain.FinancialEvent) (domain.FinancialEvent, error) {
-	return domain.FinancialEvent{}, ErrInvalid
-}
-
 func mapDBFinancialEventToDomain(f db.FinancialEvent) domain.FinancialEvent {
-	strPtr := func(v interface{}) *string {
-		if v == nil {
-			return nil
-		}
-		s := v.(string)
-		return &s
-	}
-	floatPtr := func(v interface{}) *float64 {
-		if v == nil {
-			return nil
-		}
-		fv := v.(float64)
-		return &fv
-	}
 	return domain.FinancialEvent{
 		ID:                 f.ID,
 		EventType:          f.EventType,
-		EventDate:          strPtr(f.EventDate),
+		EventDate:          fromNullString(f.EventDate),
 		Status:             f.Status,
 		VerificationStatus: f.VerificationStatus,
-		Description:        strPtr(f.Description),
-		CategoryID:         strPtr(f.CategoryID),
-		Confidence:         floatPtr(f.Confidence),
-		MetadataJson:       strPtr(f.MetadataJson),
+		Description:        fromNullString(f.Description),
+		CategoryID:         fromNullString(f.CategoryID),
+		Confidence:         fromNullFloat64(f.Confidence),
+		MetadataJson:       fromNullString(f.MetadataJson),
 		CreatedAt:          f.CreatedAt,
 		UpdatedAt:          f.UpdatedAt,
 	}
+}
+
+// SetCategory moves (or clears, with nil) the category on the financial
+// event: the category lives on the event, not on the movement. A missing
+// event affects zero rows and is not an error (same as the raw UPDATE it
+// replaces).
+func (r *FinancialEventRepository) SetCategory(ctx context.Context, eventID string, categoryID *string) error {
+	if r.db.Querier == nil {
+		return ErrUnavailable
+	}
+	now := domain.NowRFC3339()
+	_, err := r.db.Querier.UpdateFinancialEventCategory(ctx, db.UpdateFinancialEventCategoryParams{
+		ID:         eventID,
+		CategoryID: toNullString(categoryID),
+		UpdatedAt:  now,
+	})
+	return translateError(err)
 }

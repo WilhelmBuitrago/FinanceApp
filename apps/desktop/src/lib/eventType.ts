@@ -1,6 +1,6 @@
 /* Spanish labels for EventType (S11 domain — closed set from the DB CHECK). */
 
-export const EVENT_TYPE_LABELS: Record<string, string> = {
+const EVENT_TYPE_LABELS: Record<string, string> = {
   INCOME: 'Ingreso',
   EXPENSE: 'Gasto',
   TRANSFER: 'Transferencia',

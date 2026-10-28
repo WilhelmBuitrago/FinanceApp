@@ -1,4 +1,3 @@
-
 import { formatMoney } from '../lib/formatMoney';
 import type { DistributionSlice } from '../api/dashboard';
 
@@ -42,7 +41,7 @@ function buildLegend(slices: DistributionSlice[]): { entries: LegendEntry[]; tot
     ];
   }
   const entries: LegendEntry[] = shown.map((s, i) => ({
-    label: s.category === '__other__' ? 'Otros' : CATEGORY_LABELS[s.category] ?? s.category,
+    label: s.category === '__other__' ? 'Otros' : (CATEGORY_LABELS[s.category] ?? s.category),
     value: s.amount_minor,
     pct: (s.amount_minor / total) * 100,
     color: s.category === '__other__' ? '#3a3a4a' : SLICE_COLORS[i % SLICE_COLORS.length],
@@ -57,43 +56,55 @@ export function DonutChart({ slices }: DonutChartProps) {
 
   const R = 52;
   const CIRC = 2 * Math.PI * R;
-  let offset = 0;
+  // Cumulative offsets computed without mutating anything during render:
+  // each arc knows the dash consumed before it (slices are few, so the
+  // prefix sum is trivial).
+  const arcs = entries.map((e, i) => ({
+    label: e.label,
+    color: e.color,
+    dash: (e.pct / 100) * CIRC,
+    offset: entries.slice(0, i).reduce((sum, prev) => sum + (prev.pct / 100) * CIRC, 0),
+  }));
 
   return (
     <div className="flex items-center gap-6">
-      <svg viewBox="0 0 128 128" className="h-32 w-32 shrink-0" role="img" aria-label="Distribución">
-        {entries.map((e) => {
-          const dash = (e.pct / 100) * CIRC;
-          const el = (
-            <circle
-              key={e.label}
-              cx="64"
-              cy="64"
-              r={R}
-              fill="none"
-              stroke={e.color}
-              strokeWidth="16"
-              strokeDasharray={`${dash} ${CIRC - dash}`}
-              strokeDashoffset={-offset}
-              transform="rotate(-90 64 64)"
-            />
-          );
-          offset += dash;
-          return el;
-        })}
+      <svg
+        viewBox="0 0 128 128"
+        className="h-32 w-32 shrink-0"
+        role="img"
+        aria-label="Distribución"
+      >
+        {arcs.map((a) => (
+          <circle
+            key={a.label}
+            cx="64"
+            cy="64"
+            r={R}
+            fill="none"
+            stroke={a.color}
+            strokeWidth="16"
+            strokeDasharray={`${a.dash} ${CIRC - a.dash}`}
+            strokeDashoffset={-a.offset}
+            transform="rotate(-90 64 64)"
+          />
+        ))}
       </svg>
       <dl className="min-w-0 flex-1 space-y-1.5">
         {entries.map((e) => (
           <div key={e.label} className="flex items-center justify-between gap-3">
             <dt className="flex min-w-0 items-center gap-2">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: e.color }} aria-hidden="true" />
+              <span
+                className="h-2 w-2 shrink-0 rounded-full"
+                style={{ backgroundColor: e.color }}
+                aria-hidden="true"
+              />
               <span className="truncate text-body text-ink-2">{e.label}</span>
             </dt>
             <dd className="shrink-0 text-right">
-              <span className="tabular-nums text-body font-medium text-ink">{formatMoney(e.value)}</span>
-              <span className="ml-2 tabular-nums text-meta text-ink-3">
-                {Math.round(e.pct)}%
+              <span className="tabular-nums text-body font-medium text-ink">
+                {formatMoney(e.value)}
               </span>
+              <span className="ml-2 tabular-nums text-meta text-ink-3">{Math.round(e.pct)}%</span>
             </dd>
           </div>
         ))}

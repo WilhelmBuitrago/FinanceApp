@@ -1,13 +1,15 @@
 package api
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"financeapp/backend/internal/log"
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
-	"financeapp/backend/internal/log"
+	"time"
 )
 
 type ProcessorResult struct {
@@ -17,42 +19,51 @@ type ProcessorResult struct {
 	Status           string `json:"status"`
 }
 
-func RunProcessor(pdfPath string, accountID string) (*ProcessorResult, error) {
+// ProcessorTimeout bounds one processor run. The interpreter runs as a
+// child process: without a bound, a hung one hangs the upload request
+// forever and the job sits in PROCESSING until the app is restarted.
+// Preparing an environment takes about a minute; this leaves ample
+// headroom. Exported so tests can shrink it.
+var ProcessorTimeout = 5 * time.Minute
+
+func RunProcessor(ctx context.Context, pdfPath string, accountID string) (*ProcessorResult, error) {
 	log.Info(fmt.Sprintf("RunProcessor start pdf=%s account=%s", pdfPath, accountID))
 	pythonPath := os.Getenv("PROCESSOR_PYTHON")
 	if pythonPath == "" {
-		if os.PathSeparator == '\\' {
-			pythonPath = filepath.Join(os.Getenv("APPDATA"), "FinanceApp", "venv", "Scripts", "python.exe")
-		} else {
-			pythonPath = filepath.Join(os.Getenv("APPDATA"), "FinanceApp", "venv", "bin", "python")
-		}
+		return nil, fmt.Errorf("PROCESSOR_PYTHON not set: the desktop shell passes the prepared runtime path")
 	}
 	scriptPath := os.Getenv("PROCESSOR_SCRIPT")
 	if scriptPath == "" {
-		scriptPath = filepath.Join(os.Getenv("APPDATA"), "FinanceApp", "processor", "src", "main.py")
+		return nil, fmt.Errorf("PROCESSOR_SCRIPT not set: the desktop shell passes the processor entrypoint")
 	}
 	log.Info(fmt.Sprintf("Processor python=%s script=%s", pythonPath, scriptPath))
-	cmd := exec.Command(pythonPath, scriptPath, pdfPath)
+	runCtx, cancel := context.WithTimeout(ctx, ProcessorTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(runCtx, pythonPath, scriptPath, pdfPath)
 	cmd.Env = os.Environ()
 	// Ensure artifacts path is available to Python via env
 	if artifacts := os.Getenv("ARTIFACTS_PATH"); artifacts != "" {
 		cmd.Env = append(cmd.Env, "ARTIFACTS_PATH="+artifacts)
 	}
-	out, err := cmd.CombinedOutput()
+	// stdout is the JSON contract; stderr is the processor's log channel
+	// (it logs by design). Keeping them apart means a log line never
+	// corrupts the result, and a failure still carries its diagnostics.
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
-	if err != nil {
-		log.Error(fmt.Sprintf("processor execution failed: %v output=%s", err, string(out)))
-		return nil, fmt.Errorf("processor execution failed: %w, output: %s", err, string(out))
+	if err := cmd.Run(); err != nil {
+		if runCtx.Err() != nil {
+			return nil, fmt.Errorf("processor timed out after %s: %w", ProcessorTimeout, runCtx.Err())
+		}
+		log.Error(fmt.Sprintf("processor execution failed: %v stderr=%s", err, stderr.String()))
+		return nil, fmt.Errorf("processor execution failed: %w, stderr: %s", err, stderr.String())
 	}
 	log.Info("Processor execution ok")
-	s := strings.TrimSpace(string(out))
-	// Strip leading warning lines before JSON
-	if idx := strings.IndexByte(s, '{'); idx > 0 {
-		s = s[idx:]
-	}
+	s := strings.TrimSpace(stdout.String())
 	var res ProcessorResult
 	if err := json.Unmarshal([]byte(s), &res); err != nil {
-		log.Error(fmt.Sprintf("processor JSON unmarshal failed: %v output=%s", err, s))
+		log.Error(fmt.Sprintf("processor JSON unmarshal failed: %v stdout=%s stderr=%s", err, s, stderr.String()))
 		return nil, err
 	}
 	log.Info(fmt.Sprintf("Processor result processing_id=%s status=%s", res.ProcessingID, res.Status))

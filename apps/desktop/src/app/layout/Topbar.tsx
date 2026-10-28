@@ -1,24 +1,10 @@
 import { useLocation } from 'react-router-dom';
+
 import { IconMenu } from '../../components/icons';
+import { titleFor } from '../nav';
 
 interface TopbarProps {
   onToggleSidebar: () => void;
-}
-
-const routeTitles: Record<string, string> = {
-  '/': 'Overview',
-  '/accounts': 'Cuentas',
-  '/transactions': 'Movimientos',
-  '/documents': 'Documentos',
-  '/review': 'Revisión',
-  '/reports': 'Reportes',
-  '/settings': 'Configuración',
-};
-
-function titleFor(pathname: string): string {
-  if (routeTitles[pathname]) return routeTitles[pathname];
-  if (pathname.startsWith('/accounts/')) return 'Cuentas';
-  return 'FinanceApp';
 }
 
 export default function Topbar({ onToggleSidebar }: TopbarProps) {
@@ -31,12 +17,14 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
         <button
           onClick={onToggleSidebar}
           aria-label="Contraer panel lateral"
-          className="flex h-9 w-9 items-center justify-center rounded-[8px] text-ink-3 transition-colors duration-[120ms] hover:bg-interactive hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="flex h-9 w-9 items-center justify-center rounded-tk text-ink-3 transition-colors duration-[120ms] hover:bg-interactive hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <IconMenu />
         </button>
         <div className="h-5 w-px bg-line" aria-hidden="true" />
-        <h1 className="truncate text-[1.125rem] font-semibold tracking-tight text-ink">{title}</h1>
+        {/* The screen's own h1 is the document heading; the chrome title
+            is a paragraph so every screen keeps exactly one h1. */}
+        <p className="truncate text-overline font-semibold tracking-tight text-ink">{title}</p>
       </div>
     </header>
   );

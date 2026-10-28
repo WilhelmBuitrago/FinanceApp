@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createInstallment = `-- name: CreateInstallment :one
@@ -31,20 +32,20 @@ INSERT INTO installments (
 `
 
 type CreateInstallmentParams struct {
-	ID                  string      `json:"id"`
-	InstallmentPlanID   string      `json:"installment_plan_id"`
-	InstallmentNumber   int64       `json:"installment_number"`
-	TotalInstallments   int64       `json:"total_installments"`
-	ExpectedAmountMinor interface{} `json:"expected_amount_minor"`
-	CapitalAmountMinor  interface{} `json:"capital_amount_minor"`
-	InterestAmountMinor interface{} `json:"interest_amount_minor"`
-	Status              string      `json:"status"`
-	ExpectedDate        interface{} `json:"expected_date"`
-	DocumentedDate      interface{} `json:"documented_date"`
-	MovementID          interface{} `json:"movement_id"`
-	MetadataJson        interface{} `json:"metadata_json"`
-	CreatedAt           string      `json:"created_at"`
-	UpdatedAt           string      `json:"updated_at"`
+	ID                  string         `json:"id"`
+	InstallmentPlanID   string         `json:"installment_plan_id"`
+	InstallmentNumber   int64          `json:"installment_number"`
+	TotalInstallments   int64          `json:"total_installments"`
+	ExpectedAmountMinor sql.NullInt64  `json:"expected_amount_minor"`
+	CapitalAmountMinor  sql.NullInt64  `json:"capital_amount_minor"`
+	InterestAmountMinor sql.NullInt64  `json:"interest_amount_minor"`
+	Status              string         `json:"status"`
+	ExpectedDate        sql.NullString `json:"expected_date"`
+	DocumentedDate      sql.NullString `json:"documented_date"`
+	MovementID          sql.NullString `json:"movement_id"`
+	MetadataJson        sql.NullString `json:"metadata_json"`
+	CreatedAt           string         `json:"created_at"`
+	UpdatedAt           string         `json:"updated_at"`
 }
 
 func (q *Queries) CreateInstallment(ctx context.Context, arg CreateInstallmentParams) (Installment, error) {
@@ -64,32 +65,6 @@ func (q *Queries) CreateInstallment(ctx context.Context, arg CreateInstallmentPa
 		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
-	var i Installment
-	err := row.Scan(
-		&i.ID,
-		&i.InstallmentPlanID,
-		&i.InstallmentNumber,
-		&i.TotalInstallments,
-		&i.ExpectedAmountMinor,
-		&i.CapitalAmountMinor,
-		&i.InterestAmountMinor,
-		&i.Status,
-		&i.ExpectedDate,
-		&i.DocumentedDate,
-		&i.MovementID,
-		&i.MetadataJson,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getInstallment = `-- name: GetInstallment :one
-SELECT id, installment_plan_id, installment_number, total_installments, expected_amount_minor, capital_amount_minor, interest_amount_minor, status, expected_date, documented_date, movement_id, metadata_json, created_at, updated_at FROM installments WHERE id = ?
-`
-
-func (q *Queries) GetInstallment(ctx context.Context, id string) (Installment, error) {
-	row := q.db.QueryRowContext(ctx, getInstallment, id)
 	var i Installment
 	err := row.Scan(
 		&i.ID,

@@ -1,17 +1,17 @@
 /* FinanceApp — Ledger redesign
    Single source of truth. If a value is not here, it does not belong in a component. */
 
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* IBM Plex fonts are imported from main.tsx so Vite bundles the woff2 files. */
 
 @theme {
   /* ── Surfaces (calm dark, editorial) ── */
-  --color-bg: #08080c;          /* page */
-  --color-surface: #0e0e14;     /* panels, tables */
-  --color-raised: #14141c;      /* table headers, elevated layers */
+  --color-bg: #08080c; /* page */
+  --color-surface: #0e0e14; /* panels, tables */
+  --color-raised: #14141c; /* table headers, elevated layers */
   --color-interactive: #1b1b27; /* hover / interactive surfaces */
-  --color-line: #1e1e2a;        /* hairlines, borders */
+  --color-line: #1e1e2a; /* hairlines, borders */
 
   /* ── Ink (verified on ALL five surfaces: bg/surface/raised/wash/hover —
      worst case 4.57:1 on interactive; hierarchy 14.7/7.2/4.9 on raised) ── */
@@ -32,17 +32,22 @@
 
   /* ── Type — one ratio (~1.2), base 14px, cap 26px, weights 400/500/600.
      S12 refinement: compact, not tiring — reading sizes up, hierarchy intact. ── */
-  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-  --text-meta: 0.75rem;     /* 12px — meta, captions, labels, eyebrows */
-  --text-body: 0.875rem;   /* 14px — body, tables, buttons */
+  --font-sans: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --text-meta: 0.75rem; /* 12px — meta, captions, labels, eyebrows */
+  --text-body: 0.875rem; /* 14px — body, tables, buttons */
+  --text-overline: 1.125rem; /* 18px — chrome title (topbar), empty-state title */
   --text-title: 1.0625rem; /* 17px — screen titles, emphasis */
+  --text-figure: 1.375rem; /* 22px — per-figure values in the summary strip */
   --text-amount: 1.3125rem; /* 21px — drawer amounts */
+  --text-headline: 1.75rem; /* 28px — dominant number (net total), account name */
+  --text-page: 1.5rem; /* 24px — page heading, one per screen */
   --text-display: 1.625rem; /* 26px — Overview dominant number */
 
   /* ── Form ── */
-  --radius-tk: 8px; /* card radius */
-  --radius-sm: 6px; /* controls */
+  --radius-tk: 8px; /* buttons, inputs, small surfaces */
+  --radius-card: 12px; /* cards, panels, list containers */
+  --radius-sm: 6px; /* form controls */
   --shadow-float: 0 1px 0 0 rgb(0 0 0 / 0.2), 0 8px 24px rgb(0 0 0 / 0.45);
 
   /* ── Motion ── */
