@@ -48,9 +48,15 @@ func (rt *router) createAccount(w http.ResponseWriter, r *http.Request) {
 	if req.Status == "" {
 		req.Status = "ACTIVE"
 	}
-	if req.Currency == "" {
-		req.Currency = "COP"
+	// Colombia for years: the currency is normalized onto a known catalog
+	// and defaults to COP. The route used to persist whatever string
+	// arrived, so the same account stored its amounts under any spelling.
+	currency, ok := domain.NormalizeCurrency(req.Currency)
+	if !ok {
+		writeJSONError(w, http.StatusBadRequest, "currency not supported")
+		return
 	}
+	req.Currency = currency
 	if req.ID == "" {
 		writeJSONError(w, http.StatusBadRequest, "id required")
 		return
