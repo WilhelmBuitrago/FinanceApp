@@ -97,4 +97,10 @@ describe('RecentMovementsTable', () => {
 
     expect(screen.getAllByRole('row')).toHaveLength(3); // header + 2 records
   });
+
+  it('formats a row with the currency of its movement, not an assumed one', () => {
+    renderTable(ready([movement({ AmountMinor: 150000, currency: 'USD' })]));
+
+    expect(screen.getByText(/US\$\s?1\.500,00/)).toBeTruthy();
+  });
 });

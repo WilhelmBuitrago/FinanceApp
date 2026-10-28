@@ -19,4 +19,5 @@ export interface Movement {
   categoryName: string;
   categoryId?: string;
   counterpartAccountName?: string;
+  currency?: string;
 }

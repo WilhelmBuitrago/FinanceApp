@@ -50,7 +50,7 @@ export function DetailDrawer({ movement, accountName, onClose }: DetailDrawerPro
         <p
           className={`text-amount font-semibold tabular-nums ${signedAmountClass(movement.AmountMinor)}`}
         >
-          {formatSignedMoney(movement.AmountMinor)}
+          {formatSignedMoney(movement.AmountMinor, movement.currency)}
         </p>
         <DrawerCloseButton onClose={onClose} />
       </DrawerHeader>

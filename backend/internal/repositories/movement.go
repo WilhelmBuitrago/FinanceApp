@@ -241,12 +241,13 @@ func mapDBMovementToDomain(m db.Movement) domain.Movement {
 	}
 }
 
-func movementWithCategoryToDomain(mv db.Movement, eventType string, categoryID, categoryName, counterpartID, counterpartName sql.NullString) domain.MovementWithCategory {
+func movementWithCategoryToDomain(mv db.Movement, eventType, accountCurrency string, categoryID, categoryName, counterpartID, counterpartName sql.NullString) domain.MovementWithCategory {
 	return domain.MovementWithCategory{
 		Movement:               mapDBMovementToDomain(mv),
 		CategoryID:             fromNullStringValue(categoryID),
 		CategoryName:           fromNullStringValue(categoryName),
 		EventType:              eventType,
+		AccountCurrency:        accountCurrency,
 		CounterpartAccountName: fromNullStringValue(counterpartName),
 	}
 }
@@ -264,7 +265,7 @@ func mapDBMovementWithCategoryToDomain(m db.ListMovementsWithEventAndCategoryRow
 		MetadataJson:     m.MetadataJson,
 		CreatedAt:        m.CreatedAt,
 		UpdatedAt:        m.UpdatedAt,
-	}, m.EventType, m.CategoryID, m.CategoryName, m.CounterpartAccountID, m.CounterpartAccountName)
+	}, m.EventType, fromNullStringValue(m.AccountCurrency), m.CategoryID, m.CategoryName, m.CounterpartAccountID, m.CounterpartAccountName)
 }
 
 func mapDBMovementByAccountWithCategoryToDomain(m db.ListMovementsByAccountWithEventAndCategoryRow) domain.MovementWithCategory {
@@ -280,7 +281,7 @@ func mapDBMovementByAccountWithCategoryToDomain(m db.ListMovementsByAccountWithE
 		MetadataJson:     m.MetadataJson,
 		CreatedAt:        m.CreatedAt,
 		UpdatedAt:        m.UpdatedAt,
-	}, m.EventType, m.CategoryID, m.CategoryName, m.CounterpartAccountID, m.CounterpartAccountName)
+	}, m.EventType, fromNullStringValue(m.AccountCurrency), m.CategoryID, m.CategoryName, m.CounterpartAccountID, m.CounterpartAccountName)
 }
 
 func mapDBMovementComponentToDomain(c db.MovementComponent) domain.MovementComponent {

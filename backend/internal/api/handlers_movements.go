@@ -37,10 +37,11 @@ func (rt *router) listMovements(w http.ResponseWriter, r *http.Request) {
 		CategoryName           string `json:"categoryName"`
 		CategoryID             string `json:"categoryId,omitempty"`
 		CounterpartAccountName string `json:"counterpartAccountName,omitempty"`
+		Currency               string `json:"currency"`
 	}
 	out := make([]movementDTO, 0, len(movements))
 	for _, m := range movements {
-		out = append(out, movementDTO{Movement: m.Movement, CategoryName: m.CategoryName, CategoryID: m.CategoryID, CounterpartAccountName: m.CounterpartAccountName})
+		out = append(out, movementDTO{Movement: m.Movement, CategoryName: m.CategoryName, CategoryID: m.CategoryID, CounterpartAccountName: m.CounterpartAccountName, Currency: m.AccountCurrency})
 	}
 	w.Header().Set("Content-Type", "application/json")
 	encodeJSON(w, out)

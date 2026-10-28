@@ -18,6 +18,32 @@ func hydrationDo(t *testing.T, router http.Handler, method, target, body string)
 	return rr.Code, rr.Body.String()
 }
 
+// TestHydratedListings_CarryTheCurrencyOfTheAccount pins that a movement
+// names the money it is denominated in: the UI formats with the currency
+// of the account, and a movement that arrives without it forces the
+// formatter to assume one.
+func TestHydratedListings_CarryTheCurrencyOfTheAccount(t *testing.T) {
+	router, sqlDB := newTestRouter(t)
+	defer func() { _ = sqlDB.Close() }()
+
+	if code, body := hydrationDo(t, router, http.MethodPost, "/accounts", `{"id":"acc-cu","user_id":"u","name":"Nu","account_type":"BANK_ACCOUNT","currency":"COP","institution":"NU"}`); code != http.StatusCreated {
+		t.Fatalf("setup account: %d %s", code, body)
+	}
+	if code, body := hydrationDo(t, router, http.MethodPost, "/movements", `{"account_id":"acc-cu","amount_minor":-100000,"type":"EXPENSE","date":"2026-10-26","description":"Café"}`); code != http.StatusCreated {
+		t.Fatalf("setup movement: %d %s", code, body)
+	}
+
+	for _, target := range []string{"/movements", "/accounts/acc-cu/movements"} {
+		code, body := hydrationDo(t, router, http.MethodGet, target, "")
+		if code != http.StatusOK {
+			t.Fatalf("GET %s: %d %s", target, code, body)
+		}
+		if !strings.Contains(body, `"currency":"COP"`) {
+			t.Errorf("GET %s must carry the account currency, got %s", target, body)
+		}
+	}
+}
+
 // TestHydratedListings_CarryTheCounterpartOfATransfer pins that both legs
 // of a transfer name the account on the other side: the two rows read as
 // one decision.

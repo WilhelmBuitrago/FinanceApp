@@ -13,6 +13,14 @@ describe('formatMoney', () => {
     expect(formatMoney(-2500)).toBe('-$25,00');
     expect(formatMoney(5)).toBe('$0,05');
   });
+
+  it('formats a known non-COP currency with its own symbol', () => {
+    // Until multi-currency arrives, COP keeps the hand-rolled "$"; anything
+    // the catalog admits (USD and friends) formats through Intl so the
+    // symbol and separators stop lying about the money.
+    expect(formatMoney(150000, 'USD')).not.toBe(formatMoney(150000, 'COP'));
+    expect(formatMoney(150000, 'USD')).toMatch(/^\+?-?US\$\s?1\.500,00$/);
+  });
 });
 
 describe('formatSignedMoney', () => {

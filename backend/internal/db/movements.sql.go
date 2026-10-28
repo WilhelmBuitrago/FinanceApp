@@ -249,10 +249,12 @@ SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_d
        fe.event_type,
        fe.category_id,
        c.name AS category_name,
+       ma.currency AS account_currency,
        ca.id AS counterpart_account_id,
        ca.name AS counterpart_account_name
 FROM movements m
 JOIN financial_events fe ON fe.id = m.financial_event_id
+LEFT JOIN accounts ma ON ma.id = m.account_id
 LEFT JOIN categories c ON c.id = fe.category_id
 LEFT JOIN movement_relations mr
        ON mr.relation_type = 'TRANSFER_COUNTERPART'
@@ -284,6 +286,7 @@ type ListMovementsByAccountWithEventAndCategoryRow struct {
 	EventType              string         `json:"event_type"`
 	CategoryID             sql.NullString `json:"category_id"`
 	CategoryName           sql.NullString `json:"category_name"`
+	AccountCurrency        sql.NullString `json:"account_currency"`
 	CounterpartAccountID   sql.NullString `json:"counterpart_account_id"`
 	CounterpartAccountName sql.NullString `json:"counterpart_account_name"`
 }
@@ -312,6 +315,7 @@ func (q *Queries) ListMovementsByAccountWithEventAndCategory(ctx context.Context
 			&i.EventType,
 			&i.CategoryID,
 			&i.CategoryName,
+			&i.AccountCurrency,
 			&i.CounterpartAccountID,
 			&i.CounterpartAccountName,
 		); err != nil {
@@ -376,10 +380,12 @@ SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_d
        fe.event_type,
        fe.category_id,
        c.name AS category_name,
+       ma.currency AS account_currency,
        ca.id AS counterpart_account_id,
        ca.name AS counterpart_account_name
 FROM movements m
 JOIN financial_events fe ON fe.id = m.financial_event_id
+LEFT JOIN accounts ma ON ma.id = m.account_id
 LEFT JOIN categories c ON c.id = fe.category_id
 LEFT JOIN movement_relations mr
        ON mr.relation_type = 'TRANSFER_COUNTERPART'
@@ -405,6 +411,7 @@ type ListMovementsWithEventAndCategoryRow struct {
 	EventType              string         `json:"event_type"`
 	CategoryID             sql.NullString `json:"category_id"`
 	CategoryName           sql.NullString `json:"category_name"`
+	AccountCurrency        sql.NullString `json:"account_currency"`
 	CounterpartAccountID   sql.NullString `json:"counterpart_account_id"`
 	CounterpartAccountName sql.NullString `json:"counterpart_account_name"`
 }
@@ -437,6 +444,7 @@ func (q *Queries) ListMovementsWithEventAndCategory(ctx context.Context, limit i
 			&i.EventType,
 			&i.CategoryID,
 			&i.CategoryName,
+			&i.AccountCurrency,
 			&i.CounterpartAccountID,
 			&i.CounterpartAccountName,
 		); err != nil {

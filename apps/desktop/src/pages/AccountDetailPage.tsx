@@ -153,7 +153,7 @@ export default function AccountDetailPage() {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') setSelected(mv);
                         }}
-                        aria-label={`${formatDate(mv.MovementDate)} — ${mv.Description ?? 'Sin descripción'} — ${formatSignedMoney(mv.AmountMinor)}`}
+                        aria-label={`${formatDate(mv.MovementDate)} — ${mv.Description ?? 'Sin descripción'} — ${formatSignedMoney(mv.AmountMinor, mv.currency)}`}
                         className={`relative cursor-pointer border-t border-line/60 transition-colors duration-[120ms] hover:bg-interactive focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${
                           isSelected ? 'bg-accent-wash' : ''
                         }`}
@@ -177,7 +177,7 @@ export default function AccountDetailPage() {
                         <td
                           className={`whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums ${signedAmountClass(mv.AmountMinor)}`}
                         >
-                          {formatSignedMoney(mv.AmountMinor)}
+                          {formatSignedMoney(mv.AmountMinor, mv.currency)}
                         </td>
                       </tr>
                     );

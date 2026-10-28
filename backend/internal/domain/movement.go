@@ -35,6 +35,7 @@ type MovementWithCategory struct {
 	CategoryID             string
 	CategoryName           string
 	EventType              string
+	AccountCurrency        string
 	CounterpartAccountName string
 }
 

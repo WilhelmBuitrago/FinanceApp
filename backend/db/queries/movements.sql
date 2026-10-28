@@ -40,10 +40,12 @@ SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_d
        fe.event_type,
        fe.category_id,
        c.name AS category_name,
+       ma.currency AS account_currency,
        ca.id AS counterpart_account_id,
        ca.name AS counterpart_account_name
 FROM movements m
 JOIN financial_events fe ON fe.id = m.financial_event_id
+LEFT JOIN accounts ma ON ma.id = m.account_id
 LEFT JOIN categories c ON c.id = fe.category_id
 LEFT JOIN movement_relations mr
        ON mr.relation_type = 'TRANSFER_COUNTERPART'
@@ -58,10 +60,12 @@ SELECT m.id, m.financial_event_id, m.account_id, m.source_entry_id, m.movement_d
        fe.event_type,
        fe.category_id,
        c.name AS category_name,
+       ma.currency AS account_currency,
        ca.id AS counterpart_account_id,
        ca.name AS counterpart_account_name
 FROM movements m
 JOIN financial_events fe ON fe.id = m.financial_event_id
+LEFT JOIN accounts ma ON ma.id = m.account_id
 LEFT JOIN categories c ON c.id = fe.category_id
 LEFT JOIN movement_relations mr
        ON mr.relation_type = 'TRANSFER_COUNTERPART'
