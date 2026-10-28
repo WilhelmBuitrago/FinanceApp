@@ -71,6 +71,8 @@ Thumbs.db
 .idea/
 .codegraph/
 .atl/
+graphify-out/
+odd/
 
 # ==================================================
 # Temporary files and logs
