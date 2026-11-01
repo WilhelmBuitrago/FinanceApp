@@ -18,6 +18,10 @@
 Administrá cuentas, importá extractos bancarios en PDF y obtené movimientos,
 saldos y reportes con trazabilidad completa — sin depender de la nube.
 
+<p align="center">
+  <video src="https://github.com/WilhelmBuitrago/FinanceApp/raw/developer/assets/brag/brag.mp4" width="640" controls poster="https://github.com/WilhelmBuitrago/FinanceApp/raw/developer/assets/brag/brag.jpg"></video>
+</p>
+
 ## Características
 
 - Múltiples cuentas financieras, efectivo y tarjetas de crédito asociadas.
@@ -53,6 +57,7 @@ FinanceApp/
 │   ├── desktop/          # App de escritorio (Tauri + React/Vite)
 │   └── processor/        # Procesamiento documental (Python)
 ├── backend/              # API, dominio y persistencia (Go, módulo financeapp/backend)
+├── assets/               # Medios versionados (video e imágenes del README)
 ├── cmd/                  # Bootstrap legacy (no referenciado; pendiente de decisión)
 ├── data/                 # Datos locales (SQLite, artefactos, logs) — ignorado por Git
 ├── docs/                 # Documentación para desarrolladores — local, no versionada

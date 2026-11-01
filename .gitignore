@@ -29,6 +29,10 @@ data/
 /backend/data/
 /backend/internal/app/data/
 
+# ==================================================
+# Generated brag video output (brag skill, local artifact)
+# ==================================================
+/brag-output/
 
 # ==================================================
 # Python
