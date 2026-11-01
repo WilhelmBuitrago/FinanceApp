@@ -19,9 +19,9 @@ Administrá cuentas, importá extractos bancarios en PDF y obtené movimientos,
 saldos y reportes con trazabilidad completa — sin depender de la nube.
 
 <p align="center">
-  <a href="https://raw.githubusercontent.com/WilhelmBuitrago/FinanceApp/developer/assets/brag/brag.mp4" target="_blank">
-    <img src="https://raw.githubusercontent.com/WilhelmBuitrago/FinanceApp/developer/assets/brag/brag.jpg" alt="Video de lanzamiento" width="640">
-  </a>
+  <video width="640" controls poster="https://raw.githubusercontent.com/WilhelmBuitrago/FinanceApp/developer/assets/brag/brag.jpg">
+    <source src="https://raw.githubusercontent.com/WilhelmBuitrago/FinanceApp/developer/assets/brag/brag.mp4" type="video/mp4">
+  </video>
 </p>
 
 ## Características
